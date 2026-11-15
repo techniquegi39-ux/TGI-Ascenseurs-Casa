@@ -13,10 +13,11 @@ import {
 } from 'lucide-react'
 import { collection, deleteDoc, doc, getDoc, onSnapshot } from 'firebase/firestore'
 import ContractForm from '../components/ContractForm.jsx'
+import TablePdfExportButton from '../components/TablePdfExportButton.jsx'
 import { db } from '../firebase.js'
 
 function getContractNumber(contract) {
-  return String(contract.numero || contract.contractNumber || 'Sans numéro')
+  return String(contract.number || contract.numero || contract.contractNumber || 'Sans numéro')
 }
 
 function getClientName(client) {
@@ -418,62 +419,41 @@ export default function Contracts() {
           .map((snapshot) => ({ ...snapshot.data(), id: snapshot.id }))
       }
 
-      const { PDF_COMPANY_INFO, generatePremiumPDF } = await import('../utils/pdfEngine.js')
       const companyData = getCompanyInfo(settingsSnapshot.exists() ? settingsSnapshot.data() : {})
-      const company = { ...PDF_COMPANY_INFO, ...companyData }
       const client = clientsById.get(getContractClientId(contract))
-      const items = [
-        { designation: 'Numéro de contrat', value: getContractNumber(contract) },
-        { designation: 'Type de contrat', value: String(contract.type || '—') },
-        { designation: 'Statut', value: getContractStatus(contract) },
-        { designation: 'Date de début', value: formatDate(contract.dateDebut || contract.startDate) },
-        { designation: 'Date de fin', value: formatDate(contract.dateFin || contract.endDate) },
-        {
-          designation: 'Montant HT',
-          value: formatCurrency(Number(contract.montantHT ?? contract.amountHT ?? 0)),
-        },
-        {
-          designation: 'TVA',
-          value: `${Number(contract.tauxTVA ?? contract.vatRate ?? 0)} %`,
-        },
-        {
-          designation: 'Total TTC',
-          value: formatCurrency(getContractAmount(contract)),
-        },
-        {
-          designation: 'Fréquence de facturation',
-          value: String(contract.frequenceFacturation || contract.billingFrequency || '—'),
-        },
-        {
-          designation: 'Clauses particulières',
-          value: String(contract.clauses || contract.conditions || 'Aucune clause particulière.'),
-        },
-        ...elevatorDetails.map((elevator) => ({
-          designation: 'Équipement couvert',
-          value: [
-            String(elevator.reference || elevator.numeroSerie || elevator.serialNumber || 'Sans référence'),
-            String(elevator.type || 'Équipement'),
-            elevator.marque || elevator.brand,
-            elevator.adresseInstallation || elevator.adresse || elevator.installationAddress,
-          ]
-            .filter(Boolean)
-            .join(' · '),
-        })),
-      ]
-
-      await generatePremiumPDF({
-        typeDocument: `Contrat ${String(contract.type || '').trim()}`.trim(),
-        numero: getContractNumber(contract),
-        date: contract.dateDebut || contract.startDate || new Date(),
+      const [{ pdf }, { default: ContractPdfDocument }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('../components/pdf/ContractPdfDocument.jsx'),
+      ])
+      const documentContract = {
+        ...contract,
+        number: getContractNumber(contract),
+        elevatorDetails,
+        totalTTC: getContractAmount(contract),
         clientInfo: {
+          ...client,
           nom: getContractClientName(contract, clientsById),
-          adresse: String(client?.adresse || client?.address || '—'),
-          ice: String(client?.ice || client?.identifiantFiscal || '—'),
+          adresse: client?.adresse || client?.address || '',
+          ice: client?.ice || client?.identifiantFiscal || '',
+          telephone: client?.telephone || client?.téléphone || client?.phone || '',
         },
-        items,
-        companyInfo: company,
-        layout: 'details',
-      })
+        companyInfo: companyData,
+      }
+      const blob = await pdf(
+        <ContractPdfDocument contract={documentContract} />,
+      ).toBlob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `Contrat_${getContractNumber(contract)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[<>:"/\\|?*]/g, '-')
+        .replace(/\s+/g, '_')}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 
       showToast('success', 'Le PDF du contrat a été généré.')
     } catch (error) {
@@ -507,14 +487,30 @@ export default function Contracts() {
             Gérez les engagements clients, les équipements couverts et leurs échéances.
           </p>
         </div>
-        <button
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 sm:w-auto"
-          onClick={() => setModalContract(null)}
-          type="button"
-        >
-          <Plus aria-hidden="true" className="h-4 w-4" />
-          Nouveau contrat
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <TablePdfExportButton
+            columns={[
+              { label: 'N° Contrat', value: getContractNumber },
+              { label: 'Client', value: (contract) => getContractClientName(contract, clientsById) },
+              { label: 'Début', value: (contract) => formatDate(contract.dateDebut || contract.startDate) },
+              { label: 'Fin', value: (contract) => formatDate(contract.dateFin || contract.endDate) },
+              { label: 'Montant TTC', value: (contract) => formatCurrency(getContractAmount(contract)) },
+              { label: 'Statut', value: getContractStatus },
+            ]}
+            disabled={isLoading}
+            filename="Liste-contrats"
+            rows={filteredContracts}
+            title="Liste des contrats"
+          />
+          <button
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 sm:w-auto"
+            onClick={() => setModalContract(null)}
+            type="button"
+          >
+            <Plus aria-hidden="true" className="h-4 w-4" />
+            Nouveau contrat
+          </button>
+        </div>
       </header>
 
       <section aria-label="Synthèse des contrats" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

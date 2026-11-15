@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { collection, deleteDoc, doc, getDoc, onSnapshot } from 'firebase/firestore'
 import ClientForm from '../components/ClientForm.jsx'
+import TablePdfExportButton from '../components/TablePdfExportButton.jsx'
 import { db } from '../firebase.js'
 
 function getClientName(client) {
@@ -304,14 +305,30 @@ export default function Clients() {
             Gérez vos syndics, entreprises et particuliers depuis un espace centralisé.
           </p>
         </div>
-        <button
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 sm:w-auto"
-          onClick={() => setModalClient(null)}
-          type="button"
-        >
-          <Plus aria-hidden="true" className="h-4 w-4" />
-          Nouveau Client
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <TablePdfExportButton
+            columns={[
+              { label: 'Nom / Raison sociale', value: getClientName },
+              { label: 'Type', value: getClientType },
+              { label: 'Téléphone', value: getClientPhone },
+              { label: 'Ville', value: getClientCity },
+              { label: 'ICE', value: getClientIce },
+              { label: 'Statut', value: (client) => (isClientActive(client) ? 'Actif' : 'Inactif') },
+            ]}
+            disabled={isLoading}
+            filename="Liste-clients"
+            rows={filteredClients}
+            title="Répertoire clients"
+          />
+          <button
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 sm:w-auto"
+            onClick={() => setModalClient(null)}
+            type="button"
+          >
+            <Plus aria-hidden="true" className="h-4 w-4" />
+            Nouveau Client
+          </button>
+        </div>
       </header>
 
       <section aria-label="Synthèse des clients" className="grid gap-4 sm:grid-cols-3">

@@ -14,13 +14,15 @@ import {
 } from 'lucide-react'
 import { collection, deleteDoc, doc, getDoc, onSnapshot } from 'firebase/firestore'
 import QuoteForm from '../components/QuoteForm.jsx'
+import TablePdfExportButton from '../components/TablePdfExportButton.jsx'
 import { db } from '../firebase.js'
 
 const QUOTE_STATUSES = ['Brouillon', 'Envoyé', 'Accepté', 'Refusé']
 
 function getQuoteNumber(quote) {
   return String(
-    quote.numero ||
+    quote.number ||
+      quote.numero ||
       quote.quoteNumber ||
       (quote.id ? `DEV-${quote.id.slice(0, 7).toUpperCase()}` : 'Sans numéro'),
   )
@@ -269,9 +271,18 @@ function Toast({ toast, onClose }) {
   )
 }
 
-function getCompanyInfo(settings = {}, defaults = {}) {
+function getCompanyInfo(settings = {}) {
+  const companyDefaults = {
+    name: 'TGI ASCENSEURS CASA',
+    address: '',
+    phone: '',
+    email: '',
+    ice: '',
+    rc: '',
+    patente: '',
+  }
   return {
-    ...defaults,
+    ...companyDefaults,
     ...Object.fromEntries(
       Object.entries(settings).filter(([, value]) => typeof value === 'string'),
     ),
@@ -425,49 +436,45 @@ export default function Quotes() {
     setExportingId(quote.id)
     try {
       const settingsSnapshot = await getDoc(doc(db, 'settings', 'company'))
-      const { PDF_COMPANY_INFO, generatePremiumPDF } = await import('../utils/pdfEngine.js')
       const companyInfo = getCompanyInfo(
         settingsSnapshot.exists() ? settingsSnapshot.data() : {},
-        PDF_COMPANY_INFO,
       )
       const client = clientsById.get(getClientId(quote))
       const items = getNormalizedItems(quote)
       const totals = getQuoteTotals(quote)
-      const notes = [
-        `Date de validité : ${formatDate(quote.dateValidite || quote.validUntil)}`,
-        `Statut : ${getQuoteStatus(quote)}`,
-        quote.conditionsPaiement
-          ? `Conditions de paiement : ${quote.conditionsPaiement}`
-          : '',
-        quote.notes || '',
-      ]
-        .filter(Boolean)
-        .join('\n\n')
-
-      await generatePremiumPDF({
-        typeDocument: 'Devis',
-        numero: getQuoteNumber(quote),
-        date: quote.dateEmission || quote.date || new Date(),
+      const [{ pdf }, { default: QuotePdfDocument }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('../components/pdf/QuotePdfDocument.jsx'),
+      ])
+      const documentQuote = {
+        ...quote,
+        number: getQuoteNumber(quote),
+        items,
+        totalHT: totals.totalHT,
+        totalTVA: totals.totalTVA,
+        totalTTC: totals.totalTTC,
         clientInfo: {
+          ...client,
           nom: getQuoteClientName(quote, clientsById),
-          adresse: String(client?.adresse || client?.address || '—'),
-          ice: String(client?.ice || client?.identifiantFiscal || '—'),
+          adresse: client?.adresse || client?.address || '',
+          ice: client?.ice || client?.identifiantFiscal || '',
+          telephone: client?.telephone || client?.phone || '',
         },
-        items: items.map((item) => ({
-          designation: item.designation,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          taxRate: item.taxRate,
-          totalHT: item.totalHT,
-        })),
-        totaux: {
-          totalHT: totals.totalHT,
-          totalTVA: totals.totalTVA,
-          totalTTC: totals.totalTTC,
-        },
-        notes,
         companyInfo,
-      })
+      }
+      const blob = await pdf(<QuotePdfDocument quote={documentQuote} />).toBlob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `Devis_${getQuoteNumber(quote)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[<>:"/\\|?*]/g, '-')
+        .replace(/\s+/g, '_')}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
       showToast('success', 'Le devis PDF a été généré.')
     } catch (error) {
       showToast(
@@ -500,14 +507,30 @@ export default function Quotes() {
             Préparez vos offres, suivez leur statut et partagez-les en PDF.
           </p>
         </div>
-        <button
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 sm:w-auto"
-          onClick={() => setModalQuote(null)}
-          type="button"
-        >
-          <Plus aria-hidden="true" className="h-4 w-4" />
-          Nouveau devis
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <TablePdfExportButton
+            columns={[
+              { label: 'N° Devis', value: getQuoteNumber },
+              { label: 'Date', value: (quote) => formatDate(quote.dateEmission || quote.dateDevis || quote.date || quote.createdAt) },
+              { label: 'Client', value: (quote) => getQuoteClientName(quote, clientsById) },
+              { label: 'Validité', value: (quote) => formatDate(quote.dateValidite || quote.validityDate) },
+              { label: 'Total TTC', value: (quote) => formatCurrency(getQuoteTotals(quote).totalTTC) },
+              { label: 'Statut', value: getQuoteStatus },
+            ]}
+            disabled={isLoading}
+            filename="Liste-devis"
+            rows={filteredQuotes}
+            title="Liste des devis"
+          />
+          <button
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 sm:w-auto"
+            onClick={() => setModalQuote(null)}
+            type="button"
+          >
+            <Plus aria-hidden="true" className="h-4 w-4" />
+            Nouveau devis
+          </button>
+        </div>
       </header>
 
       <section aria-label="Synthèse des devis" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

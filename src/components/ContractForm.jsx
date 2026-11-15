@@ -29,6 +29,25 @@ const CONTRACT_TYPES = ['Maintenance', 'Modernisation']
 const CONTRACT_STATUSES = ['En négociation', 'Actif', 'Résilié']
 const BILLING_FREQUENCIES = ['Mensuelle', 'Trimestrielle', 'Annuelle']
 const VAT_RATES = [0, 7, 10, 14, 20]
+const MAX_CLAUSE_LENGTH = 10000
+const STANDARD_CONTRACT_CLAUSES = [
+  {
+    label: 'Maintenance préventive',
+    text: 'Le prestataire s’engage à effectuer des visites mensuelles de contrôle et de graissage.',
+  },
+  {
+    label: 'Dépannage',
+    text: 'Intervention garantie sous 24h ouvrables en cas de panne bloquante.',
+  },
+  {
+    label: 'Pièces de rechange',
+    text: 'Le remplacement des pièces d’usure normale est facturé séparément sur devis.',
+  },
+  {
+    label: 'Exclusions',
+    text: 'Les pannes causées par vandalisme, inondation ou force majeure ne sont pas couvertes.',
+  },
+]
 
 function getClientName(client) {
   return String(client.nom || client.raisonSociale || client.name || 'Client sans nom')
@@ -412,6 +431,30 @@ export default function ContractForm({ contract = null, onClose, onSaved }) {
     setFormError('')
   }
 
+  function appendStandardClause(event) {
+    const clause = STANDARD_CONTRACT_CLAUSES.find((item) => item.label === event.target.value)
+    if (!clause) {
+      return
+    }
+
+    const currentClauses = formData.clauses.trim()
+    const nextClauses = currentClauses
+      ? `${currentClauses}\n\n${clause.text}`
+      : clause.text
+
+    setFormData((previous) => ({ ...previous, clauses: nextClauses }))
+    setErrors((previous) => {
+      const nextErrors = { ...previous }
+      if (nextClauses.length > MAX_CLAUSE_LENGTH) {
+        nextErrors.clauses = `Les clauses ne doivent pas dépasser ${MAX_CLAUSE_LENGTH.toLocaleString('fr-FR')} caractères.`
+      } else {
+        delete nextErrors.clauses
+      }
+      return nextErrors
+    })
+    setFormError('')
+  }
+
   function toggleElevator(elevatorId) {
     setFormData((previous) => ({
       ...previous,
@@ -469,8 +512,8 @@ export default function ContractForm({ contract = null, onClose, onSaved }) {
     if (!BILLING_FREQUENCIES.includes(formData.frequenceFacturation)) {
       nextErrors.frequenceFacturation = 'Sélectionnez une fréquence de facturation valide.'
     }
-    if (formData.clauses.trim().length > 10000) {
-      nextErrors.clauses = 'Les clauses ne doivent pas dépasser 10 000 caractères.'
+    if (formData.clauses.trim().length > MAX_CLAUSE_LENGTH) {
+      nextErrors.clauses = `Les clauses ne doivent pas dépasser ${MAX_CLAUSE_LENGTH.toLocaleString('fr-FR')} caractères.`
     }
 
     setErrors(nextErrors)
@@ -944,6 +987,22 @@ export default function ContractForm({ contract = null, onClose, onSaved }) {
                   >
                     Clauses particulières
                   </label>
+                  <select
+                    aria-label="Insérer une clause type"
+                    className="mb-2 h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 sm:w-auto"
+                    disabled={isSaving}
+                    onChange={appendStandardClause}
+                    value=""
+                  >
+                    <option disabled value="">
+                      Insérer une clause type...
+                    </option>
+                    {STANDARD_CONTRACT_CLAUSES.map((clause) => (
+                      <option key={clause.label} value={clause.label}>
+                        {clause.label}
+                      </option>
+                    ))}
+                  </select>
                   <textarea
                     aria-describedby={errors.clauses ? 'contract-clauses-error' : undefined}
                     aria-invalid={Boolean(errors.clauses)}
@@ -954,6 +1013,7 @@ export default function ContractForm({ contract = null, onClose, onSaved }) {
                     }`}
                     disabled={isSaving}
                     id="contract-clauses"
+                    maxLength={MAX_CLAUSE_LENGTH + 500}
                     name="clauses"
                     onChange={handleChange}
                     placeholder="Conditions spécifiques, exclusions, délais d’intervention..."

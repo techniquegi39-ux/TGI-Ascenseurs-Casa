@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
   ArrowUpDown,
@@ -15,6 +15,8 @@ import {
 import { collection, deleteDoc, doc, getDoc, onSnapshot } from 'firebase/firestore'
 import InvoiceForm from '../components/InvoiceForm.jsx'
 import { db } from '../firebase.js'
+
+const DownloadPdfButton = lazy(() => import('../components/pdf/DownloadPdfButton.jsx'))
 
 const INVOICE_STATUSES = [
   'Brouillon',
@@ -301,7 +303,16 @@ function Toast({ toast, onClose }) {
   )
 }
 
-function getCompanyInfo(settings = {}, defaults = {}) {
+function getCompanyInfo(settings = {}) {
+  const defaults = {
+    name: 'TGI ASCENSEURS CASA',
+    address: '',
+    phone: '',
+    email: '',
+    ice: '',
+    rc: '',
+    patente: '',
+  }
   return {
     ...defaults,
     ...Object.fromEntries(
@@ -416,6 +427,65 @@ export default function Invoices() {
       })
   }, [clientsById, invoices, search, sortConfig, statusFilter])
 
+  const invoicePdfColumns = useMemo(
+    () => [
+      { header: 'N° Facture', accessor: getInvoiceNumber, width: '12%' },
+      {
+        header: 'Date',
+        accessor: (invoice) =>
+          formatDate(invoice.dateFacture || invoice.dateEmission || invoice.date),
+        width: '12%',
+      },
+      {
+        header: 'Client',
+        accessor: (invoice) => getInvoiceClientName(invoice, clientsById),
+        width: '22%',
+      },
+      {
+        header: 'Échéance',
+        accessor: (invoice) => formatDate(invoice.dateEcheance || invoice.dueDate),
+        width: '12%',
+      },
+      {
+        header: 'Total TTC',
+        accessor: (invoice) => formatCurrency(getInvoiceTotals(invoice).totalTTC),
+        width: '15%',
+        align: 'right',
+      },
+      {
+        header: 'Reste à payer',
+        accessor: (invoice) =>
+          formatCurrency(
+            Math.max(0, getInvoiceTotals(invoice).totalTTC - getAmountPaid(invoice)),
+          ),
+        width: '15%',
+        align: 'right',
+      },
+      { header: 'Statut', accessor: getInvoiceStatus, width: '12%' },
+    ],
+    [clientsById],
+  )
+
+  const invoicePdfTotals = useMemo(
+    () =>
+      filteredInvoices.reduce(
+        (sum, invoice) => {
+          const totals = getInvoiceTotals(invoice)
+          const paid = getAmountPaid(invoice)
+          return {
+            totalHT: sum.totalHT + totals.totalHT,
+            totalTVA: sum.totalTVA + totals.totalTVA,
+            totalTTC: sum.totalTTC + totals.totalTTC,
+            amountPaid: sum.amountPaid + paid,
+            outstandingBalance:
+              sum.outstandingBalance + Math.max(0, totals.totalTTC - paid),
+          }
+        },
+        { totalHT: 0, totalTVA: 0, totalTTC: 0, amountPaid: 0, outstandingBalance: 0 },
+      ),
+    [filteredInvoices],
+  )
+
   const draftCount = invoices.filter((invoice) => getInvoiceStatus(invoice) === 'Brouillon').length
   const unpaidCount = invoices.filter(
     (invoice) => getInvoiceStatus(invoice) === 'Validée / Non Payée',
@@ -467,57 +537,44 @@ export default function Invoices() {
     setExportingId(invoice.id)
     try {
       const settingsSnapshot = await getDoc(doc(db, 'settings', 'company'))
-      const { PDF_COMPANY_INFO, generatePremiumPDF } = await import('../utils/pdfEngine.js')
       const companyInfo = getCompanyInfo(
         settingsSnapshot.exists() ? settingsSnapshot.data() : {},
-        PDF_COMPANY_INFO,
       )
       const client = clientsById.get(getClientId(invoice))
       const totals = getInvoiceTotals(invoice)
-      const items = getInvoiceItems(invoice)
-      const amountPaid = getAmountPaid(invoice)
-      const notes = [
-        `Date d’échéance : ${formatDate(invoice.dateEcheance || invoice.dueDate)}`,
-        invoice.referenceDevis ? `Référence du devis : ${invoice.referenceDevis}` : '',
-        `Statut de paiement : ${getInvoiceStatus(invoice)}`,
-        `Montant payé : ${formatCurrency(amountPaid)}`,
-        `Reste à payer : ${formatCurrency(Math.max(0, totals.totalTTC - amountPaid))}`,
-        invoice.paymentMethod || invoice.modeReglement
-          ? `Mode de règlement : ${invoice.paymentMethod || invoice.modeReglement}`
-          : '',
-        invoice.rib ? `RIB : ${invoice.rib}` : '',
-        invoice.conditionsReglement || invoice.paymentTerms
-          ? `Conditions de règlement : ${invoice.conditionsReglement || invoice.paymentTerms}`
-          : '',
-        invoice.notes || '',
-      ]
-        .filter(Boolean)
-        .join('\n\n')
-
-      await generatePremiumPDF({
-        typeDocument: 'Facture',
-        numero: getInvoiceNumber(invoice),
-        date: invoice.dateFacture || invoice.dateEmission || invoice.date || new Date(),
+      const [{ pdf }, { default: InvoicePdfDocument }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('../components/pdf/InvoicePdfDocument.jsx'),
+      ])
+      const documentInvoice = {
+        ...invoice,
+        number: getInvoiceNumber(invoice),
+        totalHT: totals.totalHT,
+        totalTVA: totals.totalTVA,
+        totalTTC: totals.totalTTC,
+        amountPaid: getAmountPaid(invoice),
         clientInfo: {
+          ...client,
           nom: getInvoiceClientName(invoice, clientsById),
-          adresse: String(client?.adresse || client?.address || '—'),
-          ice: String(client?.ice || client?.identifiantFiscal || '—'),
+          adresse: client?.adresse || client?.address || '',
+          ice: client?.ice || client?.identifiantFiscal || '',
+          telephone: client?.telephone || client?.phone || '',
         },
-        items: items.map((item) => ({
-          designation: item.designation,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          taxRate: item.taxRate,
-          totalHT: item.totalHT,
-        })),
-        totaux: {
-          totalHT: totals.totalHT,
-          totalTVA: totals.totalTVA,
-          totalTTC: totals.totalTTC,
-        },
-        notes,
         companyInfo,
-      })
+      }
+      const blob = await pdf(<InvoicePdfDocument invoice={documentInvoice} />).toBlob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `Facture_${getInvoiceNumber(invoice)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[<>:"/\\|?*]/g, '-')
+        .replace(/\s+/g, '_')}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
       showToast('success', 'La facture PDF a été générée.')
     } catch (error) {
       showToast(
@@ -550,14 +607,31 @@ export default function Invoices() {
             Suivez les échéances, les règlements et les soldes de vos clients.
           </p>
         </div>
-        <button
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 sm:w-auto"
-          onClick={() => setModalInvoice(null)}
-          type="button"
-        >
-          <Plus aria-hidden="true" className="h-4 w-4" />
-          Nouvelle facture
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Suspense
+            fallback={
+              <span className="inline-flex h-10 items-center rounded-lg border border-slate-300 px-3 text-sm text-slate-500">
+                Chargement PDF...
+              </span>
+            }
+          >
+            <DownloadPdfButton
+              columns={invoicePdfColumns}
+              disabled={isLoading}
+              documentTitle="Liste des factures"
+              data={filteredInvoices}
+              totals={invoicePdfTotals}
+            />
+          </Suspense>
+          <button
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 sm:w-auto"
+            onClick={() => setModalInvoice(null)}
+            type="button"
+          >
+            <Plus aria-hidden="true" className="h-4 w-4" />
+            Nouvelle facture
+          </button>
+        </div>
       </header>
 
       <section aria-label="Synthèse de la trésorerie" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">

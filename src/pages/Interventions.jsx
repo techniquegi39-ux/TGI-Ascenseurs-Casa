@@ -15,13 +15,15 @@ import {
 } from 'lucide-react'
 import { collection, deleteDoc, doc, getDoc, onSnapshot } from 'firebase/firestore'
 import InterventionForm from '../components/InterventionForm.jsx'
+import TablePdfExportButton from '../components/TablePdfExportButton.jsx'
 import { db } from '../firebase.js'
 
 const INTERVENTION_STATUSES = ['Planifiée', 'En cours', 'Terminée', 'Annulée']
 
 function getInterventionNumber(intervention) {
   return String(
-    intervention.numero ||
+    intervention.number ||
+      intervention.numero ||
       intervention.reference ||
       (intervention.id ? `INT-${intervention.id.slice(0, 7).toUpperCase()}` : 'Sans numéro'),
   )
@@ -142,14 +144,38 @@ function isInterventionOverdue(intervention) {
 }
 
 function getParts(intervention) {
-  const parts = intervention.piecesRemplacees || intervention.partsReplaced || []
-  if (Array.isArray(parts)) {
-    return parts.map((part) => String(part).trim()).filter(Boolean)
-  }
-  return String(parts)
-    .split(/\r?\n|;/)
-    .map((part) => part.trim())
-    .filter(Boolean)
+  const source =
+    intervention.partsUsed ??
+    intervention.piecesRemplacees ??
+    intervention.partsReplaced ??
+    []
+  const entries = Array.isArray(source)
+    ? source
+    : String(source)
+        .split(/\r?\n|;/)
+        .map((part) => part.trim())
+        .filter(Boolean)
+
+  return entries
+    .map((part) => {
+      if (typeof part === 'string') {
+        return { designation: part.trim(), quantity: 1 }
+      }
+
+      if (!part || typeof part !== 'object') {
+        return null
+      }
+
+      const designation = String(
+        part.designation || part.name || part.nom || part.description || part.reference || '',
+      ).trim()
+      const parsedQuantity = Number(part.quantity ?? part.quantite ?? part.qty ?? 1)
+      return {
+        designation: designation || 'Pièce remplacée',
+        quantity: Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1,
+      }
+    })
+    .filter((part) => part?.designation)
 }
 
 function StatusBadge({ status }) {
@@ -222,7 +248,16 @@ function Toast({ toast, onClose }) {
   )
 }
 
-function getCompanyInfo(settings = {}, defaults = {}) {
+function getCompanyInfo(settings = {}) {
+  const defaults = {
+    name: 'TGI ASCENSEURS CASA',
+    address: '',
+    phone: '',
+    email: '',
+    ice: '',
+    rc: '',
+    patente: '',
+  }
   return {
     ...defaults,
     ...Object.fromEntries(
@@ -434,75 +469,65 @@ export default function Interventions() {
 
     try {
       const settingsSnapshot = await getDoc(doc(db, 'settings', 'company'))
-      const { PDF_COMPANY_INFO, generatePremiumPDF } = await import('../utils/pdfEngine.js')
       const companyInfo = getCompanyInfo(
         settingsSnapshot.exists() ? settingsSnapshot.data() : {},
-        PDF_COMPANY_INFO,
       )
       const client = clientsById.get(getInterventionClientId(intervention))
       const elevator = elevatorsById.get(getInterventionElevatorId(intervention))
       const parts = getParts(intervention)
-      const workReport = String(
-        intervention.travauxEffectues || intervention.rapport || intervention.report || '',
-      ).trim()
-      const problemDescription = String(
-        intervention.descriptionProbleme ||
-          intervention.probleme ||
-          intervention.description ||
-          'Non renseigné',
-      ).trim()
-      const notes = [
-        `Problème signalé :\n${problemDescription}`,
-        `Travaux effectués / Rapport :\n${workReport || 'Aucun rapport de travaux renseigné.'}`,
-      ].join('\n\n')
-      const items = parts.length
-        ? parts.map((part) => ({ designation: 'Pièce remplacée', value: part }))
-        : [{ designation: 'Pièces remplacées', value: 'Aucune pièce remplacée.' }]
-      const interventionType = String(intervention.type || 'Intervention')
-
-      await generatePremiumPDF({
-        typeDocument: 'Fiche d’intervention',
-        numero: getInterventionNumber(intervention),
-        date: intervention.dateIntervention || intervention.dateHeure || new Date(),
+      const [{ pdf }, { default: InterventionPdfDocument }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('../components/pdf/InterventionPdfDocument.jsx'),
+      ])
+      const documentIntervention = {
+        ...intervention,
+        number: getInterventionNumber(intervention),
+        partsUsed: parts,
         clientInfo: {
+          ...client,
           nom: getInterventionClientName(intervention, clientsById),
-          adresse: String(client?.adresse || client?.address || '—'),
-          ice: String(client?.ice || client?.identifiantFiscal || '—'),
+          adresse: client?.adresse || client?.address || intervention.clientAddress || '',
+          telephone:
+            client?.telephone ||
+            client?.téléphone ||
+            client?.phone ||
+            intervention.clientPhone ||
+            '',
         },
-        items: [
-          { designation: 'Type d’intervention', value: interventionType },
-          {
-            designation: 'Statut',
-            value: getStatus(intervention),
-          },
-          {
-            designation: 'Date et heure',
-            value: formatDateTime(intervention.dateIntervention || intervention.dateHeure),
-          },
-          {
-            designation: 'Technicien assigné',
-            value: String(
-              intervention.technicien || intervention.technician || intervention.technicianName || '—',
-            ),
-          },
-          {
-            designation: 'Équipement',
-            value: [
-              getInterventionElevatorName(intervention, elevatorsById),
-              elevator?.type || intervention.elevatorType,
-              elevator?.adresseInstallation || intervention.adresseInstallation,
-            ]
-              .filter(Boolean)
-              .join(' · '),
-          },
-          ...items,
-        ],
-        notes,
+        equipmentInfo: {
+          ...elevator,
+          type: elevator?.type || intervention.elevatorType || intervention.equipmentType || '',
+          numeroSerie:
+            elevator?.numeroSerie ||
+            elevator?.serialNumber ||
+            elevator?.reference ||
+            intervention.elevatorReference ||
+            intervention.equipmentReference ||
+            '',
+          adresseInstallation:
+            elevator?.adresseInstallation ||
+            elevator?.address ||
+            intervention.adresseInstallation ||
+            intervention.equipmentAddress ||
+            '',
+        },
         companyInfo,
-        layout: 'details',
-        signatureLabel: 'Signature du Client',
-        showTotals: false,
-      })
+      }
+      const blob = await pdf(
+        <InterventionPdfDocument intervention={documentIntervention} />,
+      ).toBlob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `Intervention_${getInterventionNumber(intervention)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[<>:"/\\|?*]/g, '-')
+        .replace(/\s+/g, '_')}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 
       showToast('success', 'La fiche d’intervention PDF a été générée.')
     } catch (error) {
@@ -537,14 +562,30 @@ export default function Interventions() {
             Planifiez et documentez les interventions sur les équipements de vos clients.
           </p>
         </div>
-        <button
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 sm:w-auto"
-          onClick={() => setModalIntervention(null)}
-          type="button"
-        >
-          <Plus aria-hidden="true" className="h-4 w-4" />
-          Nouvelle intervention
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <TablePdfExportButton
+            columns={[
+              { label: 'N° Fiche', value: getInterventionNumber },
+              { label: 'Date', value: (intervention) => formatDateTime(intervention.dateIntervention || intervention.dateHeure || intervention.date) },
+              { label: 'Client', value: (intervention) => getInterventionClientName(intervention, clientsById) },
+              { label: 'Type', value: (intervention) => intervention.type || '—' },
+              { label: 'Technicien', value: getInterventionTechnician },
+              { label: 'Statut', value: getStatus },
+            ]}
+            disabled={isLoading}
+            filename="Liste-interventions"
+            rows={filteredInterventions}
+            title="Liste des interventions"
+          />
+          <button
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 sm:w-auto"
+            onClick={() => setModalIntervention(null)}
+            type="button"
+          >
+            <Plus aria-hidden="true" className="h-4 w-4" />
+            Nouvelle intervention
+          </button>
+        </div>
       </header>
 
       <section aria-label="Synthèse des interventions" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

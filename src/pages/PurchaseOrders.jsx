@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { collection, deleteDoc, doc, getDoc, onSnapshot } from 'firebase/firestore'
 import PurchaseOrderForm from '../components/PurchaseOrderForm.jsx'
+import TablePdfExportButton from '../components/TablePdfExportButton.jsx'
 import { db } from '../firebase.js'
 
 const PURCHASE_ORDER_STATUSES = [
@@ -520,14 +521,30 @@ export default function PurchaseOrders() {
             Préparez les commandes fournisseurs et exportez les bons au format PDF.
           </p>
         </div>
-        <button
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 sm:w-auto"
-          onClick={() => setModalOrder(null)}
-          type="button"
-        >
-          <Plus aria-hidden="true" className="h-4 w-4" />
-          Nouveau bon de commande
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <TablePdfExportButton
+            columns={[
+              { label: 'N° BC', value: getOrderNumber },
+              { label: 'Date', value: (order) => formatDate(order.dateCommande || order.orderDate || order.date) },
+              { label: 'Fournisseur', value: getSupplierName },
+              { label: 'Livraison prévue', value: (order) => formatDate(getExpectedDeliveryDate(order)) },
+              { label: 'Total TTC', value: (order) => formatCurrency(getOrderTotals(order).totalTTC) },
+              { label: 'Statut', value: getOrderStatus },
+            ]}
+            disabled={isLoading}
+            filename="Liste-bons-de-commande"
+            rows={filteredOrders}
+            title="Liste des bons de commande"
+          />
+          <button
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 sm:w-auto"
+            onClick={() => setModalOrder(null)}
+            type="button"
+          >
+            <Plus aria-hidden="true" className="h-4 w-4" />
+            Nouveau bon de commande
+          </button>
+        </div>
       </header>
 
       <section

@@ -20,6 +20,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore'
 import DeliveryNoteForm from '../components/DeliveryNoteForm.jsx'
+import TablePdfExportButton from '../components/TablePdfExportButton.jsx'
 import { useAuth } from '../context/useAuth.js'
 import { db } from '../firebase.js'
 
@@ -27,7 +28,8 @@ const DELIVERY_NOTE_STATUSES = ['Brouillon', 'Validé & Livré', 'Annulé']
 
 function getDeliveryNoteNumber(deliveryNote) {
   return String(
-    deliveryNote.numero ||
+    deliveryNote.number ||
+      deliveryNote.numero ||
       deliveryNote.deliveryNoteNumber ||
       (deliveryNote.id ? `BL-${deliveryNote.id.slice(0, 7).toUpperCase()}` : 'Sans numéro'),
   )
@@ -211,7 +213,16 @@ function Toast({ toast, onClose }) {
   )
 }
 
-function getCompanyInfo(settings = {}, defaults = {}) {
+function getCompanyInfo(settings = {}) {
+  const defaults = {
+    name: 'TGI ASCENSEURS CASA',
+    address: '',
+    phone: '',
+    email: '',
+    ice: '',
+    rc: '',
+    patente: '',
+  }
   return {
     ...defaults,
     ...Object.fromEntries(
@@ -434,52 +445,46 @@ export default function DeliveryNotes() {
     setExportingId(deliveryNote.id)
     try {
       const settingsSnapshot = await getDoc(doc(db, 'settings', 'company'))
-      const { PDF_COMPANY_INFO, generatePremiumPDF } = await import('../utils/pdfEngine.js')
       const companyInfo = getCompanyInfo(
         settingsSnapshot.exists() ? settingsSnapshot.data() : {},
-        PDF_COMPANY_INFO,
       )
       const client = clientsById.get(String(deliveryNote.clientId || ''))
       const deliveryItems = Array.isArray(deliveryNote.items) ? deliveryNote.items : []
-      const notes = [
-        `Statut : ${getDeliveryNoteStatus(deliveryNote)}`,
-        deliveryNote.referenceDocument || deliveryNote.referenceLiee
-          ? `Document lié : ${deliveryNote.referenceDocument || deliveryNote.referenceLiee}`
-          : '',
-        deliveryNote.livreur || deliveryNote.technicien
-          ? `Livreur / Technicien : ${deliveryNote.livreur || deliveryNote.technicien}`
-          : '',
-        deliveryNote.adresseLivraison || deliveryNote.deliveryAddress
-          ? `Adresse de livraison : ${deliveryNote.adresseLivraison || deliveryNote.deliveryAddress}`
-          : '',
-        deliveryNote.notes || '',
-      ]
-        .filter(Boolean)
-        .join('\n\n')
-
-      await generatePremiumPDF({
-        typeDocument: 'BON DE LIVRAISON',
-        numero: getDeliveryNoteNumber(deliveryNote),
-        date:
-          deliveryNote.dateLivraison ||
-          deliveryNote.deliveryDate ||
-          deliveryNote.date ||
-          new Date(),
-        clientInfo: {
-          nom: getClientName(client, deliveryNote),
-          adresse: String(client?.adresse || client?.address || '—'),
-          ice: String(client?.ice || client?.identifiantFiscal || '—'),
-        },
+      const [{ pdf }, { default: DeliveryNotePdfDocument }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('../components/pdf/DeliveryNotePdfDocument.jsx'),
+      ])
+      const documentDeliveryNote = {
+        ...deliveryNote,
+        number: getDeliveryNoteNumber(deliveryNote),
         items: deliveryItems.map((item) => ({
           designation: String(item.designation || item.description || 'Article'),
-          value: `${Number(item.quantity ?? item.quantite ?? 0)} unité(s) livrée(s)`,
+          quantity: item.quantity ?? item.quantite ?? 0,
         })),
-        notes,
+        clientInfo: {
+          ...client,
+          nom: getClientName(client, deliveryNote),
+          adresse: client?.adresse || client?.address || '',
+          ice: client?.ice || client?.identifiantFiscal || '',
+          telephone: client?.telephone || client?.phone || '',
+        },
         companyInfo,
-        layout: 'details',
-        showTotals: false,
-        signatureLabel: 'Signature du réceptionnaire',
-      })
+      }
+      const blob = await pdf(
+        <DeliveryNotePdfDocument deliveryNote={documentDeliveryNote} />,
+      ).toBlob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `BL_${getDeliveryNoteNumber(deliveryNote)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[<>:"/\\|?*]/g, '-')
+        .replace(/\s+/g, '_')}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
       showToast('success', 'Le bon de livraison PDF a été généré.')
     } catch (error) {
       showToast(
@@ -512,14 +517,29 @@ export default function DeliveryNotes() {
             Préparez les livraisons, contrôlez les articles sortis et exportez les bons signables.
           </p>
         </div>
-        <button
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 sm:w-auto"
-          onClick={() => setModalNote(null)}
-          type="button"
-        >
-          <Plus aria-hidden="true" className="h-4 w-4" />
-          Nouveau bon de livraison
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <TablePdfExportButton
+            columns={[
+              { label: 'N° BL', value: getDeliveryNoteNumber },
+              { label: 'Date', value: (deliveryNote) => formatDate(deliveryNote.dateLivraison || deliveryNote.deliveryDate || deliveryNote.date) },
+              { label: 'Client', value: (deliveryNote) => getClientName(clientsById.get(deliveryNote.clientId), deliveryNote) },
+              { label: 'Réf. Document', value: (deliveryNote) => deliveryNote.referenceDocument || deliveryNote.referenceLiee || '—' },
+              { label: 'Statut', value: getDeliveryNoteStatus },
+            ]}
+            disabled={isLoading}
+            filename="Liste-bons-de-livraison"
+            rows={filteredNotes}
+            title="Liste des bons de livraison"
+          />
+          <button
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 sm:w-auto"
+            onClick={() => setModalNote(null)}
+            type="button"
+          >
+            <Plus aria-hidden="true" className="h-4 w-4" />
+            Nouveau bon de livraison
+          </button>
+        </div>
       </header>
 
       {clientError && (

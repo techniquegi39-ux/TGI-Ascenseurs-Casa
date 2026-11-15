@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { collection, deleteDoc, doc, getDoc, onSnapshot } from 'firebase/firestore'
 import ElevatorForm from '../components/ElevatorForm.jsx'
+import TablePdfExportButton from '../components/TablePdfExportButton.jsx'
 import { db } from '../firebase.js'
 
 const ELEVATOR_STATUSES = ['En marche', 'En panne', 'En maintenance']
@@ -415,14 +416,31 @@ export default function Elevators() {
             Suivez les équipements, leur propriétaire et leur état opérationnel.
           </p>
         </div>
-        <button
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 sm:w-auto"
-          onClick={() => setModalElevator(null)}
-          type="button"
-        >
-          <Plus aria-hidden="true" className="h-4 w-4" />
-          Ajouter un équipement
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <TablePdfExportButton
+            columns={[
+              { label: 'N° Série', value: getElevatorReference },
+              { label: 'Client', value: (elevator) => getElevatorClientName(elevator, clientsById) },
+              { label: 'Type', value: getElevatorType },
+              { label: 'Marque', value: (elevator) => elevator.marque || elevator.brand || '—' },
+              { label: 'Niveaux', value: getElevatorLevels },
+              { label: 'Charge', value: getElevatorCapacity },
+              { label: 'Statut', value: getElevatorStatus },
+            ]}
+            disabled={isLoading}
+            filename="Parc-ascenseurs"
+            rows={filteredElevators}
+            title="Parc d’ascenseurs"
+          />
+          <button
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 sm:w-auto"
+            onClick={() => setModalElevator(null)}
+            type="button"
+          >
+            <Plus aria-hidden="true" className="h-4 w-4" />
+            Ajouter un équipement
+          </button>
+        </div>
       </header>
 
       <section aria-label="Synthèse du parc" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
