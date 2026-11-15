@@ -96,9 +96,11 @@ function Sidebar({ isOpen, onNavigate }) {
     >
       <div className="flex h-20 items-center justify-between border-b border-white/10 px-5">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-950/30">
-            <Building2 aria-hidden="true" className="h-5 w-5" />
-          </span>
+          <img
+            alt="TGI Ascenseurs"
+            className="h-11 w-11 shrink-0 rounded-xl border border-white/15 bg-white p-0.5 object-contain shadow-lg shadow-blue-950/30 transition-transform duration-300 hover:scale-105"
+            src="/logo.png.jpeg"
+          />
           <span className="min-w-0">
             <span className="block truncate text-sm font-bold tracking-tight text-white">
               TGI Manager Pro

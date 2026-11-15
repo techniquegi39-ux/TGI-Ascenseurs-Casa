@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowRight, Building2, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
+import { ArrowRight, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 
@@ -75,9 +75,11 @@ export default function Login() {
         />
 
         <Link to="/" className="relative z-10 inline-flex w-fit items-center gap-3">
-          <span className="grid h-12 w-12 place-items-center rounded-xl border border-white/15 bg-white/10">
-            <Building2 aria-hidden="true" className="h-6 w-6 text-sky-300" />
-          </span>
+          <img
+            alt="TGI Ascenseurs"
+            className="h-12 w-12 rounded-xl border border-white/20 bg-white p-0.5 object-contain shadow-lg shadow-blue-950/30 transition-transform duration-300 hover:scale-105"
+            src="/logo.png.jpeg"
+          />
           <span>
             <span className="block text-lg font-bold tracking-tight">TGI Manager Pro</span>
             <span className="block text-xs font-medium tracking-[0.18em] text-blue-200">
@@ -107,19 +109,13 @@ export default function Login() {
 
       <section className="flex min-h-screen items-center justify-center px-5 py-12 sm:px-8">
         <div className="w-full max-w-md">
-          <Link to="/" className="mb-12 inline-flex items-center gap-3 lg:hidden">
-            <span className="grid h-11 w-11 place-items-center rounded-xl bg-blue-950 text-sky-300">
-              <Building2 aria-hidden="true" className="h-5 w-5" />
-            </span>
-            <span>
-              <span className="block font-bold tracking-tight text-slate-900">
-                TGI Manager Pro
-              </span>
-              <span className="block text-[10px] font-semibold tracking-[0.18em] text-slate-500">
-                ASCENSEURS CASA
-              </span>
-            </span>
-          </Link>
+          <div className="mb-7 flex justify-center">
+            <img
+              alt="TGI Ascenseurs"
+              className="h-24 w-24 rounded-2xl border border-slate-200 bg-white p-1 object-contain shadow-md transition-transform duration-300 hover:scale-105"
+              src="/logo.png.jpeg"
+            />
+          </div>
 
           <div className="mb-8">
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-blue-700">
