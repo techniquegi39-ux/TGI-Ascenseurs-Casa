@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  ArrowUpDown,
   AlertCircle,
+  Clock,
   Download,
   FileText,
   LoaderCircle,
@@ -62,6 +64,27 @@ function formatDate(value) {
     month: 'short',
     year: 'numeric',
   }).format(date)
+}
+
+function getDateKey(value) {
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+    return value.slice(0, 10)
+  }
+
+  const date = getDateValue(value)
+  if (!date) {
+    return ''
+  }
+
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-')
+}
+
+function getTodayDateKey() {
+  return getDateKey(new Date())
 }
 
 function normalizeTaxRate(value) {
@@ -150,6 +173,16 @@ function getQuoteStatus(quote) {
     return 'Refusé'
   }
   return rawStatus
+}
+
+function isQuoteExpired(quote) {
+  const status = getQuoteStatus(quote)
+  if (status !== 'Brouillon' && status !== 'Envoyé') {
+    return false
+  }
+
+  const validityDate = getDateKey(quote.dateValidite || quote.validUntil)
+  return Boolean(validityDate && validityDate < getTodayDateKey())
 }
 
 function formatCurrency(value) {
@@ -249,6 +282,7 @@ export default function Quotes() {
   const [quotes, setQuotes] = useState([])
   const [clients, setClients] = useState([])
   const [search, setSearch] = useState('')
+  const [sortConfig, setSortConfig] = useState({ key: 'totalTTC', direction: 'desc' })
   const [statusFilter, setStatusFilter] = useState('Tous')
   const [isLoadingQuotes, setIsLoadingQuotes] = useState(true)
   const [isLoadingClients, setIsLoadingClients] = useState(true)
@@ -332,11 +366,21 @@ export default function Quotes() {
         ].some((value) => normalizeSearch(value || '').includes(queryText))
       })
       .sort((first, second) => {
-        const firstDate = getDateValue(first.dateEmission || first.date)?.getTime() || 0
-        const secondDate = getDateValue(second.dateEmission || second.date)?.getTime() || 0
-        return secondDate - firstDate
+        if (sortConfig.key === 'totalTTC') {
+          const difference = getQuoteTotals(first).totalTTC - getQuoteTotals(second).totalTTC
+          return sortConfig.direction === 'asc' ? difference : -difference
+        }
+
+        const firstDate = getDateKey(first.dateEmission || first.date)
+        const secondDate = getDateKey(second.dateEmission || second.date)
+        if (!firstDate || !secondDate) {
+          return firstDate ? -1 : secondDate ? 1 : 0
+        }
+
+        const order = firstDate.localeCompare(secondDate)
+        return sortConfig.direction === 'asc' ? order : -order
       })
-  }, [clientsById, quotes, search, statusFilter])
+  }, [clientsById, quotes, search, sortConfig, statusFilter])
 
   const draftCount = quotes.filter((quote) => getQuoteStatus(quote) === 'Brouillon').length
   const sentCount = quotes.filter((quote) => getQuoteStatus(quote) === 'Envoyé').length
@@ -344,6 +388,14 @@ export default function Quotes() {
 
   function showToast(type, message) {
     setToast({ type, message })
+  }
+
+  function handleSort(key) {
+    setSortConfig((previous) => ({
+      key,
+      direction:
+        previous.key === key && previous.direction === 'asc' ? 'desc' : 'asc',
+    }))
   }
 
   function handleSaved(action) {
@@ -568,23 +620,46 @@ export default function Quotes() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] border-collapse text-left">
+            <table className="w-full min-w-[850px] border-collapse text-left">
               <thead className="bg-slate-50/80">
                 <tr className="border-b border-slate-200">
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     N° Devis
                   </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Date
+                  <th
+                    aria-sort={sortConfig.key === 'date'
+                      ? sortConfig.direction === 'asc' ? 'ascending' : 'descending'
+                      : 'none'}
+                    className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    <button
+                      aria-label={`Trier par date ${sortConfig.key === 'date' && sortConfig.direction === 'asc' ? 'décroissante' : 'croissante'}`}
+                      className="inline-flex items-center gap-2 text-left transition hover:text-blue-700 focus:outline-none focus:text-blue-700"
+                      onClick={() => handleSort('date')}
+                      type="button"
+                    >
+                      Date
+                      <ArrowUpDown aria-hidden="true" className="h-3.5 w-3.5" />
+                    </button>
                   </th>
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Client
                   </th>
-                  <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Total HT
-                  </th>
-                  <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Total TTC
+                  <th
+                    aria-sort={sortConfig.key === 'totalTTC'
+                      ? sortConfig.direction === 'asc' ? 'ascending' : 'descending'
+                      : 'none'}
+                    className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    <button
+                      aria-label={`Trier par total TTC ${sortConfig.key === 'totalTTC' && sortConfig.direction === 'asc' ? 'décroissant' : 'croissant'}`}
+                      className="inline-flex items-center gap-2 text-right transition hover:text-blue-700 focus:outline-none focus:text-blue-700"
+                      onClick={() => handleSort('totalTTC')}
+                      type="button"
+                    >
+                      Total TTC
+                      <ArrowUpDown aria-hidden="true" className="h-3.5 w-3.5" />
+                    </button>
                   </th>
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Statut
@@ -599,6 +674,7 @@ export default function Quotes() {
                   const number = getQuoteNumber(quote)
                   const totals = getQuoteTotals(quote)
                   const isExporting = exportingId === quote.id
+                  const expired = isQuoteExpired(quote)
 
                   return (
                     <tr className="transition hover:bg-slate-50/70" key={quote.id}>
@@ -608,15 +684,22 @@ export default function Quotes() {
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-600">
-                        {formatDate(quote.dateEmission || quote.date)}
+                        <span className="inline-flex items-center gap-2">
+                          {formatDate(quote.dateEmission || quote.date)}
+                          {expired && (
+                            <Clock
+                              aria-label="Devis expiré, relance ou mise à jour nécessaire"
+                              className="h-4 w-4 text-red-600"
+                              role="img"
+                              title="Date de validité dépassée"
+                            />
+                          )}
+                        </span>
                       </td>
                       <td className="px-5 py-4">
                         <span className="block max-w-xs truncate text-sm font-semibold text-slate-900">
                           {getQuoteClientName(quote, clientsById)}
                         </span>
-                      </td>
-                      <td className="whitespace-nowrap px-5 py-4 text-right text-sm text-slate-700">
-                        {formatCurrency(totals.totalHT)}
                       </td>
                       <td className="whitespace-nowrap px-5 py-4 text-right text-sm font-semibold text-slate-900">
                         {formatCurrency(totals.totalTTC)}

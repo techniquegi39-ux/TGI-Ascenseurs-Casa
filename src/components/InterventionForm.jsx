@@ -29,6 +29,8 @@ const INTERVENTION_TYPES = [
   'Installation',
 ]
 const INTERVENTION_STATUSES = ['Planifiée', 'En cours', 'Terminée', 'Annulée']
+const COMPLETED_REPORT_ERROR =
+  'Le rapport technique est obligatoire pour clôturer une intervention.'
 
 function getClientName(client) {
   return String(client.nom || client.raisonSociale || client.name || 'Client sans nom')
@@ -353,11 +355,15 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
           : {}),
     }))
     setErrors((previous) => {
-      if (!previous[name]) {
-        return previous
-      }
       const nextErrors = { ...previous }
       delete nextErrors[name]
+      if (
+        name === 'status' &&
+        value !== 'Terminée' &&
+        nextErrors.travauxEffectues === COMPLETED_REPORT_ERROR
+      ) {
+        delete nextErrors.travauxEffectues
+      }
       return nextErrors
     })
     setFormError('')
@@ -390,7 +396,9 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
     } else if (problem.length > 5000) {
       nextErrors.descriptionProbleme = 'La description ne doit pas dépasser 5 000 caractères.'
     }
-    if (formData.travauxEffectues.trim().length > 10000) {
+    if (formData.status === 'Terminée' && !formData.travauxEffectues.trim()) {
+      nextErrors.travauxEffectues = COMPLETED_REPORT_ERROR
+    } else if (formData.travauxEffectues.trim().length > 10000) {
       nextErrors.travauxEffectues = 'Le rapport ne doit pas dépasser 10 000 caractères.'
     }
     if (formData.piecesRemplacees.length > 3000) {
@@ -533,7 +541,23 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
 
         <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit} noValidate>
           <div className="overflow-y-auto px-5 py-6 sm:px-7">
-            <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2">
+            <div className="space-y-5">
+              <section
+                aria-labelledby="intervention-planning-heading"
+                className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5"
+              >
+                <div className="mb-4">
+                  <h3
+                    className="font-semibold text-slate-900"
+                    id="intervention-planning-heading"
+                  >
+                    Planification &amp; affectation
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Affectez l’intervention à un client, un équipement et un technicien.
+                  </p>
+                </div>
+                <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2">
               <div>
                 <label
                   className="mb-2 block text-sm font-medium text-slate-700"
@@ -626,6 +650,7 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
                     id="intervention-elevator"
                     name="elevatorId"
                     onChange={handleChange}
+                    required
                     value={formData.elevatorId}
                   >
                     <option value="">
@@ -764,53 +789,62 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
                   </p>
                 )}
               </div>
+                </div>
+              </section>
 
-              <div className="sm:col-span-2">
-                <TextAreaField
-                  error={errors.descriptionProbleme}
-                  id="intervention-problem"
-                  label="Description du problème signalé"
-                  name="descriptionProbleme"
-                  onChange={handleChange}
-                  placeholder="Décrivez le problème constaté ou la demande du client..."
-                  required
-                  rows={3}
-                  value={formData.descriptionProbleme}
-                  disabled={isSaving}
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <TextAreaField
-                  error={errors.travauxEffectues}
-                  id="intervention-work"
-                  label="Travaux effectués / Rapport"
-                  name="travauxEffectues"
-                  onChange={handleChange}
-                  placeholder="Compte rendu des contrôles, réparations et actions effectuées..."
-                  rows={4}
-                  value={formData.travauxEffectues}
-                  disabled={isSaving}
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <TextAreaField
-                  error={errors.piecesRemplacees}
-                  id="intervention-parts"
-                  label="Pièces remplacées"
-                  name="piecesRemplacees"
-                  onChange={handleChange}
-                  placeholder={'Une pièce par ligne, par exemple :\nContacteur de porte\nFusible 2A'}
-                  rows={3}
-                  value={formData.piecesRemplacees}
-                  disabled={isSaving}
-                />
-              </div>
+              <section
+                aria-labelledby="intervention-report-heading"
+                className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5"
+              >
+                <div className="mb-4">
+                  <h3 className="font-semibold text-slate-900" id="intervention-report-heading">
+                    Rapport technique
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Documentez le problème, les actions réalisées et les pièces utilisées.
+                  </p>
+                </div>
+                <div className="grid gap-5">
+                  <TextAreaField
+                    error={errors.descriptionProbleme}
+                    id="intervention-problem"
+                    label="Description du problème signalé"
+                    name="descriptionProbleme"
+                    onChange={handleChange}
+                    placeholder="Décrivez le problème constaté ou la demande du client..."
+                    required
+                    rows={3}
+                    value={formData.descriptionProbleme}
+                    disabled={isSaving}
+                  />
+                  <TextAreaField
+                    error={errors.travauxEffectues}
+                    id="intervention-work"
+                    label="Travaux effectués / Rapport"
+                    name="travauxEffectues"
+                    onChange={handleChange}
+                    placeholder="Compte rendu des contrôles, réparations et actions effectuées..."
+                    required={formData.status === 'Terminée'}
+                    rows={4}
+                    value={formData.travauxEffectues}
+                    disabled={isSaving}
+                  />
+                  <TextAreaField
+                    error={errors.piecesRemplacees}
+                    id="intervention-parts"
+                    label="Pièces remplacées"
+                    name="piecesRemplacees"
+                    onChange={handleChange}
+                    placeholder={'Une pièce par ligne, par exemple :\nContacteur de porte\nFusible 2A'}
+                    rows={3}
+                    value={formData.piecesRemplacees}
+                    disabled={isSaving}
+                  />
+                </div>
+              </section>
 
               {formError && (
-                <div
-                  className="sm:col-span-2 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm leading-5 text-red-800"
-                  role="alert"
-                >
+                <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm leading-5 text-red-800" role="alert">
                   <AlertCircle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>{formError}</span>
                 </div>

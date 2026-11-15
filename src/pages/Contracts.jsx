@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
+  ArrowUpDown,
   Download,
   FileText,
   LoaderCircle,
@@ -75,7 +76,12 @@ function formatDate(value) {
 function getContractStatus(contract) {
   const rawStatus = String(contract.status || contract.statut || '').trim()
   const normalizedStatus = rawStatus.toLocaleLowerCase('fr-FR')
+  const endDate = getDateString(contract.dateFin || contract.endDate)
+  const today = getDateString(new Date())
 
+  if (endDate && endDate < today) {
+    return 'Expiré'
+  }
   if (normalizedStatus.includes('résili') || normalizedStatus.includes('resili')) {
     return 'Résilié'
   }
@@ -86,17 +92,26 @@ function getContractStatus(contract) {
     return 'Expiré'
   }
 
-  const endDate = getDateString(contract.dateFin || contract.endDate)
-  const today = getDateString(new Date())
-  if (endDate && endDate < today) {
-    return 'Expiré'
-  }
-
   if (normalizedStatus === 'actif' || normalizedStatus === 'active' || !rawStatus) {
     return 'Actif'
   }
 
   return rawStatus
+}
+
+function getDaysUntilContractEnd(contract) {
+  const endDate = getDateString(contract.dateFin || contract.endDate)
+  const today = getDateString(new Date())
+  if (!endDate || !today) {
+    return null
+  }
+
+  const [endYear, endMonth, endDay] = endDate.split('-').map(Number)
+  const [todayYear, todayMonth, todayDay] = today.split('-').map(Number)
+  const endTimestamp = Date.UTC(endYear, endMonth - 1, endDay)
+  const todayTimestamp = Date.UTC(todayYear, todayMonth - 1, todayDay)
+
+  return Math.round((endTimestamp - todayTimestamp) / 86_400_000)
 }
 
 function getContractAmount(contract) {
@@ -225,6 +240,7 @@ export default function Contracts() {
   const [contracts, setContracts] = useState([])
   const [clients, setClients] = useState([])
   const [search, setSearch] = useState('')
+  const [sortConfig, setSortConfig] = useState({ key: 'dateFin', direction: 'asc' })
   const [statusFilter, setStatusFilter] = useState('Tous')
   const [isLoadingContracts, setIsLoadingContracts] = useState(true)
   const [isLoadingClients, setIsLoadingClients] = useState(true)
@@ -314,12 +330,27 @@ export default function Contracts() {
           getContractClientName(contract, clientsById),
         ].some((value) => normalizeSearch(value).includes(normalizedQuery))
       })
-      .sort((first, second) =>
-        getContractNumber(first).localeCompare(getContractNumber(second), 'fr', {
+      .sort((first, second) => {
+        const firstValue =
+          sortConfig.key === 'client'
+            ? getContractClientName(first, clientsById)
+            : getDateString(first.dateFin || first.endDate)
+        const secondValue =
+          sortConfig.key === 'client'
+            ? getContractClientName(second, clientsById)
+            : getDateString(second.dateFin || second.endDate)
+        if (sortConfig.key === 'dateFin' && (!firstValue || !secondValue)) {
+          return firstValue ? -1 : secondValue ? 1 : 0
+        }
+
+        const order = firstValue.localeCompare(secondValue, 'fr', {
           sensitivity: 'base',
-        }),
-      )
-  }, [clientsById, contracts, search, statusFilter])
+          numeric: true,
+        })
+
+        return sortConfig.direction === 'asc' ? order : -order
+      })
+  }, [clientsById, contracts, search, sortConfig, statusFilter])
 
   const activeCount = contracts.filter(
     (contract) => getContractStatus(contract) === 'Actif',
@@ -333,6 +364,14 @@ export default function Contracts() {
 
   function showToast(type, message) {
     setToast({ type, message })
+  }
+
+  function handleSort(key) {
+    setSortConfig((previous) => ({
+      key,
+      direction:
+        previous.key === key && previous.direction === 'asc' ? 'desc' : 'asc',
+    }))
   }
 
   function handleSaved(action) {
@@ -590,23 +629,46 @@ export default function Contracts() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1050px] border-collapse text-left">
+            <table className="w-full min-w-[900px] border-collapse text-left">
               <thead className="bg-slate-50/80">
                 <tr className="border-b border-slate-200">
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     N° Contrat
                   </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Client
-                  </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Type
+                  <th
+                    aria-sort={sortConfig.key === 'client'
+                      ? sortConfig.direction === 'asc' ? 'ascending' : 'descending'
+                      : 'none'}
+                    className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    <button
+                      aria-label={`Trier par client ${sortConfig.key === 'client' && sortConfig.direction === 'asc' ? 'décroissant' : 'croissant'}`}
+                      className="inline-flex items-center gap-2 text-left transition hover:text-blue-700 focus:outline-none focus:text-blue-700"
+                      onClick={() => handleSort('client')}
+                      type="button"
+                    >
+                      Client
+                      <ArrowUpDown aria-hidden="true" className="h-3.5 w-3.5" />
+                    </button>
                   </th>
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Date début
                   </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Date fin
+                  <th
+                    aria-sort={sortConfig.key === 'dateFin'
+                      ? sortConfig.direction === 'asc' ? 'ascending' : 'descending'
+                      : 'none'}
+                    className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    <button
+                      aria-label={`Trier par date de fin ${sortConfig.key === 'dateFin' && sortConfig.direction === 'asc' ? 'décroissant' : 'croissant'}`}
+                      className="inline-flex items-center gap-2 text-left transition hover:text-blue-700 focus:outline-none focus:text-blue-700"
+                      onClick={() => handleSort('dateFin')}
+                      type="button"
+                    >
+                      Date fin
+                      <ArrowUpDown aria-hidden="true" className="h-3.5 w-3.5" />
+                    </button>
                   </th>
                   <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Montant TTC
@@ -623,6 +685,14 @@ export default function Contracts() {
                 {filteredContracts.map((contract) => {
                   const number = getContractNumber(contract)
                   const isExporting = exportingId === contract.id
+                  const status = getContractStatus(contract)
+                  const daysUntilEnd = getDaysUntilContractEnd(contract)
+                  const isExpiringSoon =
+                    status !== 'Expiré' &&
+                    status !== 'Résilié' &&
+                    daysUntilEnd !== null &&
+                    daysUntilEnd >= 0 &&
+                    daysUntilEnd < 30
 
                   return (
                     <tr className="transition hover:bg-slate-50/70" key={contract.id}>
@@ -636,20 +706,27 @@ export default function Contracts() {
                           {getContractClientName(contract, clientsById)}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-sm text-slate-700">
-                        {contract.type || '—'}
-                      </td>
                       <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-600">
                         {formatDate(contract.dateDebut || contract.startDate)}
                       </td>
                       <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-600">
-                        {formatDate(contract.dateFin || contract.endDate)}
+                        <span className="block">{formatDate(contract.dateFin || contract.endDate)}</span>
+                        {isExpiringSoon && (
+                          <span
+                            className="mt-1 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 ring-1 ring-inset ring-amber-600/20"
+                            title="Le contrat arrive à échéance dans moins de 30 jours."
+                          >
+                            {daysUntilEnd === 0
+                              ? 'Échéance aujourd’hui'
+                              : `Expire dans ${daysUntilEnd} j`}
+                          </span>
+                        )}
                       </td>
                       <td className="whitespace-nowrap px-5 py-4 text-right text-sm font-semibold text-slate-800">
                         {formatCurrency(getContractAmount(contract))}
                       </td>
                       <td className="px-5 py-4">
-                        <StatusBadge status={getContractStatus(contract)} />
+                        <StatusBadge status={status} />
                       </td>
                       <td className="whitespace-nowrap px-5 py-4">
                         <div className="flex items-center justify-end gap-1">

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
+  ArrowUpDown,
   Download,
   LoaderCircle,
   Pencil,
@@ -161,6 +162,24 @@ function StatusBadge({ status }) {
   )
 }
 
+function SortableDateHeader({ sortDirection, onSort }) {
+  return (
+    <th
+      aria-sort={sortDirection === 'asc' ? 'ascending' : 'descending'}
+      className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
+    >
+      <button
+        className="inline-flex items-center gap-1.5 transition hover:text-blue-800"
+        onClick={onSort}
+        type="button"
+      >
+        Date
+        <ArrowUpDown aria-hidden="true" className="h-3.5 w-3.5 text-blue-700" />
+      </button>
+    </th>
+  )
+}
+
 function Toast({ toast, onClose }) {
   if (!toast) {
     return null
@@ -207,6 +226,7 @@ export default function DeliveryNotes() {
   const [clients, setClients] = useState([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('Tous')
+  const [sortDirection, setSortDirection] = useState('desc')
   const [isLoadingNotes, setIsLoadingNotes] = useState(true)
   const [isLoadingClients, setIsLoadingClients] = useState(true)
   const [noteError, setNoteError] = useState('')
@@ -303,9 +323,9 @@ export default function DeliveryNotes() {
         const secondDate = getDateValue(
           second.dateLivraison || second.deliveryDate || second.date,
         )?.getTime() || 0
-        return secondDate - firstDate
+        return (secondDate - firstDate) * (sortDirection === 'desc' ? 1 : -1)
       })
-  }, [clientsById, deliveryNotes, search, statusFilter])
+  }, [clientsById, deliveryNotes, search, sortDirection, statusFilter])
 
   const draftCount = deliveryNotes.filter(
     (deliveryNote) => getDeliveryNoteStatus(deliveryNote) === 'Brouillon',
@@ -317,6 +337,10 @@ export default function DeliveryNotes() {
 
   function showToast(type, message) {
     setToast({ type, message })
+  }
+
+  function handleSortDate() {
+    setSortDirection((previous) => (previous === 'desc' ? 'asc' : 'desc'))
   }
 
   function handleSaved(action) {
@@ -618,9 +642,7 @@ export default function DeliveryNotes() {
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     N° BL
                   </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Date
-                  </th>
+                  <SortableDateHeader onSort={handleSortDate} sortDirection={sortDirection} />
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Client
                   </th>

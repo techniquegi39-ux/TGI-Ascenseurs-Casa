@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
+  ArrowUpDown,
   Building2,
   Download,
   Gauge,
@@ -160,6 +161,7 @@ export default function Elevators() {
   const [elevators, setElevators] = useState([])
   const [clients, setClients] = useState([])
   const [search, setSearch] = useState('')
+  const [sortConfig, setSortConfig] = useState({ key: 'reference', direction: 'asc' })
   const [statusFilter, setStatusFilter] = useState('Tous')
   const [clientFilter, setClientFilter] = useState('Tous')
   const [isLoadingElevators, setIsLoadingElevators] = useState(true)
@@ -266,12 +268,23 @@ export default function Elevators() {
         ]
         return searchableValues.some((value) => normalizeSearch(value || '').includes(normalizedQuery))
       })
-      .sort((first, second) =>
-        getElevatorReference(first).localeCompare(getElevatorReference(second), 'fr', {
+      .sort((first, second) => {
+        const firstValue =
+          sortConfig.key === 'client'
+            ? getElevatorClientName(first, clientsById)
+            : getElevatorReference(first)
+        const secondValue =
+          sortConfig.key === 'client'
+            ? getElevatorClientName(second, clientsById)
+            : getElevatorReference(second)
+        const order = firstValue.localeCompare(secondValue, 'fr', {
           sensitivity: 'base',
-        }),
-      )
-  }, [clientsById, clientFilter, elevators, search, statusFilter])
+          numeric: true,
+        })
+
+        return sortConfig.direction === 'asc' ? order : -order
+      })
+  }, [clientsById, clientFilter, elevators, search, sortConfig, statusFilter])
 
   const runningCount = elevators.filter(
     (elevator) => getElevatorStatus(elevator) === 'En marche',
@@ -285,6 +298,14 @@ export default function Elevators() {
 
   function showToast(type, message) {
     setToast({ type, message })
+  }
+
+  function handleSort(key) {
+    setSortConfig((previous) => ({
+      key,
+      direction:
+        previous.key === key && previous.direction === 'asc' ? 'desc' : 'asc',
+    }))
   }
 
   function handleSaved(action) {
@@ -545,23 +566,46 @@ export default function Elevators() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1050px] border-collapse text-left">
+            <table className="w-full min-w-[950px] border-collapse text-left">
               <thead className="bg-slate-50/80">
                 <tr className="border-b border-slate-200">
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Réf / N° Série
+                  <th
+                    aria-sort={sortConfig.key === 'reference'
+                      ? sortConfig.direction === 'asc' ? 'ascending' : 'descending'
+                      : 'none'}
+                    className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    <button
+                      aria-label={`Trier par numéro de série ${sortConfig.key === 'reference' && sortConfig.direction === 'asc' ? 'décroissant' : 'croissant'}`}
+                      className="inline-flex items-center gap-2 text-left transition hover:text-blue-700 focus:outline-none focus:text-blue-700"
+                      onClick={() => handleSort('reference')}
+                      type="button"
+                    >
+                      N° de série
+                      <ArrowUpDown aria-hidden="true" className="h-3.5 w-3.5" />
+                    </button>
+                  </th>
+                  <th
+                    aria-sort={sortConfig.key === 'client'
+                      ? sortConfig.direction === 'asc' ? 'ascending' : 'descending'
+                      : 'none'}
+                    className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    <button
+                      aria-label={`Trier par client ${sortConfig.key === 'client' && sortConfig.direction === 'asc' ? 'décroissant' : 'croissant'}`}
+                      className="inline-flex items-center gap-2 text-left transition hover:text-blue-700 focus:outline-none focus:text-blue-700"
+                      onClick={() => handleSort('client')}
+                      type="button"
+                    >
+                      Client
+                      <ArrowUpDown aria-hidden="true" className="h-3.5 w-3.5" />
+                    </button>
                   </th>
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Client propriétaire
+                    Marque
                   </th>
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Type
-                  </th>
-                  <th className="px-5 py-3.5 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Niveaux
-                  </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Charge utile
+                    Niveaux / Charge
                   </th>
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Statut
@@ -587,30 +631,27 @@ export default function Elevators() {
                         <span className="block max-w-xs truncate text-sm font-semibold text-slate-900">
                           {getElevatorClientName(elevator, clientsById)}
                         </span>
-                        {getElevatorClientId(elevator) && (
-                          <span className="mt-1 block max-w-xs truncate font-mono text-[11px] text-slate-400">
-                            {getElevatorClientId(elevator)}
-                          </span>
-                        )}
                       </td>
                       <td className="px-5 py-4">
-                        <span className="block text-sm text-slate-700">
-                          {getElevatorType(elevator)}
+                        <span className="block text-sm font-medium text-slate-700">
+                          {String(elevator.marque || '—')}
                         </span>
-                        {(elevator.marque || elevator.moteur) && (
+                        {elevator.moteur && (
                           <span className="mt-1 block max-w-xs truncate text-xs text-slate-500">
-                            {[elevator.marque, elevator.moteur].filter(Boolean).join(' · ')}
+                            {String(elevator.moteur)}
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-center text-sm font-medium text-slate-700">
-                        {getElevatorLevels(elevator)}
-                      </td>
                       <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-700">
-                        <span className="inline-flex items-center gap-1.5">
-                          <Gauge aria-hidden="true" className="h-4 w-4 text-slate-400" />
-                          {getElevatorCapacity(elevator)}
-                        </span>
+                        <div className="space-y-1">
+                          <span className="block font-medium">
+                            {getElevatorLevels(elevator)} niveaux
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                            <Gauge aria-hidden="true" className="h-3.5 w-3.5 text-slate-400" />
+                            {getElevatorCapacity(elevator)}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-5 py-4">
                         <StatusBadge status={getElevatorStatus(elevator)} />

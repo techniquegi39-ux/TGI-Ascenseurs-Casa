@@ -94,6 +94,20 @@ function roundAmount(value) {
   return Math.round((value + Number.EPSILON) * 100) / 100
 }
 
+function getPaymentAmountError(value, outstandingBalance) {
+  const amount = Number(value)
+  if (typeof value !== 'string' || value.trim() === '' || !Number.isFinite(amount) || amount <= 0) {
+    return 'Le montant reçu doit être supérieur à zéro.'
+  }
+  if (Math.abs(amount - roundAmount(amount)) > 0.000001) {
+    return 'Saisissez un montant avec au maximum deux décimales.'
+  }
+  if (amount > outstandingBalance + 0.000001) {
+    return 'Le montant ne peut pas dépasser le reste à payer.'
+  }
+  return ''
+}
+
 function formatCurrency(value) {
   return `${new Intl.NumberFormat('fr-MA', {
     minimumFractionDigits: 2,
@@ -130,10 +144,33 @@ export default function PaymentModal({
   const [errors, setErrors] = useState({})
   const [formError, setFormError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const [amountTouched, setAmountTouched] = useState(false)
+  const availableBalance = Number.isFinite(Number(outstandingBalance))
+    ? Math.max(0, roundAmount(Number(outstandingBalance)))
+    : 0
+  const amountError = amountTouched
+    ? getPaymentAmountError(formData.amount, availableBalance)
+    : errors.amount || ''
+  const enteredAmount = Number(formData.amount)
+  const newOutstandingBalance =
+    formData.amount.trim() !== '' && Number.isFinite(enteredAmount)
+      ? roundAmount(availableBalance - enteredAmount)
+      : availableBalance
+  const isPaymentAmountValid =
+    formData.amount.trim() !== '' && !getPaymentAmountError(formData.amount, availableBalance)
 
   function handleChange(event) {
     const { name, value } = event.target
     setFormData((previous) => ({ ...previous, [name]: value }))
+    if (name === 'amount') {
+      setAmountTouched(true)
+      setErrors((previous) => ({
+        ...previous,
+        amount: getPaymentAmountError(value, availableBalance),
+      }))
+      setFormError('')
+      return
+    }
     setErrors((previous) => {
       if (!previous[name]) {
         return previous
@@ -147,17 +184,13 @@ export default function PaymentModal({
 
   function validate() {
     const nextErrors = {}
-    const amount = Number(formData.amount)
 
     if (!formData.paymentDate || Number.isNaN(new Date(`${formData.paymentDate}T12:00:00`).getTime())) {
       nextErrors.paymentDate = 'Saisissez une date de paiement valide.'
     }
-    if (formData.amount.trim() === '' || !Number.isFinite(amount) || amount <= 0) {
-      nextErrors.amount = 'Le montant reçu doit être supérieur à zéro.'
-    } else if (Math.abs(amount - roundAmount(amount)) > 0.000001) {
-      nextErrors.amount = 'Saisissez un montant avec au maximum deux décimales.'
-    } else if (amount > outstandingBalance + 0.000001) {
-      nextErrors.amount = 'Le montant ne peut pas dépasser le reste à payer.'
+    const amountErrorMessage = getPaymentAmountError(formData.amount, availableBalance)
+    if (amountErrorMessage) {
+      nextErrors.amount = amountErrorMessage
     }
     if (!PAYMENT_METHODS.includes(formData.paymentMethod)) {
       nextErrors.paymentMethod = 'Sélectionnez un mode de règlement valide.'
@@ -330,8 +363,8 @@ export default function PaymentModal({
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Reste à payer
                 </p>
-                <p className="mt-1 text-2xl font-bold tracking-tight text-blue-900 sm:text-3xl">
-                  {formatCurrency(outstandingBalance)}
+                <p className="mt-1 text-3xl font-bold tracking-tight text-blue-900 sm:text-4xl">
+                  {formatCurrency(availableBalance)}
                 </p>
               </div>
             </div>
@@ -376,16 +409,20 @@ export default function PaymentModal({
                   Montant reçu (MAD)
                 </label>
                 <input
-                  aria-describedby={errors.amount ? 'payment-amount-error' : undefined}
-                  aria-invalid={Boolean(errors.amount)}
+                  aria-describedby={
+                    amountError
+                      ? 'payment-amount-error payment-amount-balance'
+                      : 'payment-amount-balance'
+                  }
+                  aria-invalid={Boolean(amountError)}
                   className={`h-11 w-full rounded-lg border bg-white px-3 text-sm text-slate-900 outline-none transition focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-50 ${
-                    errors.amount
+                    amountError
                       ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
                       : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
                   }`}
                   disabled={isSaving}
                   id="payment-amount"
-                  max={outstandingBalance}
+                  max={availableBalance}
                   min="0.01"
                   name="amount"
                   onChange={handleChange}
@@ -394,7 +431,16 @@ export default function PaymentModal({
                   type="number"
                   value={formData.amount}
                 />
-                <FieldError id="payment-amount-error" message={errors.amount} />
+                <FieldError id="payment-amount-error" message={amountError} />
+                <p
+                  aria-live="polite"
+                  className={`mt-1.5 text-xs font-medium ${
+                    amountError ? 'text-red-700' : 'text-slate-500'
+                  }`}
+                  id="payment-amount-balance"
+                >
+                  Nouveau reste à payer après ce paiement : {formatCurrency(newOutstandingBalance)}
+                </p>
               </div>
 
               <div>
@@ -501,7 +547,7 @@ export default function PaymentModal({
             </button>
             <button
               className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-800 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isSaving || outstandingBalance <= 0}
+              disabled={isSaving || availableBalance <= 0 || !isPaymentAmountValid}
               type="submit"
             >
               {isSaving ? (

@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
+  ArrowUpDown,
   Banknote,
   Download,
+  Flame,
   LoaderCircle,
   Pencil,
   Plus,
@@ -68,6 +70,27 @@ function formatDate(value) {
     month: 'short',
     year: 'numeric',
   }).format(date)
+}
+
+function getDateKey(value) {
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+    return value.slice(0, 10)
+  }
+
+  const date = getDateValue(value)
+  if (!date) {
+    return ''
+  }
+
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-')
+}
+
+function getTodayDateKey() {
+  return getDateKey(new Date())
 }
 
 function getOptionalNumber(value) {
@@ -180,6 +203,16 @@ function getInvoiceStatus(invoice) {
   return 'Validée / Non Payée'
 }
 
+function isInvoiceOverdue(invoice) {
+  const status = getInvoiceStatus(invoice)
+  if (status !== 'Validée / Non Payée' && status !== 'Paiement Partiel') {
+    return false
+  }
+
+  const dueDate = getDateKey(invoice.dateEcheance || invoice.dueDate)
+  return Boolean(dueDate && dueDate < getTodayDateKey())
+}
+
 function formatCurrency(value) {
   return `${new Intl.NumberFormat('fr-MA', {
     minimumFractionDigits: 2,
@@ -281,6 +314,7 @@ export default function Invoices() {
   const [invoices, setInvoices] = useState([])
   const [clients, setClients] = useState([])
   const [search, setSearch] = useState('')
+  const [sortConfig, setSortConfig] = useState({ key: 'dateEcheance', direction: 'asc' })
   const [statusFilter, setStatusFilter] = useState('Tous')
   const [isLoadingInvoices, setIsLoadingInvoices] = useState(true)
   const [isLoadingClients, setIsLoadingClients] = useState(true)
@@ -366,11 +400,21 @@ export default function Invoices() {
         ].some((value) => normalizeSearch(value || '').includes(queryText))
       })
       .sort((first, second) => {
-        const firstDate = getDateValue(first.dateFacture || first.dateEmission || first.date)?.getTime() || 0
-        const secondDate = getDateValue(second.dateFacture || second.dateEmission || second.date)?.getTime() || 0
-        return secondDate - firstDate
+        if (sortConfig.key === 'totalTTC') {
+          const difference = getInvoiceTotals(first).totalTTC - getInvoiceTotals(second).totalTTC
+          return sortConfig.direction === 'asc' ? difference : -difference
+        }
+
+        const firstDate = getDateKey(first.dateEcheance || first.dueDate)
+        const secondDate = getDateKey(second.dateEcheance || second.dueDate)
+        if (!firstDate || !secondDate) {
+          return firstDate ? -1 : secondDate ? 1 : 0
+        }
+
+        const order = firstDate.localeCompare(secondDate)
+        return sortConfig.direction === 'asc' ? order : -order
       })
-  }, [clientsById, invoices, search, statusFilter])
+  }, [clientsById, invoices, search, sortConfig, statusFilter])
 
   const draftCount = invoices.filter((invoice) => getInvoiceStatus(invoice) === 'Brouillon').length
   const unpaidCount = invoices.filter(
@@ -383,6 +427,14 @@ export default function Invoices() {
 
   function showToast(type, message) {
     setToast({ type, message })
+  }
+
+  function handleSort(key) {
+    setSortConfig((previous) => ({
+      key,
+      direction:
+        previous.key === key && previous.direction === 'asc' ? 'desc' : 'asc',
+    }))
   }
 
   function handleSaved(action) {
@@ -617,7 +669,7 @@ export default function Invoices() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1000px] border-collapse text-left">
+            <table className="w-full min-w-[1100px] border-collapse text-left">
               <thead className="bg-slate-50/80">
                 <tr className="border-b border-slate-200">
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -629,11 +681,40 @@ export default function Invoices() {
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Client
                   </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Réf. Devis
+                  <th
+                    aria-sort={sortConfig.key === 'dateEcheance'
+                      ? sortConfig.direction === 'asc' ? 'ascending' : 'descending'
+                      : 'none'}
+                    className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    <button
+                      aria-label={`Trier par date d’échéance ${sortConfig.key === 'dateEcheance' && sortConfig.direction === 'asc' ? 'décroissante' : 'croissante'}`}
+                      className="inline-flex items-center gap-2 text-left transition hover:text-blue-700 focus:outline-none focus:text-blue-700"
+                      onClick={() => handleSort('dateEcheance')}
+                      type="button"
+                    >
+                      Échéance
+                      <ArrowUpDown aria-hidden="true" className="h-3.5 w-3.5" />
+                    </button>
+                  </th>
+                  <th
+                    aria-sort={sortConfig.key === 'totalTTC'
+                      ? sortConfig.direction === 'asc' ? 'ascending' : 'descending'
+                      : 'none'}
+                    className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    <button
+                      aria-label={`Trier par total TTC ${sortConfig.key === 'totalTTC' && sortConfig.direction === 'asc' ? 'décroissant' : 'croissant'}`}
+                      className="inline-flex items-center gap-2 text-right transition hover:text-blue-700 focus:outline-none focus:text-blue-700"
+                      onClick={() => handleSort('totalTTC')}
+                      type="button"
+                    >
+                      Total TTC
+                      <ArrowUpDown aria-hidden="true" className="h-3.5 w-3.5" />
+                    </button>
                   </th>
                   <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Total TTC
+                    Reste à payer
                   </th>
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Statut de paiement
@@ -648,6 +729,10 @@ export default function Invoices() {
                   const number = getInvoiceNumber(invoice)
                   const totals = getInvoiceTotals(invoice)
                   const isExporting = exportingId === invoice.id
+                  const amountPaid = getAmountPaid(invoice)
+                  const remainingAmount = Math.max(0, totals.totalTTC - amountPaid)
+                  const status = getInvoiceStatus(invoice)
+                  const overdue = isInvoiceOverdue(invoice)
 
                   return (
                     <tr className="transition hover:bg-slate-50/70" key={invoice.id}>
@@ -664,14 +749,27 @@ export default function Invoices() {
                           {getInvoiceClientName(invoice, clientsById)}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-5 py-4 font-mono text-xs text-slate-600">
-                        {invoice.referenceDevis || invoice.quoteReference || '—'}
+                      <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-600">
+                        {formatDate(invoice.dateEcheance || invoice.dueDate)}
                       </td>
                       <td className="whitespace-nowrap px-5 py-4 text-right text-sm font-semibold text-slate-900">
                         {formatCurrency(totals.totalTTC)}
                       </td>
+                      <td className="whitespace-nowrap px-5 py-4 text-right text-sm font-medium text-slate-700">
+                        {formatCurrency(remainingAmount)}
+                      </td>
                       <td className="px-5 py-4">
-                        <StatusBadge status={getInvoiceStatus(invoice)} />
+                        <span className="inline-flex items-center gap-2">
+                          <StatusBadge status={status} />
+                          {overdue && (
+                            <Flame
+                              aria-label="Paiement en retard"
+                              className="h-4 w-4 text-red-600"
+                              role="img"
+                              title="Paiement en retard"
+                            />
+                          )}
+                        </span>
                       </td>
                       <td className="whitespace-nowrap px-5 py-4">
                         <div className="flex items-center justify-end gap-1">

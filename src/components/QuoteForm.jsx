@@ -106,9 +106,10 @@ function getLineTotals(line) {
   const quantity = Number(line.quantity)
   const unitPrice = Number(line.unitPrice)
   const taxRate = Number(line.taxRate)
+  const rawTotalHT = quantity * unitPrice
   const totalHT =
-    Number.isFinite(quantity) && Number.isFinite(unitPrice)
-      ? roundAmount(quantity * unitPrice)
+    Number.isFinite(quantity) && Number.isFinite(unitPrice) && Number.isFinite(rawTotalHT)
+      ? roundAmount(rawTotalHT)
       : 0
   const totalTVA =
     Number.isFinite(taxRate) && taxRate >= 0
@@ -120,6 +121,26 @@ function getLineTotals(line) {
     totalTVA,
     totalTTC: roundAmount(totalHT + totalTVA),
   }
+}
+
+function isValidQuoteLine(line) {
+  const quantity = Number(line.quantity)
+  const unitPrice = Number(line.unitPrice)
+  const taxRate = Number(line.taxRate)
+  const designation = line.designation.trim()
+  const lineTotalHT = quantity * unitPrice
+
+  return (
+    designation.length > 0 &&
+    designation.length <= 180 &&
+    Number.isFinite(quantity) &&
+    quantity > 0 &&
+    line.unitPrice.trim() !== '' &&
+    Number.isFinite(unitPrice) &&
+    unitPrice >= 0 &&
+    Number.isFinite(lineTotalHT) &&
+    VAT_RATES.includes(taxRate)
+  )
 }
 
 function formatCurrency(value) {
@@ -297,6 +318,11 @@ export default function QuoteForm({ quote = null, onClose, onSaved }) {
       ),
     [lineTotals],
   )
+  const hasValidItem = formData.items.some(isValidQuoteLine)
+  const hasValidDateRange =
+    Boolean(formData.dateEmission) &&
+    Boolean(formData.dateValidite) &&
+    formData.dateValidite >= formData.dateEmission
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -315,11 +341,34 @@ export default function QuoteForm({ quote = null, onClose, onSaved }) {
         : {}),
     }))
     setErrors((previous) => {
-      if (!previous[name]) {
-        return previous
-      }
       const nextErrors = { ...previous }
       delete nextErrors[name]
+
+      if (name === 'dateEmission' || name === 'dateValidite') {
+        const nextDateEmission = name === 'dateEmission' ? value : formData.dateEmission
+        const nextDateValidite =
+          name === 'dateValidite'
+            ? value
+            : name === 'dateEmission' && !quote
+              ? addDays(value, 30)
+              : formData.dateValidite
+
+        if (!nextDateEmission) {
+          nextErrors.dateEmission = 'La date d’émission est obligatoire.'
+        } else {
+          delete nextErrors.dateEmission
+        }
+
+        if (!nextDateValidite) {
+          nextErrors.dateValidite = 'La date de validité est obligatoire.'
+        } else if (nextDateEmission && nextDateValidite < nextDateEmission) {
+          nextErrors.dateValidite =
+            'La date de validité doit être supérieure ou égale à la date d’émission.'
+        } else {
+          delete nextErrors.dateValidite
+        }
+      }
+
       return nextErrors
     })
     setFormError('')
@@ -375,7 +424,7 @@ export default function QuoteForm({ quote = null, onClose, onSaved }) {
       nextErrors.dateValidite = 'La date de validité est obligatoire.'
     } else if (formData.dateEmission && formData.dateValidite < formData.dateEmission) {
       nextErrors.dateValidite =
-        'La date de validité doit être postérieure ou égale à la date d’émission.'
+        'La date de validité doit être supérieure ou égale à la date d’émission.'
     }
 
     const itemErrors = formData.items.map((item, index) => {
@@ -394,6 +443,9 @@ export default function QuoteForm({ quote = null, onClose, onSaved }) {
       }
       if (item.unitPrice.trim() === '' || !Number.isFinite(unitPrice) || unitPrice < 0) {
         lineError.unitPrice = 'Saisissez un prix unitaire HT positif ou nul.'
+      }
+      if (Number.isFinite(quantity) && Number.isFinite(unitPrice) && !Number.isFinite(quantity * unitPrice)) {
+        lineError.unitPrice = 'Le total de la ligne est trop élevé.'
       }
       if (!VAT_RATES.includes(taxRate)) {
         lineError.taxRate = 'Sélectionnez un taux de TVA valide.'
@@ -748,6 +800,11 @@ export default function QuoteForm({ quote = null, onClose, onSaved }) {
                   {Object.values(firstItemError)[0]}
                 </p>
               )}
+              {!hasValidItem && (
+                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+                  Ajoutez au moins une ligne avec une désignation, une quantité valide et un prix HT valide.
+                </p>
+              )}
 
               <div className="space-y-3">
                 {formData.items.map((item, index) => {
@@ -1055,7 +1112,13 @@ export default function QuoteForm({ quote = null, onClose, onSaved }) {
               </button>
               <button
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-800 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={isSaving || isLoadingClients || clients.length === 0}
+                disabled={
+                  isSaving ||
+                  isLoadingClients ||
+                  clients.length === 0 ||
+                  !hasValidItem ||
+                  !hasValidDateRange
+                }
                 type="submit"
               >
                 {isSaving ? (

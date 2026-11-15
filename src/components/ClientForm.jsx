@@ -15,7 +15,7 @@ import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/fi
 import { db } from '../firebase.js'
 import { useAuth } from '../context/useAuth.js'
 
-const CLIENT_TYPES = ['Syndic', 'Entreprise', 'Particulier']
+const CLIENT_TYPES = ['Syndic', 'Promoteur Immobilier', 'Entreprise', 'Particulier']
 
 function getClientField(client, aliases, fallback = '') {
   for (const key of aliases) {
@@ -86,6 +86,8 @@ function Field({
           />
         )}
         <input
+          aria-describedby={error ? `${id}-error` : undefined}
+          aria-invalid={Boolean(error)}
           autoComplete={autoComplete}
           autoFocus={autoFocus}
           className={controlClass}
@@ -139,8 +141,8 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
     const email = formData.email.trim()
     const phone = formData.telephone.trim()
 
-    if (!name) {
-      nextErrors.nom = 'Le nom ou la raison sociale est obligatoire.'
+    if (name.length < 3) {
+      nextErrors.nom = 'Le nom ou la raison sociale doit contenir au moins 3 caractères.'
     } else if (name.length > 160) {
       nextErrors.nom = 'Le nom ne doit pas dépasser 160 caractères.'
     }
@@ -149,15 +151,19 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
       nextErrors.type = 'Sélectionnez un type de client valide.'
     }
 
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
       nextErrors.email = 'Saisissez une adresse e-mail valide.'
     }
 
     if (phone) {
-      const digits = phone.replace(/\D/g, '')
-      if (!/^\+?[\d\s().-]+$/.test(phone) || digits.length < 7 || digits.length > 15) {
-        nextErrors.telephone = 'Saisissez un numéro de téléphone valide.'
+      const normalizedPhone = phone.replace(/[\s.-]/g, '')
+      if (!/^0[567]\d{8}$/.test(normalizedPhone)) {
+        nextErrors.telephone = 'Le téléphone doit contenir 10 chiffres et commencer par 05, 06 ou 07.'
       }
+    }
+
+    if (formData.ice.trim() && !/^\d{15}$/.test(formData.ice.trim())) {
+      nextErrors.ice = "L'ICE doit contenir exactement 15 chiffres."
     }
 
     setErrors(nextErrors)
@@ -235,7 +241,7 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
       <section
         aria-labelledby="client-form-title"
         aria-modal="true"
-        className="flex max-h-[94vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-white/60 bg-white shadow-2xl shadow-slate-950/25"
+        className="flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/60 bg-white shadow-2xl shadow-slate-950/25"
         role="dialog"
       >
         <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-5 sm:px-7">
@@ -268,162 +274,201 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
 
         <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit} noValidate>
           <div className="overflow-y-auto px-5 py-6 sm:px-7">
-            <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2">
-              <div>
-                <label htmlFor="client-type" className="mb-2 block text-sm font-medium text-slate-700">
-                  Type de client
-                  <span className="ml-1 text-red-600" aria-hidden="true">*</span>
-                </label>
-                <div className="relative">
-                  <UserRound
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                  />
-                  <select
-                    aria-describedby={errors.type ? 'client-type-error' : undefined}
-                    className={`h-11 w-full rounded-lg border bg-white pl-10 pr-3 text-sm text-slate-900 outline-none transition focus:ring-4 ${
-                      errors.type
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
-                        : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
-                    }`}
-                    id="client-type"
-                    name="type"
-                    onChange={handleChange}
-                    required
-                    value={formData.type}
-                    disabled={isSaving}
+            <div className="space-y-5">
+              <section
+                aria-labelledby="client-general-heading"
+                className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5"
+              >
+                <div className="mb-4">
+                  <h3
+                    className="font-semibold text-slate-900"
+                    id="client-general-heading"
                   >
-                    {CLIENT_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {errors.type && (
-                  <p className="mt-1.5 text-xs text-red-700" id="client-type-error">
-                    {errors.type}
+                    Informations générales
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Identité et catégorie du client.
                   </p>
-                )}
-              </div>
+                </div>
+                <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2">
+                  <div>
+                    <label
+                      htmlFor="client-type"
+                      className="mb-2 block text-sm font-medium text-slate-700"
+                    >
+                      Type de client
+                      <span className="ml-1 text-red-600" aria-hidden="true">*</span>
+                    </label>
+                    <div className="relative">
+                      <UserRound
+                        aria-hidden="true"
+                        className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                      />
+                      <select
+                        aria-describedby={errors.type ? 'client-type-error' : undefined}
+                        aria-invalid={Boolean(errors.type)}
+                        className={`h-11 w-full rounded-lg border bg-white pl-10 pr-3 text-sm text-slate-900 outline-none transition focus:ring-4 ${
+                          errors.type
+                            ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+                            : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
+                        }`}
+                        id="client-type"
+                        name="type"
+                        onChange={handleChange}
+                        required
+                        value={formData.type}
+                        disabled={isSaving}
+                      >
+                        {CLIENT_TYPES.map((type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {errors.type && (
+                      <p className="mt-1.5 text-xs text-red-700" id="client-type-error">
+                        {errors.type}
+                      </p>
+                    )}
+                  </div>
 
-              <Field
-                autoFocus
-                autoComplete="organization"
-                error={errors.nom}
-                icon={Building2}
-                id="client-name"
-                label="Nom ou raison sociale"
-                name="nom"
-                onChange={handleChange}
-                placeholder="Nom du client"
-                required
-                value={formData.nom}
-                disabled={isSaving}
-              />
-
-              <Field
-                error={errors.ice}
-                icon={Fingerprint}
-                id="client-ice"
-                label="ICE / Identifiant fiscal"
-                name="ice"
-                onChange={handleChange}
-                placeholder="Identifiant fiscal (optionnel)"
-                value={formData.ice}
-                disabled={isSaving}
-              />
-              <Field
-                autoComplete="tel"
-                error={errors.telephone}
-                icon={Phone}
-                id="client-phone"
-                label="Téléphone"
-                name="telephone"
-                onChange={handleChange}
-                placeholder="+212 6XX XX XX XX"
-                type="tel"
-                value={formData.telephone}
-                disabled={isSaving}
-              />
-
-              <Field
-                autoComplete="email"
-                error={errors.email}
-                icon={Mail}
-                id="client-email"
-                label="E-mail"
-                name="email"
-                onChange={handleChange}
-                placeholder="contact@entreprise.ma"
-                type="email"
-                value={formData.email}
-                disabled={isSaving}
-              />
-              <Field
-                error={errors.ville}
-                icon={MapPin}
-                id="client-city"
-                label="Ville"
-                name="ville"
-                onChange={handleChange}
-                placeholder="Casablanca"
-                autoComplete="address-level2"
-                value={formData.ville}
-                disabled={isSaving}
-              />
-
-              <div className="sm:col-span-2">
-                <label
-                  htmlFor="client-address"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Adresse complète
-                </label>
-                <div className="relative">
-                  <MapPin
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-slate-400"
-                  />
-                  <textarea
-                    autoComplete="street-address"
-                    className="min-h-24 w-full resize-y rounded-lg border border-slate-300 bg-white py-3 pl-10 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
-                    id="client-address"
-                    name="adresse"
+                  <Field
+                    autoFocus
+                    autoComplete="organization"
+                    error={errors.nom}
+                    icon={Building2}
+                    id="client-name"
+                    label="Nom ou raison sociale"
+                    name="nom"
                     onChange={handleChange}
-                    placeholder="Numéro, rue, quartier..."
-                    rows={3}
-                    value={formData.adresse}
+                    placeholder="Nom du client"
+                    required
+                    value={formData.nom}
                     disabled={isSaving}
                   />
                 </div>
-              </div>
+              </section>
 
-              <div>
-                <label
-                  htmlFor="client-status"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Statut du compte
-                </label>
-                <div className="relative">
-                  <BadgeCheck
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                  />
-                  <select
-                    className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-10 pr-3 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
-                    id="client-status"
-                    name="active"
-                    onChange={handleChange}
-                    value={String(formData.active)}
-                    disabled={isSaving}
+              <section
+                aria-labelledby="client-contact-heading"
+                className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5"
+              >
+                <div className="mb-4">
+                  <h3
+                    className="font-semibold text-slate-900"
+                    id="client-contact-heading"
                   >
-                    <option value="true">Actif</option>
-                    <option value="false">Inactif</option>
-                  </select>
+                    Informations légales &amp; contact
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Les coordonnées et identifiants sont vérifiés avant l’enregistrement.
+                  </p>
                 </div>
-              </div>
+                <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2">
+                  <Field
+                    error={errors.ice}
+                    icon={Fingerprint}
+                    id="client-ice"
+                    label="ICE / Identifiant fiscal"
+                    name="ice"
+                    onChange={handleChange}
+                    placeholder="15 chiffres (optionnel)"
+                    value={formData.ice}
+                    disabled={isSaving}
+                  />
+                  <Field
+                    autoComplete="tel"
+                    error={errors.telephone}
+                    icon={Phone}
+                    id="client-phone"
+                    label="Téléphone"
+                    name="telephone"
+                    onChange={handleChange}
+                    placeholder="05XXXXXXXX, 06XXXXXXXX ou 07XXXXXXXX"
+                    type="tel"
+                    value={formData.telephone}
+                    disabled={isSaving}
+                  />
+                  <Field
+                    autoComplete="email"
+                    error={errors.email}
+                    icon={Mail}
+                    id="client-email"
+                    label="E-mail"
+                    name="email"
+                    onChange={handleChange}
+                    placeholder="contact@entreprise.ma"
+                    type="email"
+                    value={formData.email}
+                    disabled={isSaving}
+                  />
+                  <Field
+                    autoComplete="address-level2"
+                    error={errors.ville}
+                    icon={MapPin}
+                    id="client-city"
+                    label="Ville"
+                    name="ville"
+                    onChange={handleChange}
+                    placeholder="Casablanca"
+                    value={formData.ville}
+                    disabled={isSaving}
+                  />
+
+                  <div className="sm:col-span-2">
+                    <label
+                      htmlFor="client-address"
+                      className="mb-2 block text-sm font-medium text-slate-700"
+                    >
+                      Adresse complète
+                    </label>
+                    <div className="relative">
+                      <MapPin
+                        aria-hidden="true"
+                        className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-slate-400"
+                      />
+                      <textarea
+                        autoComplete="street-address"
+                        className="min-h-24 w-full resize-y rounded-lg border border-slate-300 bg-white py-3 pl-10 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+                        id="client-address"
+                        name="adresse"
+                        onChange={handleChange}
+                        placeholder="Numéro, rue, quartier..."
+                        rows={3}
+                        value={formData.adresse}
+                        disabled={isSaving}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="client-status"
+                      className="mb-2 block text-sm font-medium text-slate-700"
+                    >
+                      Statut du compte
+                    </label>
+                    <div className="relative">
+                      <BadgeCheck
+                        aria-hidden="true"
+                        className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                      />
+                      <select
+                        className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-10 pr-3 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+                        id="client-status"
+                        name="active"
+                        onChange={handleChange}
+                        value={String(formData.active)}
+                        disabled={isSaving}
+                      >
+                        <option value="true">Actif</option>
+                        <option value="false">Inactif</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </section>
             </div>
 
             {formError && (

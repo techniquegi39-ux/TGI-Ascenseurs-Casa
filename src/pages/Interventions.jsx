@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
+  ArrowUpDown,
   CalendarClock,
   Download,
   FileText,
@@ -66,6 +67,15 @@ function getInterventionElevatorName(intervention, elevatorsById) {
   )
 }
 
+function getInterventionTechnician(intervention) {
+  return String(
+    intervention.technicien ||
+      intervention.technician ||
+      intervention.technicianName ||
+      '',
+  ).trim()
+}
+
 function toDate(value) {
   if (!value) {
     return null
@@ -118,6 +128,17 @@ function getStatus(intervention) {
     return 'Annulée'
   }
   return status
+}
+
+function isInterventionOverdue(intervention) {
+  if (getStatus(intervention) !== 'Planifiée') {
+    return false
+  }
+
+  const date = toDate(
+    intervention.dateIntervention || intervention.dateHeure || intervention.date,
+  )
+  return Boolean(date && date.getTime() < Date.now())
 }
 
 function getParts(intervention) {
@@ -215,6 +236,7 @@ export default function Interventions() {
   const [clients, setClients] = useState([])
   const [elevators, setElevators] = useState([])
   const [search, setSearch] = useState('')
+  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' })
   const [statusFilter, setStatusFilter] = useState('Tous')
   const [isLoadingInterventions, setIsLoadingInterventions] = useState(true)
   const [isLoadingClients, setIsLoadingClients] = useState(true)
@@ -329,16 +351,34 @@ export default function Interventions() {
           getInterventionClientName(intervention, clientsById),
           getInterventionElevatorName(intervention, elevatorsById),
           intervention.type,
-          intervention.technicien || intervention.technician,
+          getInterventionTechnician(intervention),
         ]
         return searchableValues.some((value) => normalizeSearch(value || '').includes(normalizedQuery))
       })
       .sort((first, second) => {
-        const firstDate = toDate(first.dateIntervention || first.dateHeure)?.getTime() || 0
-        const secondDate = toDate(second.dateIntervention || second.dateHeure)?.getTime() || 0
-        return secondDate - firstDate
+        if (sortConfig.key === 'technician') {
+          const order = getInterventionTechnician(first).localeCompare(
+            getInterventionTechnician(second),
+            'fr',
+            { sensitivity: 'base', numeric: true },
+          )
+          return sortConfig.direction === 'asc' ? order : -order
+        }
+
+        const firstDate = toDate(
+          first.dateIntervention || first.dateHeure || first.date,
+        )?.getTime()
+        const secondDate = toDate(
+          second.dateIntervention || second.dateHeure || second.date,
+        )?.getTime()
+        if (firstDate === undefined || secondDate === undefined) {
+          return firstDate === undefined ? (secondDate === undefined ? 0 : 1) : -1
+        }
+
+        const order = firstDate - secondDate
+        return sortConfig.direction === 'asc' ? order : -order
       })
-  }, [clientsById, elevatorsById, interventions, search, statusFilter])
+  }, [clientsById, elevatorsById, interventions, search, sortConfig, statusFilter])
 
   const plannedCount = interventions.filter(
     (intervention) => getStatus(intervention) === 'Planifiée',
@@ -352,6 +392,14 @@ export default function Interventions() {
 
   function showToast(type, message) {
     setToast({ type, message })
+  }
+
+  function handleSort(key) {
+    setSortConfig((previous) => ({
+      key,
+      direction:
+        previous.key === key && previous.direction === 'asc' ? 'desc' : 'asc',
+    }))
   }
 
   function handleSaved(action) {
@@ -627,26 +675,49 @@ export default function Interventions() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1250px] border-collapse text-left">
+            <table className="w-full min-w-[1100px] border-collapse text-left">
               <thead className="bg-slate-50/80">
                 <tr className="border-b border-slate-200">
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     N° Fiche
                   </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Date
+                  <th
+                    aria-sort={sortConfig.key === 'date'
+                      ? sortConfig.direction === 'asc' ? 'ascending' : 'descending'
+                      : 'none'}
+                    className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    <button
+                      aria-label={`Trier par date ${sortConfig.key === 'date' && sortConfig.direction === 'asc' ? 'décroissante' : 'croissante'}`}
+                      className="inline-flex items-center gap-2 text-left transition hover:text-blue-700 focus:outline-none focus:text-blue-700"
+                      onClick={() => handleSort('date')}
+                      type="button"
+                    >
+                      Date
+                      <ArrowUpDown aria-hidden="true" className="h-3.5 w-3.5" />
+                    </button>
                   </th>
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Client
                   </th>
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Équipement concerné
-                  </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Type
                   </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Technicien
+                  <th
+                    aria-sort={sortConfig.key === 'technician'
+                      ? sortConfig.direction === 'asc' ? 'ascending' : 'descending'
+                      : 'none'}
+                    className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    <button
+                      aria-label={`Trier par technicien ${sortConfig.key === 'technician' && sortConfig.direction === 'asc' ? 'décroissant' : 'croissant'}`}
+                      className="inline-flex items-center gap-2 text-left transition hover:text-blue-700 focus:outline-none focus:text-blue-700"
+                      onClick={() => handleSort('technician')}
+                      type="button"
+                    >
+                      Technicien
+                      <ArrowUpDown aria-hidden="true" className="h-3.5 w-3.5" />
+                    </button>
                   </th>
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Statut
@@ -660,6 +731,11 @@ export default function Interventions() {
                 {filteredInterventions.map((intervention) => {
                   const number = getInterventionNumber(intervention)
                   const isExporting = exportingId === intervention.id
+                  const dateValue =
+                    intervention.dateIntervention ||
+                    intervention.dateHeure ||
+                    intervention.date
+                  const overdue = isInterventionOverdue(intervention)
 
                   return (
                     <tr className="transition hover:bg-slate-50/70" key={intervention.id}>
@@ -670,21 +746,26 @@ export default function Interventions() {
                       </td>
                       <td className="whitespace-nowrap px-5 py-4">
                         <span className="inline-flex items-center gap-2 text-sm text-slate-600">
-                          <CalendarClock aria-hidden="true" className="h-4 w-4 text-slate-400" />
-                          {formatDateTime(
-                            intervention.dateIntervention ||
-                              intervention.dateHeure ||
-                              intervention.date,
+                          {overdue ? (
+                            <AlertCircle
+                              aria-label="Intervention planifiée en retard"
+                              className="h-4 w-4 shrink-0 text-red-600"
+                              role="img"
+                            />
+                          ) : (
+                            <CalendarClock
+                              aria-hidden="true"
+                              className="h-4 w-4 text-slate-400"
+                            />
                           )}
+                          {formatDateTime(dateValue)}
                         </span>
                       </td>
                       <td className="px-5 py-4">
                         <span className="block max-w-xs truncate text-sm font-semibold text-slate-900">
                           {getInterventionClientName(intervention, clientsById)}
                         </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="block max-w-xs truncate font-mono text-xs font-semibold text-slate-800">
+                        <span className="mt-1 block max-w-xs truncate font-mono text-[11px] text-slate-500">
                           {getInterventionElevatorName(intervention, elevatorsById)}
                         </span>
                         {elevatorsById.get(getInterventionElevatorId(intervention))?.type && (
@@ -697,10 +778,7 @@ export default function Interventions() {
                         {intervention.type || '—'}
                       </td>
                       <td className="px-5 py-4 text-sm text-slate-700">
-                        {intervention.technicien ||
-                          intervention.technician ||
-                          intervention.technicianName ||
-                          '—'}
+                        {getInterventionTechnician(intervention) || '—'}
                       </td>
                       <td className="px-5 py-4">
                         <StatusBadge status={getStatus(intervention)} />

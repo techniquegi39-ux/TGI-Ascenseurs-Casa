@@ -133,6 +133,77 @@ function formatCurrency(value) {
   }).format(value)} MAD`
 }
 
+function getPurchaseOrderValidationErrors(formData) {
+  const nextErrors = {}
+  const supplier = formData.fournisseur.trim()
+
+  if (!supplier) {
+    nextErrors.fournisseur = 'Le nom du fournisseur est obligatoire.'
+  } else if (supplier.length > 180) {
+    nextErrors.fournisseur = 'Le nom du fournisseur ne doit pas dépasser 180 caractères.'
+  }
+  if (formData.dateCommande === '') {
+    nextErrors.dateCommande = 'La date de commande est obligatoire.'
+  }
+  if (!formData.dateLivraisonPrevue) {
+    nextErrors.dateLivraisonPrevue = 'La date de livraison espérée est obligatoire.'
+  } else if (
+    formData.dateCommande &&
+    formData.dateLivraisonPrevue < formData.dateCommande
+  ) {
+    nextErrors.dateLivraisonPrevue =
+      'La livraison espérée ne peut pas précéder la date de commande.'
+  }
+  if (!PURCHASE_ORDER_STATUSES.includes(formData.status)) {
+    nextErrors.status = 'Sélectionnez un statut valide.'
+  }
+
+  const lineErrors = formData.items.map((item, index) => {
+    const lineError = {}
+    const quantity = Number(item.quantity)
+    const unitPrice = Number(item.unitPrice)
+    const taxRate = Number(item.taxRate)
+
+    if (!item.designation.trim()) {
+      lineError.designation = `La désignation de la ligne ${index + 1} est obligatoire.`
+    } else if (item.designation.trim().length > 180) {
+      lineError.designation = 'La désignation ne doit pas dépasser 180 caractères.'
+    }
+    if (
+      item.quantity.trim() === '' ||
+      !Number.isFinite(quantity) ||
+      quantity <= 0 ||
+      quantity > 1000000
+    ) {
+      lineError.quantity = 'La quantité doit être supérieure à zéro.'
+    }
+    if (
+      item.unitPrice.trim() === '' ||
+      !Number.isFinite(unitPrice) ||
+      unitPrice < 0 ||
+      Math.abs(unitPrice - roundAmount(unitPrice)) > 0.000001
+    ) {
+      lineError.unitPrice = 'Saisissez un prix unitaire HT valide (2 décimales maximum).'
+    }
+    if (!VAT_RATES.includes(taxRate)) {
+      lineError.taxRate = 'Sélectionnez un taux de TVA valide.'
+    }
+    return lineError
+  })
+
+  if (formData.items.length === 0) {
+    nextErrors.items = [{ designation: 'Ajoutez au moins une ligne de commande.' }]
+  } else if (lineErrors.some((lineError) => Object.keys(lineError).length > 0)) {
+    nextErrors.items = lineErrors
+  }
+  if (formData.instructionsLivraison.trim().length > 3000) {
+    nextErrors.instructionsLivraison =
+      'Les instructions ne doivent pas dépasser 3 000 caractères.'
+  }
+
+  return nextErrors
+}
+
 function TextField({
   id,
   label,
@@ -233,10 +304,10 @@ export default function PurchaseOrderForm({ purchaseOrder = null, onClose, onSav
   const { currentUser } = useAuth()
   const [formData, setFormData] = useState(() => getInitialFormData(purchaseOrder))
   const [activeTab, setActiveTab] = useState('general')
-  const [errors, setErrors] = useState({})
   const [formError, setFormError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
 
+  const errors = useMemo(() => getPurchaseOrderValidationErrors(formData), [formData])
   const lineTotals = useMemo(
     () => formData.items.map((item) => getLineTotals(item)),
     [formData.items],
@@ -263,14 +334,6 @@ export default function PurchaseOrderForm({ purchaseOrder = null, onClose, onSav
         ? { dateLivraisonPrevue: addDays(value, 7) }
         : {}),
     }))
-    setErrors((previous) => {
-      if (!previous[name]) {
-        return previous
-      }
-      const nextErrors = { ...previous }
-      delete nextErrors[name]
-      return nextErrors
-    })
     setFormError('')
   }
 
@@ -281,7 +344,6 @@ export default function PurchaseOrderForm({ purchaseOrder = null, onClose, onSav
         item.id === lineId ? { ...item, [field]: value } : item,
       ),
     }))
-    setErrors((previous) => (previous.items ? { ...previous, items: null } : previous))
     setFormError('')
   }
 
@@ -295,86 +357,17 @@ export default function PurchaseOrderForm({ purchaseOrder = null, onClose, onSav
       ...previous,
       items: previous.items.filter((item) => item.id !== lineId),
     }))
-    setErrors((previous) => ({ ...previous, items: null }))
   }
 
   function validate() {
-    const nextErrors = {}
-    const supplier = formData.fournisseur.trim()
-
-    if (!supplier) {
-      nextErrors.fournisseur = 'Le nom du fournisseur est obligatoire.'
-    } else if (supplier.length > 180) {
-      nextErrors.fournisseur = 'Le nom du fournisseur ne doit pas dépasser 180 caractères.'
-    }
-    if (formData.dateCommande === '') {
-      nextErrors.dateCommande = 'La date de commande est obligatoire.'
-    }
-    if (!formData.dateLivraisonPrevue) {
-      nextErrors.dateLivraisonPrevue = 'La date de livraison espérée est obligatoire.'
-    } else if (
-      formData.dateCommande &&
-      formData.dateLivraisonPrevue < formData.dateCommande
-    ) {
-      nextErrors.dateLivraisonPrevue =
-        'La livraison espérée ne peut pas précéder la date de commande.'
-    }
-    if (!PURCHASE_ORDER_STATUSES.includes(formData.status)) {
-      nextErrors.status = 'Sélectionnez un statut valide.'
-    }
-
-    const lineErrors = formData.items.map((item, index) => {
-      const lineError = {}
-      const quantity = Number(item.quantity)
-      const unitPrice = Number(item.unitPrice)
-      const taxRate = Number(item.taxRate)
-
-      if (!item.designation.trim()) {
-        lineError.designation = `La désignation de la ligne ${index + 1} est obligatoire.`
-      } else if (item.designation.trim().length > 180) {
-        lineError.designation = 'La désignation ne doit pas dépasser 180 caractères.'
-      }
-      if (
-        item.quantity.trim() === '' ||
-        !Number.isFinite(quantity) ||
-        quantity <= 0 ||
-        quantity > 1000000
-      ) {
-        lineError.quantity = 'La quantité doit être supérieure à zéro.'
-      }
-      if (
-        item.unitPrice.trim() === '' ||
-        !Number.isFinite(unitPrice) ||
-        unitPrice < 0 ||
-        Math.abs(unitPrice - roundAmount(unitPrice)) > 0.000001
-      ) {
-        lineError.unitPrice = 'Saisissez un prix unitaire HT valide (2 décimales maximum).'
-      }
-      if (!VAT_RATES.includes(taxRate)) {
-        lineError.taxRate = 'Sélectionnez un taux de TVA valide.'
-      }
-      return lineError
-    })
-
-    if (formData.items.length === 0) {
-      nextErrors.items = [{ designation: 'Ajoutez au moins une ligne de commande.' }]
-    } else if (lineErrors.some((lineError) => Object.keys(lineError).length > 0)) {
-      nextErrors.items = lineErrors
-    }
-    if (formData.instructionsLivraison.trim().length > 3000) {
-      nextErrors.instructionsLivraison =
-        'Les instructions ne doivent pas dépasser 3 000 caractères.'
-    }
-
-    setErrors(nextErrors)
-    if (nextErrors.fournisseur || nextErrors.dateCommande || nextErrors.dateLivraisonPrevue || nextErrors.status) {
+    if (errors.fournisseur || errors.dateCommande || errors.dateLivraisonPrevue || errors.status) {
       setActiveTab('general')
-    } else if (nextErrors.items) {
+    } else if (errors.items) {
       setActiveTab('items')
-    } else if (nextErrors.instructionsLivraison) {
+    } else if (errors.instructionsLivraison) {
       setActiveTab('instructions')
     }
-    return Object.keys(nextErrors).length === 0
+    return Object.keys(errors).length === 0
   }
 
   async function handleSubmit(event) {
@@ -599,6 +592,7 @@ export default function PurchaseOrderForm({ purchaseOrder = null, onClose, onSav
                   id="purchase-order-delivery-date"
                   label="Date de livraison espérée"
                   name="dateLivraisonPrevue"
+                  min={formData.dateCommande}
                   onChange={handleChange}
                   required
                   type="date"
@@ -950,7 +944,7 @@ export default function PurchaseOrderForm({ purchaseOrder = null, onClose, onSav
               ) : (
                 <button
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 text-sm font-semibold text-white transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 disabled:cursor-not-allowed disabled:opacity-60"
-                  disabled={isSaving}
+                  disabled={isSaving || Object.keys(errors).length > 0}
                   type="submit"
                 >
                   {isSaving ? (

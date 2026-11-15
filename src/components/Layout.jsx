@@ -17,11 +17,14 @@ import {
   ShoppingCart,
   Truck,
   Users,
+  UserRound,
   Wrench,
   X,
 } from 'lucide-react'
+import { doc, getDoc } from 'firebase/firestore'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
+import { db } from '../firebase.js'
 
 const navigationSections = [
   {
@@ -170,25 +173,35 @@ function Sidebar({ isOpen, onNavigate }) {
   )
 }
 
-function UserAvatar({ userData, currentUser }) {
-  if (userData?.role === 'Directeur') {
+function UserAvatar({ userData, currentUser, companySettings }) {
+  const name = userData?.nom || currentUser?.displayName || currentUser?.email || 'Utilisateur'
+  const photo =
+    userData?.role === 'Directeur'
+      ? companySettings.directeurPhoto
+      : userData?.role === 'Commercial'
+        ? companySettings.commercialPhoto
+        : ''
+
+  if (photo) {
     return (
       <img
-        src="/khalid-avatar.jpeg"
-        alt="Directeur"
-        className="h-10 w-10 rounded-full border-2 border-blue-600 object-cover"
+        alt={`Photo du ${userData?.role || 'profil'}`}
+        className="h-10 w-10 shrink-0 rounded-full border-2 border-blue-600 object-cover"
+        src={photo}
       />
     )
   }
-
-  const name = userData?.nom || currentUser?.displayName || currentUser?.email || 'Utilisateur'
 
   return (
     <span
       aria-label={name}
       className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-blue-100 bg-blue-50 text-sm font-bold text-blue-800"
     >
-      {getUserInitials(name)}
+      {name && name !== 'Utilisateur' ? (
+        getUserInitials(name)
+      ) : (
+        <UserRound aria-hidden="true" className="h-5 w-5" />
+      )}
     </span>
   )
 }
@@ -201,6 +214,43 @@ export default function Layout() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const [logoutError, setLogoutError] = useState('')
+  const [companySettings, setCompanySettings] = useState({})
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadCompanySettings() {
+      try {
+        const settingsSnapshot = await getDoc(doc(db, 'settings', 'company'))
+        if (isMounted) {
+          const settingsData = settingsSnapshot.exists() ? settingsSnapshot.data() : {}
+          setCompanySettings({
+            directeurPhoto:
+              typeof settingsData.directeurPhoto === 'string'
+                ? settingsData.directeurPhoto
+                : '',
+            commercialPhoto:
+              typeof settingsData.commercialPhoto === 'string'
+                ? settingsData.commercialPhoto
+                : '',
+          })
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des photos de profil :', error)
+      }
+    }
+
+    function handleCompanySettingsUpdated() {
+      void loadCompanySettings()
+    }
+
+    void loadCompanySettings()
+    window.addEventListener('company-settings-updated', handleCompanySettingsUpdated)
+    return () => {
+      isMounted = false
+      window.removeEventListener('company-settings-updated', handleCompanySettingsUpdated)
+    }
+  }, [])
 
   useEffect(() => {
     if (!isUserMenuOpen) {
@@ -299,7 +349,11 @@ export default function Layout() {
                 }}
                 type="button"
               >
-                <UserAvatar currentUser={currentUser} userData={userData} />
+                <UserAvatar
+                  companySettings={companySettings}
+                  currentUser={currentUser}
+                  userData={userData}
+                />
                 <span className="hidden max-w-36 sm:block">
                   <span className="block truncate text-xs font-semibold text-slate-800">
                     {userName}

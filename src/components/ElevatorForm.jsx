@@ -23,8 +23,7 @@ import { db } from '../firebase.js'
 import { useAuth } from '../context/useAuth.js'
 
 const ELEVATOR_TYPES = [
-  'Ascenseur Électrique',
-  'Ascenseur Hydraulique',
+  'Ascenseur',
   'Monte-charge',
   'Monte-plat',
   'Escalator',
@@ -48,7 +47,10 @@ function getElevatorValue(elevator, aliases, fallback = '') {
 }
 
 function getInitialFormData(elevator) {
-  const typeValue = String(getElevatorValue(elevator, ['type'], ELEVATOR_TYPES[0]))
+  const savedType = String(getElevatorValue(elevator, ['type'], ELEVATOR_TYPES[0]))
+  const typeValue = ['Ascenseur Électrique', 'Ascenseur Hydraulique'].includes(savedType)
+    ? 'Ascenseur'
+    : savedType
   const statusValue = String(
     getElevatorValue(elevator, ['status', 'statut'], ELEVATOR_STATUSES[0]),
   )
@@ -227,8 +229,10 @@ export default function ElevatorForm({ elevator = null, onClose, onSaved }) {
 
     if (!reference) {
       nextErrors.reference = 'La référence ou le numéro de série est obligatoire.'
-    } else if (!/^[\p{L}\d][\p{L}\d._/-]{2,49}$/u.test(reference)) {
-      nextErrors.reference = 'Utilisez 3 à 50 caractères (lettres, chiffres, point, tiret ou slash).'
+    } else if (reference.length < 4) {
+      nextErrors.reference = 'Le numéro de série doit contenir au moins 4 caractères.'
+    } else if (reference.length > 50) {
+      nextErrors.reference = 'Le numéro de série ne doit pas dépasser 50 caractères.'
     }
 
     if (!ELEVATOR_TYPES.includes(formData.type)) {
@@ -247,12 +251,12 @@ export default function ElevatorForm({ elevator = null, onClose, onSaved }) {
       nextErrors.moteur = 'Le moteur ne doit pas dépasser 120 caractères.'
     }
 
-    if (!Number.isInteger(levels) || levels < 1 || levels > 200) {
-      nextErrors.niveaux = 'Le nombre de niveaux doit être un entier entre 1 et 200.'
+    if (!Number.isInteger(levels) || levels < 2 || levels > 200) {
+      nextErrors.niveaux = 'Le nombre de niveaux doit être un entier entre 2 et 200.'
     }
 
-    if (!Number.isInteger(capacity) || capacity < 1 || capacity > 100000) {
-      nextErrors.chargeKg = 'La charge utile doit être un entier positif en kilogrammes.'
+    if (!Number.isFinite(capacity) || capacity < 50 || capacity > 100000) {
+      nextErrors.chargeKg = 'La charge utile doit être un nombre compris entre 50 et 100 000 kg.'
     }
 
     if (people !== undefined && (!Number.isInteger(people) || people < 1 || people > 1000)) {
@@ -392,290 +396,337 @@ export default function ElevatorForm({ elevator = null, onClose, onSaved }) {
 
         <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit} noValidate>
           <div className="overflow-y-auto px-5 py-6 sm:px-7">
-            <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <label
-                  htmlFor="elevator-client"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Client propriétaire
-                  <span className="ml-1 text-red-600" aria-hidden="true">*</span>
-                </label>
-                <div className="relative">
-                  <UserRound
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                  />
-                  <select
-                    aria-describedby={errors.clientId ? 'elevator-client-error' : undefined}
-                    aria-invalid={Boolean(errors.clientId)}
-                    className={`h-11 w-full rounded-lg border bg-white pl-10 pr-3 text-sm text-slate-900 outline-none transition focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-50 ${
-                      errors.clientId
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
-                        : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
-                    }`}
-                    disabled={isSaving || isLoadingClients || clients.length === 0}
-                    id="elevator-client"
-                    name="clientId"
-                    onChange={handleChange}
-                    required
-                    value={selectedClientId}
-                  >
-                    <option value="">
-                      {isLoadingClients
-                        ? 'Chargement des clients...'
-                        : clients.length
-                          ? 'Sélectionnez un client'
-                          : 'Aucun client disponible'}
-                    </option>
-                    {clients.map((client) => (
-                      <option key={client.id} value={client.id}>
-                        {getClientName(client)}
-                      </option>
-                    ))}
-                  </select>
+            <div className="space-y-5">
+              <section
+                aria-labelledby="elevator-location-heading"
+                className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5"
+              >
+                <div className="mb-4">
+                  <h3 className="font-semibold text-slate-900" id="elevator-location-heading">
+                    Localisation &amp; affectation
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Associez l’équipement à son propriétaire et à son site d’installation.
+                  </p>
                 </div>
-                {errors.clientId && (
-                  <p className="mt-1.5 text-xs text-red-700" id="elevator-client-error">
-                    {errors.clientId}
-                  </p>
-                )}
-                {isLoadingClients && (
-                  <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-slate-500">
-                    <LoaderCircle aria-hidden="true" className="h-3.5 w-3.5 animate-spin" />
-                    Chargement de la liste des clients
-                  </p>
-                )}
-                {clientLoadError && (
-                  <div className="mt-2 flex items-center justify-between gap-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-800">
-                    <span className="min-w-0 break-words">{clientLoadError}</span>
-                    <button
-                      className="inline-flex shrink-0 items-center gap-1 font-semibold"
-                      onClick={retryClients}
-                      type="button"
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <label
+                      htmlFor="elevator-client"
+                      className="mb-2 block text-sm font-medium text-slate-700"
                     >
-                      <RefreshCw aria-hidden="true" className="h-3.5 w-3.5" />
-                      Réessayer
-                    </button>
+                      Client propriétaire
+                      <span className="ml-1 text-red-600" aria-hidden="true">*</span>
+                    </label>
+                    <div className="relative">
+                      <UserRound
+                        aria-hidden="true"
+                        className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                      />
+                      <select
+                        aria-describedby={errors.clientId ? 'elevator-client-error' : undefined}
+                        aria-invalid={Boolean(errors.clientId)}
+                        className={`h-11 w-full rounded-lg border bg-white pl-10 pr-3 text-sm text-slate-900 outline-none transition focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-50 ${
+                          errors.clientId
+                            ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+                            : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
+                        }`}
+                        disabled={isSaving || isLoadingClients || clients.length === 0}
+                        id="elevator-client"
+                        name="clientId"
+                        onChange={handleChange}
+                        required
+                        value={selectedClientId}
+                      >
+                        <option value="">
+                          {isLoadingClients
+                            ? 'Chargement des clients...'
+                            : clients.length
+                              ? 'Sélectionnez un client'
+                              : 'Aucun client disponible'}
+                        </option>
+                        {clients.map((client) => (
+                          <option key={client.id} value={client.id}>
+                            {getClientName(client)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {errors.clientId && (
+                      <p className="mt-1.5 text-xs text-red-700" id="elevator-client-error">
+                        {errors.clientId}
+                      </p>
+                    )}
+                    {isLoadingClients && (
+                      <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-slate-500">
+                        <LoaderCircle aria-hidden="true" className="h-3.5 w-3.5 animate-spin" />
+                        Chargement de la liste des clients
+                      </p>
+                    )}
+                    {clientLoadError && (
+                      <div className="mt-2 flex items-center justify-between gap-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-800">
+                        <span className="min-w-0 break-words">{clientLoadError}</span>
+                        <button
+                          className="inline-flex shrink-0 items-center gap-1 font-semibold"
+                          onClick={retryClients}
+                          type="button"
+                        >
+                          <RefreshCw aria-hidden="true" className="h-3.5 w-3.5" />
+                          Réessayer
+                        </button>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              <Field
-                autoFocus
-                error={errors.reference}
-                icon={Fingerprint}
-                id="elevator-reference"
-                label="Référence / N° de série"
-                name="reference"
-                onChange={handleChange}
-                placeholder="TGI-2026-001"
-                required
-                value={formData.reference}
-                disabled={isSaving}
-              />
+                  <div className="sm:col-span-2">
+                    <label
+                      htmlFor="elevator-address"
+                      className="mb-2 block text-sm font-medium text-slate-700"
+                    >
+                      Adresse d’installation
+                      <span className="ml-1 text-red-600" aria-hidden="true">*</span>
+                    </label>
+                    <div className="relative">
+                      <MapPin
+                        aria-hidden="true"
+                        className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-slate-400"
+                      />
+                      <textarea
+                        aria-describedby={
+                          errors.adresseInstallation ? 'elevator-address-error' : undefined
+                        }
+                        aria-invalid={Boolean(errors.adresseInstallation)}
+                        className={`min-h-24 w-full resize-y rounded-lg border bg-white py-3 pl-10 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-50 ${
+                          errors.adresseInstallation
+                            ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+                            : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
+                        }`}
+                        disabled={isSaving}
+                        id="elevator-address"
+                        name="adresseInstallation"
+                        onChange={handleChange}
+                        placeholder="Adresse complète de l’installation"
+                        required
+                        rows={3}
+                        value={formData.adresseInstallation}
+                      />
+                    </div>
+                    {errors.adresseInstallation && (
+                      <p className="mt-1.5 text-xs text-red-700" id="elevator-address-error">
+                        {errors.adresseInstallation}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </section>
 
-              <div>
-                <label
-                  htmlFor="elevator-type"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Type d’équipement
-                  <span className="ml-1 text-red-600" aria-hidden="true">*</span>
-                </label>
-                <div className="relative">
-                  <Building2
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                  />
-                  <select
-                    aria-describedby={errors.type ? 'elevator-type-error' : undefined}
-                    aria-invalid={Boolean(errors.type)}
-                    className={`h-11 w-full rounded-lg border bg-white pl-10 pr-3 text-sm text-slate-900 outline-none transition focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-50 ${
-                      errors.type
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
-                        : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
-                    }`}
-                    disabled={isSaving}
-                    id="elevator-type"
-                    name="type"
+              <section
+                aria-labelledby="elevator-technical-heading"
+                className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5"
+              >
+                <div className="mb-4">
+                  <h3 className="font-semibold text-slate-900" id="elevator-technical-heading">
+                    Caractéristiques techniques
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Décrivez le type d’appareil, sa motorisation et ses capacités.
+                  </p>
+                </div>
+                <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2">
+                  <div>
+                    <label
+                      htmlFor="elevator-type"
+                      className="mb-2 block text-sm font-medium text-slate-700"
+                    >
+                      Type d’équipement
+                      <span className="ml-1 text-red-600" aria-hidden="true">*</span>
+                    </label>
+                    <div className="relative">
+                      <Building2
+                        aria-hidden="true"
+                        className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                      />
+                      <select
+                        aria-describedby={errors.type ? 'elevator-type-error' : undefined}
+                        aria-invalid={Boolean(errors.type)}
+                        className={`h-11 w-full rounded-lg border bg-white pl-10 pr-3 text-sm text-slate-900 outline-none transition focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-50 ${
+                          errors.type
+                            ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+                            : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
+                        }`}
+                        disabled={isSaving}
+                        id="elevator-type"
+                        name="type"
+                        onChange={handleChange}
+                        required
+                        value={formData.type}
+                      >
+                        {ELEVATOR_TYPES.map((type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {errors.type && (
+                      <p className="mt-1.5 text-xs text-red-700" id="elevator-type-error">
+                        {errors.type}
+                      </p>
+                    )}
+                  </div>
+
+                  <Field
+                    error={errors.marque}
+                    icon={Building2}
+                    id="elevator-brand"
+                    label="Marque"
+                    name="marque"
                     onChange={handleChange}
+                    placeholder="Otis, KONE, Schindler..."
                     required
-                    value={formData.type}
+                    value={formData.marque}
+                    disabled={isSaving}
+                  />
+                  <Field
+                    error={errors.moteur}
+                    icon={Wrench}
+                    id="elevator-motor"
+                    label="Marque / Moteur"
+                    name="moteur"
+                    onChange={handleChange}
+                    placeholder="Marque ou modèle du moteur"
+                    required
+                    value={formData.moteur}
+                    disabled={isSaving}
+                  />
+                  <Field
+                    error={errors.niveaux}
+                    icon={Building2}
+                    id="elevator-levels"
+                    label="Nombre de niveaux / arrêts"
+                    max={200}
+                    min={2}
+                    name="niveaux"
+                    onChange={handleChange}
+                    placeholder="Ex. 8"
+                    required
+                    step={1}
+                    type="number"
+                    value={formData.niveaux}
+                    disabled={isSaving}
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field
+                      error={errors.chargeKg}
+                      icon={Gauge}
+                      id="elevator-capacity"
+                      label="Charge utile (kg)"
+                      max={100000}
+                      min={50}
+                      name="chargeKg"
+                      onChange={handleChange}
+                      placeholder="630"
+                      required
+                      step="any"
+                      type="number"
+                      value={formData.chargeKg}
+                      disabled={isSaving}
+                    />
+                    <Field
+                      error={errors.personnes}
+                      id="elevator-people"
+                      label="Personnes"
+                      max={1000}
+                      min={1}
+                      name="personnes"
+                      onChange={handleChange}
+                      placeholder="8"
+                      step={1}
+                      type="number"
+                      value={formData.personnes}
+                      disabled={isSaving}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <section
+                aria-labelledby="elevator-identification-heading"
+                className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5"
+              >
+                <div className="mb-4">
+                  <h3
+                    className="font-semibold text-slate-900"
+                    id="elevator-identification-heading"
                   >
-                    {ELEVATOR_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {errors.type && (
-                  <p className="mt-1.5 text-xs text-red-700" id="elevator-type-error">
-                    {errors.type}
+                    Identification &amp; état
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Identifiant unique de l’équipement et état opérationnel.
                   </p>
-                )}
-              </div>
-
-              <Field
-                error={errors.marque}
-                icon={Building2}
-                id="elevator-brand"
-                label="Marque"
-                name="marque"
-                onChange={handleChange}
-                placeholder="Otis, KONE, Schindler..."
-                required
-                value={formData.marque}
-                disabled={isSaving}
-              />
-              <Field
-                error={errors.moteur}
-                icon={Wrench}
-                id="elevator-motor"
-                label="Moteur / Modèle"
-                name="moteur"
-                onChange={handleChange}
-                placeholder="Marque ou modèle du moteur"
-                required
-                value={formData.moteur}
-                disabled={isSaving}
-              />
-
-              <Field
-                error={errors.niveaux}
-                icon={Building2}
-                id="elevator-levels"
-                label="Nombre de niveaux / arrêts"
-                max={200}
-                min={1}
-                name="niveaux"
-                onChange={handleChange}
-                placeholder="Ex. 8"
-                required
-                step={1}
-                type="number"
-                value={formData.niveaux}
-                disabled={isSaving}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <Field
-                  error={errors.chargeKg}
-                  icon={Gauge}
-                  id="elevator-capacity"
-                  label="Charge utile (kg)"
-                  max={100000}
-                  min={1}
-                  name="chargeKg"
-                  onChange={handleChange}
-                  placeholder="630"
-                  required
-                  step={1}
-                  type="number"
-                  value={formData.chargeKg}
-                  disabled={isSaving}
-                />
-                <Field
-                  error={errors.personnes}
-                  id="elevator-people"
-                  label="Personnes"
-                  max={1000}
-                  min={1}
-                  name="personnes"
-                  onChange={handleChange}
-                  placeholder="8"
-                  step={1}
-                  type="number"
-                  value={formData.personnes}
-                  disabled={isSaving}
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label
-                  htmlFor="elevator-address"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Adresse d’installation
-                  <span className="ml-1 text-red-600" aria-hidden="true">*</span>
-                </label>
-                <div className="relative">
-                  <MapPin
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-slate-400"
-                  />
-                  <textarea
-                    aria-describedby={
-                      errors.adresseInstallation ? 'elevator-address-error' : undefined
-                    }
-                    aria-invalid={Boolean(errors.adresseInstallation)}
-                    className={`min-h-24 w-full resize-y rounded-lg border bg-white py-3 pl-10 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-50 ${
-                      errors.adresseInstallation
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
-                        : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
-                    }`}
-                    disabled={isSaving}
-                    id="elevator-address"
-                    name="adresseInstallation"
+                </div>
+                <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2">
+                  <Field
+                    autoFocus
+                    error={errors.reference}
+                    icon={Fingerprint}
+                    id="elevator-reference"
+                    label="N° de série / Référence"
+                    name="reference"
                     onChange={handleChange}
-                    placeholder="Adresse complète de l’installation"
+                    placeholder="TGI-2026-001"
                     required
-                    rows={3}
-                    value={formData.adresseInstallation}
-                  />
-                </div>
-                {errors.adresseInstallation && (
-                  <p className="mt-1.5 text-xs text-red-700" id="elevator-address-error">
-                    {errors.adresseInstallation}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label
-                  htmlFor="elevator-status"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Statut actuel
-                  <span className="ml-1 text-red-600" aria-hidden="true">*</span>
-                </label>
-                <div className="relative">
-                  <Server
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                  />
-                  <select
-                    aria-describedby={errors.status ? 'elevator-status-error' : undefined}
-                    aria-invalid={Boolean(errors.status)}
-                    className={`h-11 w-full rounded-lg border bg-white pl-10 pr-3 text-sm text-slate-900 outline-none transition focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-50 ${
-                      errors.status
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
-                        : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
-                    }`}
+                    value={formData.reference}
                     disabled={isSaving}
-                    id="elevator-status"
-                    name="status"
-                    onChange={handleChange}
-                    required
-                    value={formData.status}
-                  >
-                    {ELEVATOR_STATUSES.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
+                  />
+
+                  <div>
+                    <label
+                      htmlFor="elevator-status"
+                      className="mb-2 block text-sm font-medium text-slate-700"
+                    >
+                      Statut actuel
+                      <span className="ml-1 text-red-600" aria-hidden="true">*</span>
+                    </label>
+                    <div className="relative">
+                      <Server
+                        aria-hidden="true"
+                        className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                      />
+                      <select
+                        aria-describedby={errors.status ? 'elevator-status-error' : undefined}
+                        aria-invalid={Boolean(errors.status)}
+                        className={`h-11 w-full rounded-lg border bg-white pl-10 pr-3 text-sm text-slate-900 outline-none transition focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-50 ${
+                          errors.status
+                            ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+                            : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
+                        }`}
+                        disabled={isSaving}
+                        id="elevator-status"
+                        name="status"
+                        onChange={handleChange}
+                        required
+                        value={formData.status}
+                      >
+                        {ELEVATOR_STATUSES.map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {errors.status && (
+                      <p className="mt-1.5 text-xs text-red-700" id="elevator-status-error">
+                        {errors.status}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                {errors.status && (
-                  <p className="mt-1.5 text-xs text-red-700" id="elevator-status-error">
-                    {errors.status}
-                  </p>
-                )}
-              </div>
+              </section>
 
               {formError && (
                 <div
-                  className="sm:col-span-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm leading-5 text-red-800"
+                  className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm leading-5 text-red-800"
                   role="alert"
                 >
                   {formError}

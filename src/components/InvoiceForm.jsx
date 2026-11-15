@@ -159,20 +159,61 @@ function getLineTotals(line) {
   const quantity = Number(line.quantity)
   const unitPrice = Number(line.unitPrice)
   const taxRate = Number(line.taxRate)
+  const rawTotalHT = quantity * unitPrice
   const totalHT =
-    Number.isFinite(quantity) && Number.isFinite(unitPrice)
-      ? roundAmount(quantity * unitPrice)
+    Number.isFinite(quantity) &&
+    Number.isFinite(unitPrice) &&
+    Number.isFinite(rawTotalHT)
+      ? roundAmount(rawTotalHT)
       : 0
+  const rawTotalTVA = totalHT * (taxRate / 100)
   const totalTVA =
-    Number.isFinite(taxRate) && taxRate >= 0
-      ? roundAmount(totalHT * (taxRate / 100))
+    Number.isFinite(taxRate) && taxRate >= 0 && Number.isFinite(rawTotalTVA)
+      ? roundAmount(rawTotalTVA)
       : 0
+  const rawTotalTTC = totalHT + totalTVA
 
   return {
     totalHT,
     totalTVA,
-    totalTTC: roundAmount(totalHT + totalTVA),
+    totalTTC: Number.isFinite(rawTotalTTC) ? roundAmount(rawTotalTTC) : 0,
   }
+}
+
+function getInvoiceLineErrors(line, index) {
+  const lineError = {}
+  const quantity = Number(line.quantity)
+  const unitPrice = Number(line.unitPrice)
+  const taxRate = Number(line.taxRate)
+  const designation = line.designation.trim()
+  const totalHT = quantity * unitPrice
+  const totalTVA = totalHT * (taxRate / 100)
+  const totalTTC = totalHT + totalTVA
+
+  if (!designation) {
+    lineError.designation = `La désignation de la ligne ${index + 1} est obligatoire.`
+  } else if (designation.length > 180) {
+    lineError.designation = 'La désignation ne doit pas dépasser 180 caractères.'
+  }
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    lineError.quantity = 'La quantité doit être supérieure à zéro.'
+  }
+  if (line.unitPrice.trim() === '' || !Number.isFinite(unitPrice) || unitPrice < 0) {
+    lineError.unitPrice = 'Saisissez un prix unitaire HT positif ou nul.'
+  }
+  if (
+    Number.isFinite(quantity) &&
+    Number.isFinite(unitPrice) &&
+    Number.isFinite(taxRate) &&
+    (!Number.isFinite(totalHT) || !Number.isFinite(totalTVA) || !Number.isFinite(totalTTC))
+  ) {
+    lineError.unitPrice = 'Le total de la ligne est trop élevé.'
+  }
+  if (!VAT_RATES.includes(taxRate)) {
+    lineError.taxRate = 'Sélectionnez un taux de TVA valide.'
+  }
+
+  return lineError
 }
 
 function getPaymentStatus(workflowStatus, amountPaid, totalTTC) {
@@ -372,6 +413,13 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
     normalizedAmountPaid,
     totals.totalTTC,
   )
+  const allItemsValid =
+    formData.items.length > 0 &&
+    formData.items.every((item, index) => Object.keys(getInvoiceLineErrors(item, index)).length === 0)
+  const hasValidDateRange =
+    Boolean(formData.dateFacture) &&
+    Boolean(formData.dateEcheance) &&
+    formData.dateEcheance >= formData.dateFacture
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -390,11 +438,34 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
         : {}),
     }))
     setErrors((previous) => {
-      if (!previous[name]) {
-        return previous
-      }
       const nextErrors = { ...previous }
       delete nextErrors[name]
+
+      if (name === 'dateFacture' || name === 'dateEcheance') {
+        const nextInvoiceDate = name === 'dateFacture' ? value : formData.dateFacture
+        const nextDueDate =
+          name === 'dateEcheance'
+            ? value
+            : name === 'dateFacture' && !invoice
+              ? addDays(value, 30)
+              : formData.dateEcheance
+
+        if (!nextInvoiceDate) {
+          nextErrors.dateFacture = 'La date de facturation est obligatoire.'
+        } else {
+          delete nextErrors.dateFacture
+        }
+
+        if (!nextDueDate) {
+          nextErrors.dateEcheance = 'La date d’échéance est obligatoire.'
+        } else if (nextInvoiceDate && nextDueDate < nextInvoiceDate) {
+          nextErrors.dateEcheance =
+            'La date d’échéance doit être supérieure ou égale à la date de facturation.'
+        } else {
+          delete nextErrors.dateEcheance
+        }
+      }
+
       return nextErrors
     })
     setFormError('')
@@ -409,6 +480,22 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
     }))
     setErrors((previous) => (previous.items ? { ...previous, items: null } : previous))
     setFormError('')
+  }
+
+  function addLine() {
+    setFormData((previous) => ({
+      ...previous,
+      items: [...previous.items, createEmptyLine()],
+    }))
+    setErrors((previous) => ({ ...previous, items: null }))
+  }
+
+  function removeLine(lineId) {
+    setFormData((previous) => ({
+      ...previous,
+      items: previous.items.filter((line) => line.id !== lineId),
+    }))
+    setErrors((previous) => ({ ...previous, items: null }))
   }
 
   function validate() {
@@ -435,7 +522,7 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
       nextErrors.dateEcheance = 'La date d’échéance est obligatoire.'
     } else if (formData.dateFacture && formData.dateEcheance < formData.dateFacture) {
       nextErrors.dateEcheance =
-        'La date d’échéance doit être postérieure ou égale à la date de facturation.'
+        'La date d’échéance doit être supérieure ou égale à la date de facturation.'
     }
     if (!INVOICE_WORKFLOW_STATUSES.includes(formData.workflowStatus)) {
       nextErrors.workflowStatus = 'Sélectionnez un état de facture valide.'
@@ -444,27 +531,7 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
       nextErrors.paymentMethod = 'Sélectionnez un mode de règlement valide.'
     }
 
-    const itemErrors = formData.items.map((item, index) => {
-      const lineError = {}
-      const quantity = Number(item.quantity)
-      const unitPrice = Number(item.unitPrice)
-      const taxRate = Number(item.taxRate)
-      if (!item.designation.trim()) {
-        lineError.designation = `La désignation de la ligne ${index + 1} est obligatoire.`
-      } else if (item.designation.trim().length > 180) {
-        lineError.designation = 'La désignation ne doit pas dépasser 180 caractères.'
-      }
-      if (!Number.isFinite(quantity) || quantity <= 0) {
-        lineError.quantity = 'La quantité doit être supérieure à zéro.'
-      }
-      if (item.unitPrice.trim() === '' || !Number.isFinite(unitPrice) || unitPrice < 0) {
-        lineError.unitPrice = 'Saisissez un prix unitaire HT positif ou nul.'
-      }
-      if (!VAT_RATES.includes(taxRate)) {
-        lineError.taxRate = 'Sélectionnez un taux de TVA valide.'
-      }
-      return lineError
-    })
+    const itemErrors = formData.items.map(getInvoiceLineErrors)
 
     if (formData.items.length === 0) {
       nextErrors.items = [{ designation: 'Ajoutez au moins une ligne à la facture.' }]
@@ -608,10 +675,6 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
       onClose()
     }
   }
-
-  const firstItemError = Array.isArray(errors.items)
-    ? errors.items.find((lineError) => Object.keys(lineError).length > 0)
-    : null
 
   return (
     <div
@@ -830,12 +893,7 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
                 <button
                   className="inline-flex h-10 items-center justify-center gap-2 self-start rounded-lg border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-800 transition hover:bg-blue-100 sm:self-auto"
                   disabled={isSaving}
-                  onClick={() =>
-                    setFormData((previous) => ({
-                      ...previous,
-                      items: [...previous.items, createEmptyLine()],
-                    }))
-                  }
+                  onClick={addLine}
                   type="button"
                 >
                   <Plus aria-hidden="true" className="h-4 w-4" />
@@ -843,18 +901,20 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
                 </button>
               </div>
 
-              {firstItemError && (
+              {!allItemsValid && (
                 <p
                   className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
                   role="alert"
                 >
-                  {Object.values(firstItemError)[0]}
+                  {formData.items.length === 0
+                    ? 'Ajoutez au moins une ligne à la facture.'
+                    : 'Corrigez chaque ligne : désignation requise, quantité supérieure à zéro, prix HT nul ou positif et taux de TVA valide.'}
                 </p>
               )}
 
               <div className="space-y-3">
                 {formData.items.map((item, index) => {
-                  const itemError = Array.isArray(errors.items) ? errors.items[index] || {} : {}
+                  const itemError = getInvoiceLineErrors(item, index)
                   const calculated = lineTotals[index]
                   return (
                     <article
@@ -867,12 +927,7 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
                           aria-label={`Supprimer la ligne ${index + 1}`}
                           className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-40"
                           disabled={isSaving}
-                          onClick={() =>
-                            setFormData((previous) => ({
-                              ...previous,
-                              items: previous.items.filter((line) => line.id !== item.id),
-                            }))
-                          }
+                          onClick={() => removeLine(item.id)}
                           title="Supprimer la ligne"
                           type="button"
                         >
@@ -900,14 +955,7 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
                             disabled={isSaving}
                             id={`invoice-line-${item.id}-designation`}
                             onChange={(event) =>
-                              setFormData((previous) => ({
-                                ...previous,
-                                items: previous.items.map((line) =>
-                                  line.id === item.id
-                                    ? { ...line, designation: event.target.value }
-                                    : line,
-                                ),
-                              }))
+                              handleLineChange(item.id, 'designation', event.target.value)
                             }
                             placeholder="Désignation de l’article ou du service"
                             value={item.designation}
@@ -947,6 +995,11 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
                               {field.label}
                             </label>
                             <input
+                              aria-describedby={
+                                itemError[field.key]
+                                  ? `invoice-line-${item.id}-${field.key}-error`
+                                  : undefined
+                              }
                               aria-invalid={Boolean(itemError[field.key])}
                               className={`h-10 w-full rounded-lg border bg-white px-3 text-sm text-slate-900 outline-none transition focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-100 ${
                                 itemError[field.key]
@@ -965,7 +1018,12 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
                               value={item[field.key]}
                             />
                             {itemError[field.key] && (
-                              <p className="mt-1 text-xs text-red-700">{itemError[field.key]}</p>
+                              <p
+                                className="mt-1 text-xs text-red-700"
+                                id={`invoice-line-${item.id}-${field.key}-error`}
+                              >
+                                {itemError[field.key]}
+                              </p>
                             )}
                           </div>
                         ))}
@@ -977,7 +1035,17 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
                             Taux TVA
                           </label>
                           <select
-                            className="h-10 w-full rounded-lg border border-slate-300 bg-white px-2 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+                            aria-describedby={
+                              itemError.taxRate
+                                ? `invoice-line-${item.id}-tax-error`
+                                : undefined
+                            }
+                            aria-invalid={Boolean(itemError.taxRate)}
+                            className={`h-10 w-full rounded-lg border bg-white px-2 text-sm text-slate-900 outline-none transition focus:ring-4 ${
+                              itemError.taxRate
+                                ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+                                : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
+                            }`}
                             disabled={isSaving}
                             id={`invoice-line-${item.id}-tax`}
                             onChange={(event) =>
@@ -991,6 +1059,14 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
                               </option>
                             ))}
                           </select>
+                          {itemError.taxRate && (
+                            <p
+                              className="mt-1 text-xs text-red-700"
+                              id={`invoice-line-${item.id}-tax-error`}
+                            >
+                              {itemError.taxRate}
+                            </p>
+                          )}
                         </div>
                         <div className="sm:col-span-6">
                           <span className="mb-1.5 block text-xs font-medium text-slate-600">
@@ -1228,7 +1304,13 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
               </button>
               <button
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-800 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={isSaving || isLoadingClients || clients.length === 0}
+                disabled={
+                  isSaving ||
+                  isLoadingClients ||
+                  clients.length === 0 ||
+                  !allItemsValid ||
+                  !hasValidDateRange
+                }
                 type="submit"
               >
                 {isSaving ? (

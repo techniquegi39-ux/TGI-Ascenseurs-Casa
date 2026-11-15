@@ -56,6 +56,20 @@ function getDateInputValue(value) {
   return `${year}-${month}-${day}`
 }
 
+function getNextDateInputValue(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return undefined
+  }
+
+  const [year, month, day] = value.split('-').map(Number)
+  const nextDate = new Date(Date.UTC(year, month - 1, day + 1))
+  return [
+    nextDate.getUTCFullYear(),
+    String(nextDate.getUTCMonth() + 1).padStart(2, '0'),
+    String(nextDate.getUTCDate()).padStart(2, '0'),
+  ].join('-')
+}
+
 function getInitialFormData(contract) {
   const elevatorIds =
     contract?.elevatorIds || contract?.equipementIds || contract?.equipmentIds || []
@@ -379,11 +393,20 @@ export default function ContractForm({ contract = null, onClose, onSaved }) {
         : {}),
     }))
     setErrors((previous) => {
-      if (!previous[name]) {
-        return previous
-      }
       const nextErrors = { ...previous }
       delete nextErrors[name]
+
+      if (name === 'dateDebut' || name === 'dateFin') {
+        const startDate = name === 'dateDebut' ? value : formData.dateDebut
+        const endDate = name === 'dateFin' ? value : formData.dateFin
+
+        if (startDate && endDate && endDate <= startDate) {
+          nextErrors.dateFin = 'La date de fin doit être strictement postérieure à la date de début.'
+        } else {
+          delete nextErrors.dateFin
+        }
+      }
+
       return nextErrors
     })
     setFormError('')
@@ -428,14 +451,17 @@ export default function ContractForm({ contract = null, onClose, onSaved }) {
     }
     if (!formData.dateFin) {
       nextErrors.dateFin = 'La date de fin est obligatoire.'
-    } else if (formData.dateDebut && formData.dateFin < formData.dateDebut) {
-      nextErrors.dateFin = 'La date de fin doit être postérieure ou égale à la date de début.'
+    } else if (formData.dateDebut && formData.dateFin <= formData.dateDebut) {
+      nextErrors.dateFin = 'La date de fin doit être strictement postérieure à la date de début.'
     }
     if (!CONTRACT_STATUSES.includes(formData.status)) {
       nextErrors.status = 'Sélectionnez un statut valide.'
     }
-    if (!Number.isFinite(amount) || amount < 0 || formData.montantHT.trim() === '') {
-      nextErrors.montantHT = 'Saisissez un montant HT positif ou nul.'
+    if (!Number.isFinite(amount) || amount <= 0 || formData.montantHT.trim() === '') {
+      nextErrors.montantHT = 'Le montant HT doit être un nombre strictement positif.'
+    }
+    if (selectedElevators.length === 0) {
+      nextErrors.elevatorIds = 'Sélectionnez au moins un équipement couvert.'
     }
     if (!VAT_RATES.includes(taxRate)) {
       nextErrors.tauxTVA = 'Sélectionnez un taux de TVA valide.'
@@ -448,11 +474,23 @@ export default function ContractForm({ contract = null, onClose, onSaved }) {
     }
 
     setErrors(nextErrors)
-    if (nextErrors.clientId || nextErrors.numero || nextErrors.type || nextErrors.dateDebut || nextErrors.dateFin || nextErrors.status) {
+    if (
+      nextErrors.clientId ||
+      nextErrors.numero ||
+      nextErrors.type ||
+      nextErrors.dateDebut ||
+      nextErrors.dateFin ||
+      nextErrors.status
+    ) {
       setActiveTab('general')
     } else if (nextErrors.elevatorIds) {
       setActiveTab('equipment')
-    } else if (nextErrors.montantHT || nextErrors.tauxTVA || nextErrors.frequenceFacturation || nextErrors.clauses) {
+    } else if (
+      nextErrors.montantHT ||
+      nextErrors.tauxTVA ||
+      nextErrors.frequenceFacturation ||
+      nextErrors.clauses
+    ) {
       setActiveTab('finance')
     }
 
@@ -719,7 +757,7 @@ export default function ContractForm({ contract = null, onClose, onSaved }) {
                   onChange={handleChange}
                   required
                   type="date"
-                  min={formData.dateDebut || undefined}
+                  min={getNextDateInputValue(formData.dateDebut)}
                   value={formData.dateFin}
                   disabled={isSaving}
                 />
@@ -856,7 +894,7 @@ export default function ContractForm({ contract = null, onClose, onSaved }) {
                   onChange={handleChange}
                   placeholder="0.00"
                   required
-                  min="0"
+                  min="0.01"
                   step="0.01"
                   type="number"
                   value={formData.montantHT}

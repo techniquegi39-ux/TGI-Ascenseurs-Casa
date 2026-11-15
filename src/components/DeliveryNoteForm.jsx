@@ -16,7 +16,7 @@ import {
 import {
   collection,
   doc,
-  getDocs,
+  onSnapshot,
   runTransaction,
   serverTimestamp,
 } from 'firebase/firestore'
@@ -144,6 +144,89 @@ function getInitialFormData(deliveryNote) {
   }
 }
 
+function getDeliveryNoteValidationErrors(
+  formData,
+  clients,
+  inventoryById,
+  availableByInventoryId,
+) {
+  const nextErrors = {}
+  if (!clients.some((client) => client.id === formData.clientId)) {
+    nextErrors.clientId = 'Sélectionnez un client valide.'
+  }
+  if (!formData.dateLivraison) {
+    nextErrors.dateLivraison = 'La date de livraison est obligatoire.'
+  }
+  if (!DELIVERY_NOTE_STATUSES.includes(formData.status)) {
+    nextErrors.status = 'Sélectionnez un statut valide.'
+  }
+  if (formData.referenceDocument.trim().length > 120) {
+    nextErrors.referenceDocument = 'La référence ne doit pas dépasser 120 caractères.'
+  }
+
+  const lineErrors = formData.items.map((line, index) => {
+    const lineError = {}
+    const quantity = Number(line.quantity)
+    const hasValidQuantity =
+      line.quantity.trim() !== '' &&
+      Number.isInteger(quantity) &&
+      quantity > 0 &&
+      quantity <= 1000000
+
+    if (!line.inventoryItemId || !inventoryById.has(line.inventoryItemId)) {
+      lineError.inventoryItemId = `Sélectionnez un article du stock pour la ligne ${index + 1}.`
+    }
+    if (!hasValidQuantity) {
+      lineError.quantity = 'La quantité livrée doit être un entier supérieur à zéro.'
+    }
+
+    if (line.inventoryItemId && inventoryById.has(line.inventoryItemId)) {
+      const availableQuantity = availableByInventoryId.get(line.inventoryItemId)
+      if (availableQuantity === undefined) {
+        lineError.quantity = 'La quantité en stock de cet article est invalide.'
+      } else if (hasValidQuantity) {
+        const quantityInOtherLines = formData.items.reduce((sum, otherLine) => {
+          if (
+            otherLine.id === line.id ||
+            otherLine.inventoryItemId !== line.inventoryItemId
+          ) {
+            return sum
+          }
+          const otherQuantity = Number(otherLine.quantity)
+          return Number.isInteger(otherQuantity) && otherQuantity > 0
+            ? sum + otherQuantity
+            : sum
+        }, 0)
+        const maximumQuantity = Math.max(0, availableQuantity - quantityInOtherLines)
+        if (quantity > maximumQuantity) {
+          lineError.quantity = `Stock insuffisant. Maximum : ${maximumQuantity}.`
+        }
+      }
+    }
+
+    return lineError
+  })
+
+  if (formData.items.length === 0) {
+    nextErrors.items = [{ inventoryItemId: 'Ajoutez au moins une ligne de livraison.' }]
+  } else if (lineErrors.some((lineError) => Object.keys(lineError).length > 0)) {
+    nextErrors.items = lineErrors
+  }
+  if (!formData.livreur.trim()) {
+    nextErrors.livreur = 'Le nom du livreur ou technicien est obligatoire.'
+  } else if (formData.livreur.trim().length > 120) {
+    nextErrors.livreur = 'Le nom ne doit pas dépasser 120 caractères.'
+  }
+  if (formData.adresseLivraison.trim().length > 500) {
+    nextErrors.adresseLivraison = 'L’adresse ne doit pas dépasser 500 caractères.'
+  }
+  if (formData.notes.trim().length > 3000) {
+    nextErrors.notes = 'Les notes ne doivent pas dépasser 3 000 caractères.'
+  }
+
+  return nextErrors
+}
+
 function TextField({
   id,
   label,
@@ -243,65 +326,75 @@ export default function DeliveryNoteForm({ deliveryNote = null, onClose, onSaved
   const [resourceError, setResourceError] = useState('')
   const [resourceReloadKey, setResourceReloadKey] = useState(0)
   const [activeTab, setActiveTab] = useState('general')
-  const [errors, setErrors] = useState({})
   const [formError, setFormError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
-    let isMounted = true
+    let clientsLoaded = false
+    let inventoryLoaded = false
 
-    async function loadResources() {
-      setIsLoadingResources(true)
-      setResourceError('')
-      try {
-        const [clientsSnapshot, inventorySnapshot] = await Promise.all([
-          getDocs(collection(db, 'clients')),
-          getDocs(collection(db, 'inventory')),
-        ])
-        if (isMounted) {
-          setClients(
-            clientsSnapshot.docs
-              .map((clientDocument) => ({
-                ...clientDocument.data(),
-                id: clientDocument.id,
-              }))
-              .sort((first, second) =>
-                getClientName(first).localeCompare(getClientName(second), 'fr', {
-                  sensitivity: 'base',
-                }),
-              ),
-          )
-          setInventoryItems(
-            inventorySnapshot.docs
-              .map((itemDocument) => ({
-                ...itemDocument.data(),
-                id: itemDocument.id,
-              }))
-              .sort((first, second) =>
-                getInventoryReference(first).localeCompare(getInventoryReference(second), 'fr', {
-                  sensitivity: 'base',
-                }),
-              ),
-          )
-        }
-      } catch (error) {
-        if (isMounted) {
-          setResourceError(
-            error instanceof Error
-              ? error.message
-              : 'Impossible de charger les clients et les articles du stock.',
-          )
-        }
-      } finally {
-        if (isMounted) {
+    const unsubscribeClients = onSnapshot(
+      collection(db, 'clients'),
+      (snapshot) => {
+        setClients(
+          snapshot.docs
+            .map((clientDocument) => ({
+              ...clientDocument.data(),
+              id: clientDocument.id,
+            }))
+            .sort((first, second) =>
+              getClientName(first).localeCompare(getClientName(second), 'fr', {
+                sensitivity: 'base',
+              }),
+            ),
+        )
+        clientsLoaded = true
+        if (inventoryLoaded) {
           setIsLoadingResources(false)
         }
-      }
-    }
+      },
+      (error) => {
+        setResourceError(
+          error instanceof Error
+            ? error.message
+            : 'Impossible de charger la liste des clients.',
+        )
+        setIsLoadingResources(false)
+      },
+    )
+    const unsubscribeInventory = onSnapshot(
+      collection(db, 'inventory'),
+      (snapshot) => {
+        setInventoryItems(
+          snapshot.docs
+            .map((itemDocument) => ({
+              ...itemDocument.data(),
+              id: itemDocument.id,
+            }))
+            .sort((first, second) =>
+              getInventoryReference(first).localeCompare(getInventoryReference(second), 'fr', {
+                sensitivity: 'base',
+              }),
+            ),
+        )
+        inventoryLoaded = true
+        if (clientsLoaded) {
+          setIsLoadingResources(false)
+        }
+      },
+      (error) => {
+        setResourceError(
+          error instanceof Error
+            ? error.message
+            : 'Impossible de charger les articles du stock.',
+        )
+        setIsLoadingResources(false)
+      },
+    )
 
-    void loadResources()
     return () => {
-      isMounted = false
+      unsubscribeClients()
+      unsubscribeInventory()
     }
   }, [resourceReloadKey])
 
@@ -332,6 +425,16 @@ export default function DeliveryNoteForm({ deliveryNote = null, onClose, onSaved
     }
     return availability
   }, [inventoryItems, previouslyDeliveredQuantities])
+  const errors = useMemo(
+    () =>
+      getDeliveryNoteValidationErrors(
+        formData,
+        clients,
+        inventoryById,
+        availableByInventoryId,
+      ),
+    [availableByInventoryId, clients, formData, inventoryById],
+  )
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -352,14 +455,6 @@ export default function DeliveryNoteForm({ deliveryNote = null, onClose, onSaved
           }
         : {}),
     }))
-    setErrors((previous) => {
-      if (!previous[name]) {
-        return previous
-      }
-      const nextErrors = { ...previous }
-      delete nextErrors[name]
-      return nextErrors
-    })
     setFormError('')
   }
 
@@ -382,7 +477,6 @@ export default function DeliveryNoteForm({ deliveryNote = null, onClose, onSaved
         return { ...line, [field]: value }
       }),
     }))
-    setErrors((previous) => (previous.items ? { ...previous, items: null } : previous))
     setFormError('')
   }
 
@@ -396,7 +490,6 @@ export default function DeliveryNoteForm({ deliveryNote = null, onClose, onSaved
       ...previous,
       items: previous.items.filter((line) => line.id !== lineId),
     }))
-    setErrors((previous) => ({ ...previous, items: null }))
   }
 
   function getAvailableQuantity(itemId) {
@@ -404,89 +497,14 @@ export default function DeliveryNoteForm({ deliveryNote = null, onClose, onSaved
   }
 
   function validate() {
-    const nextErrors = {}
-    if (!clients.some((client) => client.id === formData.clientId)) {
-      nextErrors.clientId = 'Sélectionnez un client valide.'
-    }
-    if (!formData.dateLivraison) {
-      nextErrors.dateLivraison = 'La date de livraison est obligatoire.'
-    }
-    if (!DELIVERY_NOTE_STATUSES.includes(formData.status)) {
-      nextErrors.status = 'Sélectionnez un statut valide.'
-    }
-    if (formData.referenceDocument.trim().length > 120) {
-      nextErrors.referenceDocument = 'La référence ne doit pas dépasser 120 caractères.'
-    }
-
-    const aggregateQuantities = new Map()
-    const lineErrors = formData.items.map((line, index) => {
-      const lineError = {}
-      const quantity = Number(line.quantity)
-      if (!line.inventoryItemId || !inventoryById.has(line.inventoryItemId)) {
-        lineError.inventoryItemId = `Sélectionnez un article du stock pour la ligne ${index + 1}.`
-      }
-      if (
-        line.quantity.trim() === '' ||
-        !Number.isInteger(quantity) ||
-        quantity <= 0 ||
-        quantity > 1000000
-      ) {
-        lineError.quantity = 'La quantité livrée doit être un entier supérieur à zéro.'
-      }
-      if (line.inventoryItemId && Number.isInteger(quantity) && quantity > 0) {
-        aggregateQuantities.set(
-          line.inventoryItemId,
-          (aggregateQuantities.get(line.inventoryItemId) || 0) + quantity,
-        )
-      }
-      return lineError
-    })
-
-    for (const [itemId, requestedQuantity] of aggregateQuantities) {
-      const availableQuantity = getAvailableQuantity(itemId)
-      if (availableQuantity === null) {
-        const firstLineIndex = formData.items.findIndex((line) => line.inventoryItemId === itemId)
-        if (firstLineIndex >= 0) {
-          lineErrors[firstLineIndex].quantity =
-            'La quantité en stock de cet article est invalide.'
-        }
-      } else if (requestedQuantity > availableQuantity) {
-        let reported = false
-        formData.items.forEach((line, index) => {
-          if (line.inventoryItemId === itemId && !reported) {
-            lineErrors[index].quantity = `Quantité totale supérieure au disponible (${availableQuantity}).`
-            reported = true
-          }
-        })
-      }
-    }
-
-    if (formData.items.length === 0) {
-      nextErrors.items = [{ inventoryItemId: 'Ajoutez au moins une ligne de livraison.' }]
-    } else if (lineErrors.some((lineError) => Object.keys(lineError).length > 0)) {
-      nextErrors.items = lineErrors
-    }
-    if (!formData.livreur.trim()) {
-      nextErrors.livreur = 'Le nom du livreur ou technicien est obligatoire.'
-    } else if (formData.livreur.trim().length > 120) {
-      nextErrors.livreur = 'Le nom ne doit pas dépasser 120 caractères.'
-    }
-    if (formData.adresseLivraison.trim().length > 500) {
-      nextErrors.adresseLivraison = 'L’adresse ne doit pas dépasser 500 caractères.'
-    }
-    if (formData.notes.trim().length > 3000) {
-      nextErrors.notes = 'Les notes ne doivent pas dépasser 3 000 caractères.'
-    }
-
-    setErrors(nextErrors)
-    if (nextErrors.clientId || nextErrors.dateLivraison || nextErrors.status) {
+    if (errors.clientId || errors.dateLivraison || errors.status) {
       setActiveTab('general')
-    } else if (nextErrors.items) {
+    } else if (errors.items) {
       setActiveTab('items')
-    } else if (nextErrors.livreur || nextErrors.adresseLivraison || nextErrors.notes) {
+    } else if (errors.livreur || errors.adresseLivraison || errors.notes) {
       setActiveTab('signature')
     }
-    return Object.keys(nextErrors).length === 0
+    return Object.keys(errors).length === 0
   }
 
   async function handleSubmit(event) {
@@ -649,6 +667,7 @@ export default function DeliveryNoteForm({ deliveryNote = null, onClose, onSaved
   }
 
   function retryResources() {
+    setIsLoadingResources(true)
     setResourceError('')
     setResourceReloadKey((key) => key + 1)
   }
@@ -662,6 +681,21 @@ export default function DeliveryNoteForm({ deliveryNote = null, onClose, onSaved
   const firstItemError = Array.isArray(errors.items)
     ? errors.items.find((lineError) => Object.keys(lineError).length > 0)
     : null
+  const firstValidationMessage =
+    errors.clientId ||
+    errors.dateLivraison ||
+    errors.status ||
+    errors.referenceDocument ||
+    firstItemError?.inventoryItemId ||
+    firstItemError?.quantity ||
+    errors.livreur ||
+    errors.adresseLivraison ||
+    errors.notes
+  const validationTab = errors.clientId || errors.dateLivraison || errors.status
+    ? 'general'
+    : errors.items
+      ? 'items'
+      : 'signature'
 
   return (
     <div
@@ -724,6 +758,24 @@ export default function DeliveryNoteForm({ deliveryNote = null, onClose, onSaved
 
         <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit} noValidate>
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-7">
+            {!isLoadingResources && !resourceError && firstValidationMessage && (
+              <div
+                className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+                role="alert"
+              >
+                <span className="flex min-w-0 items-start gap-2">
+                  <AlertCircle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{firstValidationMessage}</span>
+                </span>
+                <button
+                  className="shrink-0 font-semibold underline underline-offset-2"
+                  onClick={() => setActiveTab(validationTab)}
+                  type="button"
+                >
+                  Afficher l’erreur
+                </button>
+              </div>
+            )}
             <section
               aria-labelledby="delivery-note-tab-general"
               className={activeTab === 'general' ? 'space-y-5' : 'hidden'}
@@ -870,7 +922,7 @@ export default function DeliveryNoteForm({ deliveryNote = null, onClose, onSaved
                 <div>
                   <h3 className="font-semibold text-slate-900">Articles livrés</h3>
                   <p className="mt-1 text-xs text-slate-500">
-                    Le stock disponible est contrôlé à l’enregistrement du BL.
+                    Le stock disponible est actualisé en direct et contrôlé avant l’enregistrement.
                   </p>
                 </div>
                 <button
@@ -1182,7 +1234,12 @@ export default function DeliveryNoteForm({ deliveryNote = null, onClose, onSaved
               ) : (
                 <button
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-800 px-4 text-sm font-semibold text-white transition hover:bg-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-700/20 disabled:cursor-not-allowed disabled:opacity-60"
-                  disabled={isSaving || isLoadingResources || Boolean(resourceError)}
+                  disabled={
+                    isSaving ||
+                    isLoadingResources ||
+                    Boolean(resourceError) ||
+                    Object.keys(errors).length > 0
+                  }
                   type="submit"
                 >
                   {isSaving ? (

@@ -268,6 +268,7 @@ export default function Collections() {
   const [invoices, setInvoices] = useState([])
   const [clients, setClients] = useState([])
   const [search, setSearch] = useState('')
+  const [clientSearch, setClientSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('open')
   const [isLoadingInvoices, setIsLoadingInvoices] = useState(true)
   const [isLoadingClients, setIsLoadingClients] = useState(true)
@@ -347,6 +348,7 @@ export default function Collections() {
 
   const filteredInvoices = useMemo(() => {
     const queryText = normalizeSearch(search)
+    const clientQuery = normalizeSearch(clientSearch)
     return invoiceRows
       .filter((invoice) => {
         if (statusFilter === 'open' && !['Validée / Non Payée', 'Paiement Partiel'].includes(invoice.status)) {
@@ -367,12 +369,10 @@ export default function Collections() {
         if (statusFilter === 'cancelled' && invoice.status !== 'Annulée') {
           return false
         }
-        if (!queryText) {
-          return true
+        if (queryText && !normalizeSearch(invoice.number).includes(queryText)) {
+          return false
         }
-        return [invoice.number, invoice.clientName].some((value) =>
-          normalizeSearch(value).includes(queryText),
-        )
+        return !clientQuery || normalizeSearch(invoice.clientName).includes(clientQuery)
       })
       .sort((first, second) => {
         const firstDate = getDateValue(
@@ -383,7 +383,7 @@ export default function Collections() {
         )?.getTime() || 0
         return secondDate - firstDate
       })
-  }, [invoiceRows, search, statusFilter])
+  }, [clientSearch, invoiceRows, search, statusFilter])
 
   const openInvoices = invoiceRows.filter((invoice) =>
     ['Validée / Non Payée', 'Paiement Partiel'].includes(invoice.status),
@@ -494,9 +494,9 @@ export default function Collections() {
               {statusFilter === 'open' ? ' · factures ouvertes par défaut' : ''}
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-[minmax(220px,1fr)_230px]">
+          <div className="grid gap-3 sm:grid-cols-[minmax(170px,1fr)_minmax(170px,1fr)_230px]">
             <label className="relative block">
-              <span className="sr-only">Rechercher une facture ou un client</span>
+              <span className="sr-only">Rechercher par numéro de facture</span>
               <Search
                 aria-hidden="true"
                 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
@@ -504,9 +504,23 @@ export default function Collections() {
               <input
                 className="h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="N° facture ou client..."
+                placeholder="N° facture..."
                 type="search"
                 value={search}
+              />
+            </label>
+            <label className="relative block">
+              <span className="sr-only">Rechercher rapidement par client</span>
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                className="h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+                onChange={(event) => setClientSearch(event.target.value)}
+                placeholder="Nom du client..."
+                type="search"
+                value={clientSearch}
               />
             </label>
             <label>
@@ -542,7 +556,7 @@ export default function Collections() {
             <p className="mt-1 max-w-md text-sm leading-6 text-slate-500">
               {invoiceError
                 ? 'Vérifiez votre connexion ou vos autorisations Firestore, puis réessayez.'
-                : search
+                : search || clientSearch
                   ? 'Aucune facture ne correspond à votre recherche.'
                   : statusFilter === 'open'
                     ? 'Aucune facture validée en attente de règlement ou avec un paiement partiel.'
@@ -551,13 +565,13 @@ export default function Collections() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[950px] border-collapse text-left">
+            <table className="w-full min-w-[1050px] border-collapse text-left">
               <thead>
                 <tr className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   <th className="px-5 py-3.5">N° Facture</th>
                   <th className="px-5 py-3.5">Client</th>
                   <th className="px-5 py-3.5 text-right">Total TTC</th>
-                  <th className="px-5 py-3.5 text-right">Montant payé</th>
+                  <th className="px-5 py-3.5 text-right">Progression</th>
                   <th className="px-5 py-3.5 text-right">Reste à payer</th>
                   <th className="px-5 py-3.5">Statut</th>
                   <th className="px-5 py-3.5 text-right">Action</th>
@@ -577,6 +591,16 @@ export default function Collections() {
                     todayStart > 0 &&
                     new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate()).getTime() <
                       todayStart
+                  const paidPercent =
+                    invoice.totalTTC > 0
+                      ? Math.min(100, Math.max(0, (invoice.amountPaid / invoice.totalTTC) * 100))
+                      : 0
+                  const progressColor =
+                    paidPercent >= 100
+                      ? 'bg-emerald-500'
+                      : paidPercent > 0
+                        ? 'bg-blue-600'
+                        : 'bg-slate-300'
 
                   return (
                     <tr className="transition hover:bg-slate-50/80" key={invoice.id}>
@@ -596,8 +620,25 @@ export default function Collections() {
                       <td className="whitespace-nowrap px-5 py-4 text-right text-sm tabular-nums text-slate-700">
                         {formatCurrency(invoice.totalTTC)}
                       </td>
-                      <td className="whitespace-nowrap px-5 py-4 text-right text-sm tabular-nums text-slate-700">
-                        {formatCurrency(invoice.amountPaid)}
+                      <td className="px-5 py-4">
+                        <div className="flex items-center justify-end gap-3">
+                          <div
+                            aria-label={`Montant payé : ${paidPercent.toFixed(0)} %`}
+                            aria-valuemax={100}
+                            aria-valuemin={0}
+                            aria-valuenow={paidPercent}
+                            className="h-2.5 w-28 overflow-hidden rounded-full bg-slate-100"
+                            role="progressbar"
+                          >
+                            <div
+                              className={`h-full rounded-full transition-[width] duration-500 ${progressColor}`}
+                              style={{ width: `${paidPercent}%` }}
+                            />
+                          </div>
+                          <span className="w-10 text-right text-xs font-semibold tabular-nums text-slate-700">
+                            {paidPercent.toFixed(0)}%
+                          </span>
+                        </div>
                       </td>
                       <td className="whitespace-nowrap px-5 py-4 text-right">
                         <span

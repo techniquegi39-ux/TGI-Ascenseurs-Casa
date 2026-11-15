@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
+  ArrowUpDown,
   Building2,
   Download,
   LoaderCircle,
@@ -29,6 +30,19 @@ function getClientType(client) {
 
 function getClientCity(client) {
   return String(client.ville || client.city || '—')
+}
+
+function getClientIce(client) {
+  return String(client.ice || client.identifiantFiscal || '—')
+}
+
+function getClientInitials(client) {
+  const words = getClientName(client).trim().split(/\s+/).filter(Boolean)
+  const initials = words.length > 1
+    ? `${words[0][0]}${words[1][0]}`
+    : words[0]?.slice(0, 2) || 'CL'
+
+  return initials.toLocaleUpperCase('fr-FR')
 }
 
 function isClientActive(client) {
@@ -111,6 +125,7 @@ function ClientStatus({ active }) {
 export default function Clients() {
   const [clients, setClients] = useState([])
   const [search, setSearch] = useState('')
+  const [sortConfig, setSortConfig] = useState({ key: 'nom', direction: 'asc' })
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [modalClient, setModalClient] = useState(undefined)
@@ -164,18 +179,30 @@ export default function Clients() {
         const phoneMatches = phoneQuery.length > 0 && clientPhoneDigits.includes(phoneQuery)
         return nameMatches || phoneMatches
       })
-      .sort((first, second) =>
-        getClientName(first).localeCompare(getClientName(second), 'fr', {
+      .sort((first, second) => {
+        const getValue = sortConfig.key === 'type' ? getClientType : getClientName
+        const order = getValue(first).localeCompare(getValue(second), 'fr', {
           sensitivity: 'base',
-        }),
-      )
-  }, [clients, search])
+          numeric: true,
+        })
+
+        return sortConfig.direction === 'asc' ? order : -order
+      })
+  }, [clients, search, sortConfig])
 
   const activeCount = clients.filter(isClientActive).length
   const inactiveCount = clients.length - activeCount
 
   function showToast(type, message) {
     setToast({ type, message })
+  }
+
+  function handleSort(key) {
+    setSortConfig((previous) => ({
+      key,
+      direction:
+        previous.key === key && previous.direction === 'asc' ? 'desc' : 'asc',
+    }))
   }
 
   function handleSaved(action) {
@@ -363,23 +390,49 @@ export default function Clients() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] border-collapse text-left">
+            <table className="w-full min-w-[1000px] border-collapse text-left">
               <thead className="bg-slate-50/80">
                 <tr className="border-b border-slate-200">
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    ID / Réf
+                  <th
+                    aria-sort={sortConfig.key === 'nom'
+                      ? sortConfig.direction === 'asc' ? 'ascending' : 'descending'
+                      : 'none'}
+                    className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    <button
+                      aria-label={`Trier par nom ${sortConfig.key === 'nom' && sortConfig.direction === 'asc' ? 'décroissant' : 'croissant'}`}
+                      className="inline-flex items-center gap-2 text-left transition hover:text-blue-700 focus:outline-none focus:text-blue-700"
+                      onClick={() => handleSort('nom')}
+                      type="button"
+                    >
+                      Nom / Raison sociale
+                      <ArrowUpDown aria-hidden="true" className="h-3.5 w-3.5" />
+                    </button>
                   </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Nom / Raison sociale
-                  </th>
-                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Type
+                  <th
+                    aria-sort={sortConfig.key === 'type'
+                      ? sortConfig.direction === 'asc' ? 'ascending' : 'descending'
+                      : 'none'}
+                    className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    <button
+                      aria-label={`Trier par type ${sortConfig.key === 'type' && sortConfig.direction === 'asc' ? 'décroissant' : 'croissant'}`}
+                      className="inline-flex items-center gap-2 text-left transition hover:text-blue-700 focus:outline-none focus:text-blue-700"
+                      onClick={() => handleSort('type')}
+                      type="button"
+                    >
+                      Type
+                      <ArrowUpDown aria-hidden="true" className="h-3.5 w-3.5" />
+                    </button>
                   </th>
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Téléphone
                   </th>
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Ville
+                  </th>
+                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    ICE
                   </th>
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Statut
@@ -396,20 +449,25 @@ export default function Clients() {
 
                   return (
                     <tr className="transition hover:bg-slate-50/70" key={client.id}>
-                      <td className="whitespace-nowrap px-5 py-4">
-                        <span className="font-mono text-xs font-semibold text-slate-500">
-                          {getClientReference(client)}
-                        </span>
-                      </td>
                       <td className="px-5 py-4">
-                        <span className="block max-w-xs truncate text-sm font-semibold text-slate-900">
-                          {getClientName(client)}
-                        </span>
-                        {client.email && (
-                          <span className="mt-1 block max-w-xs truncate text-xs text-slate-500">
-                            {String(client.email)}
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span
+                            aria-hidden="true"
+                            className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-blue-50 text-xs font-bold text-blue-800 ring-1 ring-inset ring-blue-700/10"
+                          >
+                            {getClientInitials(client)}
                           </span>
-                        )}
+                          <div className="min-w-0">
+                            <span className="block max-w-xs truncate text-sm font-semibold text-slate-900">
+                              {getClientName(client)}
+                            </span>
+                            {client.email && (
+                              <span className="mt-1 block max-w-xs truncate text-xs text-slate-500">
+                                {String(client.email)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </td>
                       <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-600">
                         {getClientType(client)}
@@ -419,6 +477,9 @@ export default function Clients() {
                       </td>
                       <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-600">
                         {getClientCity(client)}
+                      </td>
+                      <td className="whitespace-nowrap px-5 py-4 font-mono text-xs text-slate-600">
+                        {getClientIce(client)}
                       </td>
                       <td className="whitespace-nowrap px-5 py-4">
                         <ClientStatus active={active} />

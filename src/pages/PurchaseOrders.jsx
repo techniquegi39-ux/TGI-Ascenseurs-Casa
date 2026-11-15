@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
+  AlertTriangle,
+  ArrowUpDown,
   Download,
   LoaderCircle,
   Pencil,
@@ -31,6 +33,15 @@ function getOrderNumber(order) {
 
 function getSupplierName(order) {
   return String(order.fournisseur || order.supplierName || order.supplier || 'Fournisseur non renseigné')
+}
+
+function getExpectedDeliveryDate(order) {
+  return (
+    order.dateLivraisonPrevue ||
+    order.expectedDeliveryDate ||
+    order.expectedDelivery ||
+    order.deliveryDate
+  )
 }
 
 function getDateValue(value) {
@@ -134,16 +145,40 @@ function getOrderStatus(order) {
   if (normalized.includes('brouillon') || normalized.includes('draft')) {
     return 'Brouillon'
   }
+  if (normalized.includes('annul') || normalized.includes('cancel')) {
+    return 'Annulé'
+  }
+  if (
+    normalized.includes('attente') ||
+    normalized.includes('pending') ||
+    normalized.includes('awaiting') ||
+    normalized.includes('non reception') ||
+    normalized.includes('receptionner') ||
+    normalized.includes('en cours de reception') ||
+    normalized.includes('reception en cours')
+  ) {
+    return 'Envoyé au fournisseur'
+  }
   if (normalized.includes('envoy') || normalized.includes('sent')) {
     return 'Envoyé au fournisseur'
   }
   if (normalized.includes('reception') || normalized.includes('received')) {
     return 'Réceptionné'
   }
-  if (normalized.includes('annul') || normalized.includes('cancel')) {
-    return 'Annulé'
-  }
   return rawStatus
+}
+
+function isAwaitingReceipt(order) {
+  const status = normalizeSearch(getOrderStatus(order))
+  return [
+    'envoy',
+    'attente',
+    'pending',
+    'sent',
+    'awaiting',
+    'en cours',
+    'transit',
+  ].some((term) => status.includes(term))
 }
 
 function formatCurrency(value) {
@@ -159,6 +194,33 @@ function normalizeSearch(value) {
     .replace(/[\u0300-\u036f]/g, '')
     .toLocaleLowerCase('fr-MA')
     .trim()
+}
+
+function SortableHeader({ field, label, sortBy, sortDirection, onSort, alignRight = false }) {
+  const isActive = sortBy === field
+
+  return (
+    <th
+      aria-sort={isActive ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+      className={`px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500 ${
+        alignRight ? 'text-right' : 'text-left'
+      }`}
+    >
+      <button
+        className={`inline-flex items-center gap-1.5 transition hover:text-blue-800 ${
+          alignRight ? 'justify-end' : ''
+        }`}
+        onClick={() => onSort(field)}
+        type="button"
+      >
+        {label}
+        <ArrowUpDown
+          aria-hidden="true"
+          className={`h-3.5 w-3.5 ${isActive ? 'text-blue-700' : 'text-slate-400'}`}
+        />
+      </button>
+    </th>
+  )
 }
 
 function StatusBadge({ status }) {
@@ -243,6 +305,8 @@ export default function PurchaseOrders() {
   const [purchaseOrders, setPurchaseOrders] = useState([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('Tous')
+  const [sortBy, setSortBy] = useState('orderDate')
+  const [sortDirection, setSortDirection] = useState('desc')
   const [isLoading, setIsLoading] = useState(true)
   const [orderError, setOrderError] = useState('')
   const [modalOrder, setModalOrder] = useState(undefined)
@@ -295,15 +359,36 @@ export default function PurchaseOrders() {
         )
       })
       .sort((first, second) => {
-        const firstDate = getDateValue(
-          first.dateCommande || first.orderDate || first.date,
-        )?.getTime() || 0
-        const secondDate = getDateValue(
-          second.dateCommande || second.orderDate || second.date,
-        )?.getTime() || 0
-        return secondDate - firstDate
+        const direction = sortDirection === 'asc' ? 1 : -1
+        let comparison
+
+        if (sortBy === 'totalTTC') {
+          comparison = getOrderTotals(first).totalTTC - getOrderTotals(second).totalTTC
+        } else if (sortBy === 'deliveryDate') {
+          const firstDate = getDateValue(getExpectedDeliveryDate(first))?.getTime() || 0
+          const secondDate = getDateValue(getExpectedDeliveryDate(second))?.getTime() || 0
+          comparison = firstDate - secondDate
+        } else {
+          const firstDate = getDateValue(
+            first.dateCommande || first.orderDate || first.date,
+          )?.getTime() || 0
+          const secondDate = getDateValue(
+            second.dateCommande || second.orderDate || second.date,
+          )?.getTime() || 0
+          comparison = firstDate - secondDate
+        }
+
+        if (comparison === 0) {
+          comparison = getOrderNumber(first).localeCompare(getOrderNumber(second), 'fr', {
+            sensitivity: 'base',
+          })
+        }
+        return comparison * direction
       })
-  }, [purchaseOrders, search, statusFilter])
+  }, [purchaseOrders, search, sortBy, sortDirection, statusFilter])
+
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
 
   const draftCount = purchaseOrders.filter(
     (order) => getOrderStatus(order) === 'Brouillon',
@@ -317,6 +402,15 @@ export default function PurchaseOrders() {
 
   function showToast(type, message) {
     setToast({ type, message })
+  }
+
+  function handleSort(field) {
+    if (sortBy === field) {
+      setSortDirection((previous) => (previous === 'asc' ? 'desc' : 'asc'))
+      return
+    }
+    setSortBy(field)
+    setSortDirection(field === 'orderDate' ? 'desc' : 'asc')
   }
 
   function handleSaved(action) {
@@ -540,7 +634,7 @@ export default function PurchaseOrders() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[890px] border-collapse text-left">
+            <table className="w-full min-w-[1120px] border-collapse text-left">
               <thead className="bg-slate-50/80">
                 <tr className="border-b border-slate-200">
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -552,9 +646,21 @@ export default function PurchaseOrders() {
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Fournisseur
                   </th>
-                  <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Total TTC
-                  </th>
+                  <SortableHeader
+                    field="deliveryDate"
+                    label="Livraison prévue"
+                    onSort={handleSort}
+                    sortBy={sortBy}
+                    sortDirection={sortDirection}
+                  />
+                  <SortableHeader
+                    alignRight
+                    field="totalTTC"
+                    label="Total TTC"
+                    onSort={handleSort}
+                    sortBy={sortBy}
+                    sortDirection={sortDirection}
+                  />
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Statut
                   </th>
@@ -568,6 +674,16 @@ export default function PurchaseOrders() {
                   const number = getOrderNumber(order)
                   const totals = getOrderTotals(order)
                   const isExporting = exportingId === order.id
+                  const expectedDeliveryDate = getExpectedDeliveryDate(order)
+                  const deliveryDay = getDateValue(expectedDeliveryDate)
+                  const isSupplierLate =
+                    isAwaitingReceipt(order) &&
+                    deliveryDay !== null &&
+                    new Date(
+                      deliveryDay.getFullYear(),
+                      deliveryDay.getMonth(),
+                      deliveryDay.getDate(),
+                    ).getTime() < todayStart.getTime()
 
                   return (
                     <tr className="transition hover:bg-slate-50/70" key={order.id}>
@@ -582,6 +698,20 @@ export default function PurchaseOrders() {
                       <td className="px-5 py-4">
                         <span className="block max-w-xs truncate text-sm font-semibold text-slate-900">
                           {getSupplierName(order)}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-600">
+                        <span className="inline-flex items-center gap-1.5">
+                          {formatDate(expectedDeliveryDate)}
+                          {isSupplierLate && (
+                            <span
+                              aria-label="Retard fournisseur : date de livraison dépassée"
+                              className="inline-flex text-red-600"
+                              title="Retard fournisseur : la date de livraison espérée est dépassée."
+                            >
+                              <AlertTriangle aria-hidden="true" className="h-4 w-4" />
+                            </span>
+                          )}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-5 py-4 text-right text-sm font-semibold text-slate-900">
