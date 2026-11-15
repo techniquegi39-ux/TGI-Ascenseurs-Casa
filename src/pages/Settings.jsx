@@ -150,8 +150,8 @@ function AccessDenied() {
         Accès refusé
       </h1>
       <p className="mx-auto mt-2 max-w-md text-center text-sm leading-6 text-slate-500">
-        Cette page est réservée à la direction. Seul le Directeur peut consulter ou modifier les
-        paramètres de l’entreprise.
+        Cette page est réservée à la direction et aux administrateurs. Ils peuvent consulter ou
+        modifier les paramètres de l’entreprise.
       </p>
     </section>
   )
@@ -193,8 +193,10 @@ function FeedbackMessage({ feedback }) {
 }
 
 export default function Settings() {
-  const { userData } = useAuth()
-  const isDirector = userData?.role === 'Directeur'
+  const { currentUser, userData, loading: authLoading } = useAuth()
+  const normalizedRole =
+    typeof userData?.role === 'string' ? userData.role.trim().toLowerCase() : ''
+  const isAuthorized = normalizedRole === 'directeur' || normalizedRole === 'admin'
   const [formData, setFormData] = useState(() => ({ ...DEFAULT_FORM_DATA }))
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -235,14 +237,14 @@ export default function Settings() {
       }
     }
 
-    if (isDirector) {
+    if (isAuthorized) {
       void loadCompanySettings()
     }
 
     return () => {
       isMounted = false
     }
-  }, [isDirector, reloadKey])
+  }, [isAuthorized, reloadKey])
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -331,10 +333,10 @@ export default function Settings() {
     event.preventDefault()
     setFeedback(null)
 
-    if (!isDirector) {
+    if (!isAuthorized) {
       setFeedback({
         type: 'error',
-        message: 'Seul le Directeur peut modifier ces paramètres.',
+        message: 'Seuls le Directeur et les administrateurs peuvent modifier ces paramètres.',
       })
       return
     }
@@ -392,7 +394,11 @@ export default function Settings() {
     }
   }
 
-  if (!isDirector) {
+  if (authLoading || (currentUser && !userData)) {
+    return <LoadingPanel />
+  }
+
+  if (!isAuthorized) {
     return <AccessDenied />
   }
 
@@ -440,7 +446,7 @@ export default function Settings() {
         </div>
         <span className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-800">
           <BadgeCheck aria-hidden="true" className="h-4 w-4" />
-          Accès Directeur
+          Accès Direction
         </span>
       </header>
 
