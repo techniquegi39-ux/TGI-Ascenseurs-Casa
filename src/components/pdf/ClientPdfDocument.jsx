@@ -3,14 +3,18 @@ import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/render
 const NAVY = '#1E3A8A'
 const BORDER = '#E2E8F0'
 const MUTED = '#475569'
-const PALE_BLUE = '#F8FAFC'
+const PALE = '#F8FAFC'
 
 const styles = StyleSheet.create({
+  page: {
+    padding: 0,
+    backgroundColor: '#FFFFFF',
+    color: '#0F172A',
+    fontFamily: 'Helvetica',
+  },
   header: {
     width: '100%',
-    paddingTop: 40,
-    paddingBottom: 40,
-    paddingHorizontal: 40,
+    padding: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -65,7 +69,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   documentMeta: {
-    marginBottom: 18,
+    marginBottom: 4,
     padding: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -88,52 +92,47 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: 'Helvetica-Bold',
   },
-  section: {
-    marginBottom: 16,
-    borderRadius: 4,
-    backgroundColor: PALE_BLUE,
+  sectionHeader: {
+    marginTop: 20,
+    padding: 8,
+    backgroundColor: NAVY,
   },
   sectionTitle: {
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 7,
-    color: NAVY,
-    fontSize: 10,
+    color: '#FFFFFF',
+    fontSize: 9,
     fontFamily: 'Helvetica-Bold',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
-  detailRow: {
-    minHeight: 30,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  row: {
+    padding: 8,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
-  },
-  alternateRow: {
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
     backgroundColor: '#FFFFFF',
   },
-  detailLabel: {
-    width: '36%',
-    paddingRight: 12,
+  alternateRow: {
+    backgroundColor: PALE,
+  },
+  label: {
+    width: '40%',
+    paddingRight: 10,
     color: MUTED,
     fontSize: 9,
-    fontFamily: 'Helvetica-Bold',
   },
-  detailValue: {
-    flexGrow: 1,
-    flexBasis: 0,
-    color: '#1F2937',
-    fontSize: 9,
+  value: {
+    width: '60%',
+    color: '#0F172A',
+    fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
     lineHeight: 1.35,
   },
   footer: {
     position: 'absolute',
+    right: 0,
     bottom: 0,
     left: 0,
-    right: 0,
     paddingTop: 10,
     paddingBottom: 16,
     paddingHorizontal: 40,
@@ -191,30 +190,28 @@ function formatDate(value) {
   }).format(date)
 }
 
+function isClientActive(client) {
+  const status = client.active ?? client.actif ?? client.status ?? client.statut
+
+  if (typeof status === 'boolean') {
+    return status
+  }
+
+  if (typeof status === 'string') {
+    return !['inactif', 'inactive', 'false', 'non'].includes(
+      status.trim().toLocaleLowerCase('fr-FR'),
+    )
+  }
+
+  return true
+}
+
 function getCompanyDetails(companyInfo) {
   return [
     getText(companyInfo, 'address', 'adresse'),
     getText(companyInfo, 'phone', 'telephone', 'téléphone'),
     getText(companyInfo, 'email'),
   ].filter(Boolean)
-}
-
-function getClientStatus(client) {
-  const status = client.active ?? client.actif ?? client.status ?? client.statut
-
-  if (typeof status === 'boolean') {
-    return status ? 'Actif' : 'Inactif'
-  }
-
-  if (typeof status === 'string') {
-    return ['inactif', 'inactive', 'false', 'non'].includes(
-      status.trim().toLocaleLowerCase('fr-FR'),
-    )
-      ? 'Inactif'
-      : 'Actif'
-  }
-
-  return 'Actif'
 }
 
 function getLegalDetails(companyInfo) {
@@ -249,25 +246,34 @@ function getLegalDetails(companyInfo) {
 }
 
 function getClientSections(client) {
-  const address = getText(client, 'adresse', 'address') || '—'
-  const city = getText(client, 'ville', 'city') || '—'
+  const active = isClientActive(client)
 
   return [
     {
-      title: 'Informations générales',
+      title: 'Identité & Contact',
       details: [
         ['Nom / Raison sociale', getText(client, 'nom', 'raisonSociale', 'name') || 'Client sans nom'],
         ['Type de client', getText(client, 'type') || '—'],
         ['ICE / Identifiant fiscal', getText(client, 'ice', 'identifiantFiscal') || '—'],
         ['Téléphone', getText(client, 'telephone', 'téléphone', 'phone') || '—'],
         ['E-mail', getText(client, 'email') || '—'],
-        ['Adresse complète', address],
-        ['Ville', city],
-        ['Statut', getClientStatus(client)],
+        ['Statut', active ? 'Actif' : 'Inactif'],
       ],
     },
     {
-      title: 'Contacts de l’immeuble',
+      title: 'Localisation',
+      details: [
+        ['Adresse complète', getText(client, 'adresse', 'address') || '—'],
+        ['Ville', getText(client, 'ville', 'city') || '—'],
+        [
+          'Google Maps',
+          getText(client, 'googleMapsLink', 'localisationGoogleMaps', 'mapsUrl') || '—',
+        ],
+        ['Coordonnées GPS', getText(client, 'coordonneesGPS', 'gpsCoordinates') || '—'],
+      ],
+    },
+    {
+      title: 'Gestion de l’Immeuble',
       details: [
         ['Syndic', getText(client, 'syndicNom', 'nomSyndic', 'syndicName') || '—'],
         [
@@ -277,18 +283,14 @@ function getClientSections(client) {
         ['Concierge', getText(client, 'conciergeNom', 'nomConcierge', 'conciergeName') || '—'],
         [
           'Téléphone du concierge',
-          getText(client, 'conciergeTelephone', 'telephoneConcierge', 'conciergePhone') || '—',
+          getText(client, 'conciergeTelephone', 'telephoneConcierge', 'conciergePhone') ||
+            '—',
         ],
       ],
     },
     {
-      title: 'Localisation & conditions financières',
+      title: 'Conditions Financières',
       details: [
-        [
-          'Google Maps',
-          getText(client, 'googleMapsLink', 'localisationGoogleMaps', 'mapsUrl') || '—',
-        ],
-        ['Coordonnées GPS', getText(client, 'coordonneesGPS', 'gpsCoordinates') || '—'],
         [
           'Mode de paiement préféré',
           getText(client, 'modePaiementPrefere', 'preferredPaymentMethod') || '—',
@@ -302,7 +304,11 @@ function getClientSections(client) {
   ]
 }
 
-export default function ClientPdfDocument({ client = {}, companyInfo = {}, generatedAt = new Date() }) {
+export default function ClientPdfDocument({
+  client = {},
+  companyInfo = {},
+  generatedAt = new Date(),
+}) {
   const companyName = getText(companyInfo, 'name', 'nom') || 'TGI ASCENSEURS CASA'
   const companyDetails = getCompanyDetails(companyInfo)
   const legalDetails = getLegalDetails(companyInfo)
@@ -318,7 +324,7 @@ export default function ClientPdfDocument({ client = {}, companyInfo = {}, gener
       subject={`Fiche client ${clientReference}`}
       title={`Fiche client ${clientName}`}
     >
-      <Page size="A4" style={{ padding: 0, backgroundColor: '#FFFFFF' }} wrap>
+      <Page size="A4" style={styles.page} wrap>
         <View style={styles.header}>
           <View style={styles.headerIdentity}>
             <View style={styles.logoFrame}>
@@ -346,7 +352,9 @@ export default function ClientPdfDocument({ client = {}, companyInfo = {}, gener
               <Text style={styles.metaValue}>{clientName}</Text>
             </View>
             <View style={[styles.metaItem, { alignItems: 'flex-end' }]}>
-              <Text style={[styles.metaLabel, { textAlign: 'right' }]}>Référence · Date d’édition</Text>
+              <Text style={[styles.metaLabel, { textAlign: 'right' }]}>
+                Référence · Date d’édition
+              </Text>
               <Text style={[styles.metaValue, { textAlign: 'right' }]}>
                 {clientReference} · {formatDate(generatedAt)}
               </Text>
@@ -354,15 +362,17 @@ export default function ClientPdfDocument({ client = {}, companyInfo = {}, gener
           </View>
 
           {sections.map((section) => (
-            <View key={section.title} style={styles.section}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
+            <View key={section.title}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>{section.title}</Text>
+              </View>
               {section.details.map(([label, value], index) => (
                 <View
                   key={label}
-                  style={[styles.detailRow, index % 2 === 1 && styles.alternateRow]}
+                  style={[styles.row, index % 2 === 1 && styles.alternateRow]}
                 >
-                  <Text style={styles.detailLabel}>{label}</Text>
-                  <Text style={styles.detailValue}>{value}</Text>
+                  <Text style={styles.label}>{label}</Text>
+                  <Text style={styles.value}>{value}</Text>
                 </View>
               ))}
             </View>
