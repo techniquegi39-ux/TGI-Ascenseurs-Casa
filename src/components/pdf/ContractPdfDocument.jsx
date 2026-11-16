@@ -1,108 +1,128 @@
 import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 
 const NAVY = '#1E3A8A'
-const STEEL_BLUE = '#1E3A8A'
 const BORDER = '#E2E8F0'
 const MUTED = '#475569'
-const PALE_BLUE = '#F8FAFC'
-const PALE_GRAY = '#F8FAFC'
+const PALE_GRAY = '#F3F4F6'
 
 const styles = StyleSheet.create({
-  page: {
-    paddingTop: 164,
-    paddingRight: 38,
-    paddingBottom: 92,
-    paddingLeft: 38,
-    backgroundColor: '#FFFFFF',
-    color: '#1E293B',
-    fontFamily: 'Helvetica',
-    fontSize: 9,
-  },
   header: {
-    position: 'absolute',
-    top: 24,
-    right: 38,
-    left: 38,
-    height: 66,
+    width: '100%',
+    paddingTop: 40,
+    paddingBottom: 40,
+    paddingHorizontal: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: 10,
-    borderBottomWidth: 1.5,
-    borderBottomColor: STEEL_BLUE,
+    backgroundColor: NAVY,
+  },
+  headerIdentity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoFrame: {
+    width: 82,
+    height: 70,
+    padding: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
   },
   logo: {
-    width: 76,
+    width: 72,
     height: 60,
     objectFit: 'contain',
   },
+  documentTitle: {
+    maxWidth: 220,
+    marginLeft: 16,
+    color: '#FFFFFF',
+    fontSize: 21,
+    fontFamily: 'Helvetica-Bold',
+  },
   companyBlock: {
-    flexGrow: 1,
+    width: '47%',
     alignItems: 'flex-end',
-    marginLeft: 18,
   },
   companyName: {
     marginBottom: 3,
-    color: NAVY,
-    fontSize: 15,
+    color: '#FFFFFF',
+    opacity: 0.9,
+    fontSize: 12,
     fontFamily: 'Helvetica-Bold',
+    textAlign: 'right',
   },
   companyDetail: {
     marginTop: 2,
-    color: MUTED,
+    color: '#FFFFFF',
+    opacity: 0.9,
     fontSize: 8,
     textAlign: 'right',
   },
-  titleBlock: {
-    position: 'absolute',
-    top: 104,
-    right: 38,
-    left: 38,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+  content: {
+    paddingBottom: 120,
   },
-  title: {
-    color: NAVY,
-    fontSize: 17,
+  contractMeta: {
+    marginTop: 30,
+    paddingHorizontal: 40,
+  },
+  contractMetaCard: {
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 4,
+  },
+  contractMetaItem: {
+    width: '32%',
+  },
+  contractMetaLabel: {
+    marginBottom: 4,
+    color: MUTED,
+    fontSize: 8,
     fontFamily: 'Helvetica-Bold',
-    letterSpacing: 0.35,
+    textTransform: 'uppercase',
   },
   intro: {
-    marginBottom: 16,
-    padding: 12,
-    backgroundColor: PALE_BLUE,
-    borderLeftWidth: 3,
-    borderLeftColor: STEEL_BLUE,
-    borderRadius: 3,
+    marginTop: 16,
+    paddingHorizontal: 40,
+  },
+  introCard: {
+    padding: 14,
+    backgroundColor: PALE_GRAY,
+    borderLeftWidth: 4,
+    borderLeftColor: NAVY,
+    borderRadius: 4,
   },
   introLead: {
     marginBottom: 6,
     color: NAVY,
-    fontSize: 10,
+    fontSize: 12,
     fontFamily: 'Helvetica-Bold',
   },
   introText: {
     color: '#334155',
-    fontSize: 9,
+    fontSize: 10,
     lineHeight: 1.5,
   },
   section: {
-    marginBottom: 15,
+    marginTop: 16,
+    paddingHorizontal: 40,
   },
   sectionTitle: {
     marginBottom: 7,
-    paddingBottom: 5,
+    paddingBottom: 6,
     color: NAVY,
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: 'Helvetica-Bold',
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
   equipmentRow: {
     flexDirection: 'row',
-    paddingVertical: 7,
-    paddingHorizontal: 8,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
@@ -111,33 +131,31 @@ const styles = StyleSheet.create({
   },
   equipmentIndex: {
     width: 22,
-    color: STEEL_BLUE,
-    fontSize: 8,
+    color: NAVY,
+    fontSize: 9,
     fontFamily: 'Helvetica-Bold',
   },
   equipmentDescription: {
     flexGrow: 1,
     color: '#334155',
-    fontSize: 8,
+    fontSize: 9,
     lineHeight: 1.4,
   },
   emptyText: {
     color: MUTED,
-    fontSize: 8,
+    fontSize: 9,
     fontStyle: 'italic',
   },
   financialGrid: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: 9,
   },
   financialCard: {
     flexGrow: 1,
     flexBasis: 0,
-    padding: 9,
-    backgroundColor: PALE_GRAY,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 3,
+    padding: 10,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 4,
   },
   financialCardSpaced: {
     marginRight: 9,
@@ -145,84 +163,97 @@ const styles = StyleSheet.create({
   financialLabel: {
     marginBottom: 4,
     color: MUTED,
-    fontSize: 7,
+    fontSize: 8,
     fontFamily: 'Helvetica-Bold',
     textTransform: 'uppercase',
   },
   financialValue: {
     color: '#1E293B',
-    fontSize: 9,
+    fontSize: 10,
     fontFamily: 'Helvetica-Bold',
   },
   grandTotal: {
-    color: NAVY,
-    fontSize: 10,
+    padding: 6,
+    color: '#FFFFFF',
+    fontSize: 12,
+    backgroundColor: NAVY,
+    borderRadius: 3,
   },
   clauseBox: {
-    padding: 12,
+    padding: 16,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: BORDER,
-    borderRadius: 3,
+    borderRadius: 4,
   },
   clauseText: {
     color: '#1E293B',
     fontSize: 10,
-    lineHeight: 1.5,
+    lineHeight: 1.55,
     textAlign: 'justify',
   },
   signatures: {
     flexDirection: 'row',
     marginTop: 18,
+    paddingHorizontal: 40,
+    justifyContent: 'space-between',
   },
   signatureBox: {
-    flexGrow: 1,
-    flexBasis: 0,
+    width: '48%',
     minHeight: 120,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderStyle: 'dashed',
-    borderRadius: 3,
-  },
-  signatureBoxSpaced: {
-    marginRight: 12,
+    padding: 14,
+    backgroundColor: PALE_GRAY,
+    borderRadius: 4,
   },
   signatureTitle: {
-    color: NAVY,
-    fontSize: 8,
+    color: '#111827',
+    fontSize: 10,
     fontFamily: 'Helvetica-Bold',
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 0.35,
+    textAlign: 'left',
   },
   signatureHint: {
     marginTop: 5,
     color: MUTED,
-    fontSize: 7,
-    textAlign: 'center',
+    fontSize: 8,
+    textAlign: 'left',
+  },
+  signatureLine: {
+    height: 50,
+    marginTop: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#9CA3AF',
   },
   footer: {
     position: 'absolute',
-    right: 38,
-    bottom: 20,
-    left: 38,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingTop: 10,
+    paddingBottom: 16,
+    paddingHorizontal: 40,
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 3,
+    borderTopColor: '#F97316',
   },
-  footerDetails: {
-    maxWidth: '80%',
+  footerColumn: {
+    width: '32%',
+    paddingRight: 8,
   },
   legalText: {
+    marginTop: 2,
     color: MUTED,
     fontSize: 7,
-    lineHeight: 1.35,
+    lineHeight: 1.3,
   },
-  pageNumber: {
+  footerPageColumn: {
+    width: '32%',
+    paddingRight: 8,
+    alignItems: 'flex-end',
+  },
+  footerPage: {
     color: NAVY,
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
@@ -294,7 +325,7 @@ function getCompanyDetails(companyInfo) {
 }
 
 function getLegalDetails(companyInfo) {
-  const details = [
+  const banking = [
     getText(companyInfo, 'banque', 'bank')
       ? `Banque : ${getText(companyInfo, 'banque', 'bank')}`
       : '',
@@ -302,6 +333,8 @@ function getLegalDetails(companyInfo) {
     getText(companyInfo, 'capitalSocial', 'capital')
       ? `Capital social : ${getText(companyInfo, 'capitalSocial', 'capital')}`
       : '',
+  ].filter(Boolean)
+  const registrations = [
     getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')
       ? `IF : ${getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')}`
       : '',
@@ -311,12 +344,17 @@ function getLegalDetails(companyInfo) {
     getText(companyInfo, 'rc') ? `RC : ${getText(companyInfo, 'rc')}` : '',
     getText(companyInfo, 'ice') ? `ICE : ${getText(companyInfo, 'ice')}` : '',
     getText(companyInfo, 'patente') ? `Patente : ${getText(companyInfo, 'patente')}` : '',
+  ].filter(Boolean)
+  const legal = [
     getText(companyInfo, 'mentionsLegales', 'legalMentions'),
   ].filter(Boolean)
 
-  return details.length
-    ? details.join('  ·  ')
-    : 'TGI Ascenseurs Casa · Contrat généré par TGI Manager Pro'
+  if (banking.length === 0 && registrations.length === 0 && legal.length === 0) {
+    banking.push('TGI Ascenseurs Casa')
+    legal.push('Contrat généré par TGI Manager Pro')
+  }
+
+  return { banking, registrations, legal }
 }
 
 function getElevators(contract) {
@@ -388,6 +426,7 @@ export default function ContractPdfDocument({ contract = {} }) {
     companyIce ? `ICE : ${companyIce}` : '',
   ].filter(Boolean)
   const companyDetails = getCompanyDetails(companyInfo)
+  const legalDetails = getLegalDetails(companyInfo)
   const elevators = getElevators(contract)
   const dateDebut = contract.dateDebut || contract.startDate
   const dateFin = contract.dateFin || contract.endDate
@@ -419,12 +458,17 @@ export default function ContractPdfDocument({ contract = {} }) {
       subject={`Contrat d’entretien ${getContractNumber(contract)}`}
       title={`Contrat d’entretien ${getContractNumber(contract)}`}
     >
-      <Page size="A4" style={styles.page} wrap>
-        <View fixed style={styles.header}>
-          <Image
-            src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
-            style={styles.logo}
-          />
+      <Page size="A4" style={{ padding: 0, backgroundColor: '#FFFFFF' }} wrap>
+        <View style={styles.header}>
+          <View style={styles.headerIdentity}>
+            <View style={styles.logoFrame}>
+              <Image
+                src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
+                style={styles.logo}
+              />
+            </View>
+            <Text style={styles.documentTitle}>CONTRAT D’ENTRETIEN</Text>
+          </View>
           <View style={styles.companyBlock}>
             <Text style={styles.companyName}>{companyName}</Text>
             {companyDetails.map((detail) => (
@@ -435,135 +479,170 @@ export default function ContractPdfDocument({ contract = {} }) {
           </View>
         </View>
 
-        <View fixed style={styles.titleBlock}>
-          <Text style={styles.title}>
-            CONTRAT D’ENTRETIEN N° {getContractNumber(contract)}
-          </Text>
-        </View>
+        <View style={styles.content}>
+          <View style={styles.contractMeta}>
+            <View style={styles.contractMetaCard}>
+              <View style={styles.contractMetaItem}>
+                <Text style={styles.contractMetaLabel}>N° de contrat</Text>
+                <Text style={styles.financialValue}>{getContractNumber(contract)}</Text>
+              </View>
+              <View style={styles.contractMetaItem}>
+                <Text style={styles.contractMetaLabel}>Date de début</Text>
+                <Text style={styles.financialValue}>{formatDate(dateDebut)}</Text>
+              </View>
+              <View style={styles.contractMetaItem}>
+                <Text style={styles.contractMetaLabel}>Date de fin</Text>
+                <Text style={styles.financialValue}>{formatDate(dateFin)}</Text>
+              </View>
+            </View>
+          </View>
 
-        <View style={styles.intro}>
-          <Text style={styles.introLead}>Entre les soussignés :</Text>
-          <Text style={styles.introText}>
-            {companyName}
-            {companyPartyDetails.length ? `, ${companyPartyDetails.join(' · ')}` : ''}, d’une part,
-            et le Client {clientName}, ICE {clientIce}, domicilié à {clientAddress}, d’autre part.
-            {'\n'}Il a été convenu ce qui suit :
-          </Text>
-        </View>
+          <View style={styles.intro}>
+            <View style={styles.introCard}>
+              <Text style={styles.introLead}>Entre les soussignés :</Text>
+              <Text style={styles.introText}>
+                {companyName}
+                {companyPartyDetails.length ? `, ${companyPartyDetails.join(' · ')}` : ''}, d’une part,
+                et le Client {clientName}, ICE {clientIce}, domicilié à {clientAddress}, d’autre part.
+                {'\n'}Il a été convenu ce qui suit :
+              </Text>
+            </View>
+          </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>1. Objet du contrat et équipements concernés</Text>
-          {elevators.length > 0 ? (
-            elevators.map((elevator, index) => (
-              <View
-                key={elevator.id || `${getElevatorDescription(elevator)}-${index}`}
-                style={[
-                  styles.equipmentRow,
-                  index % 2 === 1 ? styles.equipmentRowAlternate : null,
-                ]}
-                wrap={false}
-              >
-                <Text style={styles.equipmentIndex}>{index + 1}.</Text>
-                <Text style={styles.equipmentDescription}>
-                  {getElevatorDescription(elevator)}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>1. Objet du contrat et équipements concernés</Text>
+            {elevators.length > 0 ? (
+              elevators.map((elevator, index) => (
+                <View
+                  key={elevator.id || `${getElevatorDescription(elevator)}-${index}`}
+                  style={[
+                    styles.equipmentRow,
+                    index % 2 === 1 ? styles.equipmentRowAlternate : null,
+                  ]}
+                  wrap={false}
+                >
+                  <Text style={styles.equipmentIndex}>{index + 1}.</Text>
+                  <Text style={styles.equipmentDescription}>
+                    {getElevatorDescription(elevator)}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>Aucun équipement associé à ce contrat.</Text>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>2. Conditions financières et durée</Text>
+            <View style={styles.financialGrid}>
+              <View style={[styles.financialCard, styles.financialCardSpaced]}>
+                <Text style={styles.financialLabel}>Montant HT</Text>
+                <Text style={styles.financialValue}>{formatCurrency(totalHT)}</Text>
+              </View>
+              <View style={[styles.financialCard, styles.financialCardSpaced]}>
+                <Text style={styles.financialLabel}>TVA ({vatRate} %)</Text>
+                <Text style={styles.financialValue}>
+                  {formatCurrency(totalTTC - totalHT)}
                 </Text>
               </View>
-            ))
-          ) : (
-            <Text style={styles.emptyText}>Aucun équipement associé à ce contrat.</Text>
-          )}
-        </View>
+              <View style={styles.financialCard}>
+                <Text style={styles.financialLabel}>Montant TTC</Text>
+                <Text style={[styles.financialValue, styles.grandTotal]}>
+                  {formatCurrency(totalTTC)}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.financialGrid}>
+              <View style={[styles.financialCard, styles.financialCardSpaced]}>
+                <Text style={styles.financialLabel}>Date de début</Text>
+                <Text style={styles.financialValue}>{formatDate(dateDebut)}</Text>
+              </View>
+              <View style={[styles.financialCard, styles.financialCardSpaced]}>
+                <Text style={styles.financialLabel}>Date de fin</Text>
+                <Text style={styles.financialValue}>{formatDate(dateFin)}</Text>
+              </View>
+              <View style={styles.financialCard}>
+                <Text style={styles.financialLabel}>Périodicité de paiement</Text>
+                <Text style={styles.financialValue}>{frequency || '—'}</Text>
+              </View>
+            </View>
+          </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>2. Conditions financières et durée</Text>
-          <View style={styles.financialGrid}>
-            <View style={[styles.financialCard, styles.financialCardSpaced]}>
-              <Text style={styles.financialLabel}>Montant HT</Text>
-              <Text style={styles.financialValue}>{formatCurrency(totalHT)}</Text>
-            </View>
-            <View style={[styles.financialCard, styles.financialCardSpaced]}>
-              <Text style={styles.financialLabel}>TVA ({vatRate} %)</Text>
-              <Text style={styles.financialValue}>
-                {formatCurrency(totalTTC - totalHT)}
-              </Text>
-            </View>
-            <View style={styles.financialCard}>
-              <Text style={styles.financialLabel}>Montant TTC</Text>
-              <Text style={[styles.financialValue, styles.grandTotal]}>
-                {formatCurrency(totalTTC)}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.financialGrid}>
-            <View style={[styles.financialCard, styles.financialCardSpaced]}>
-              <Text style={styles.financialLabel}>Date de début</Text>
-              <Text style={styles.financialValue}>{formatDate(dateDebut)}</Text>
-            </View>
-            <View style={[styles.financialCard, styles.financialCardSpaced]}>
-              <Text style={styles.financialLabel}>Date de fin</Text>
-              <Text style={styles.financialValue}>{formatDate(dateFin)}</Text>
-            </View>
-            <View style={styles.financialCard}>
-              <Text style={styles.financialLabel}>Périodicité de paiement</Text>
-              <Text style={styles.financialValue}>{frequency || '—'}</Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>3. Spécifications et engagements de service</Text>
+            <View style={styles.financialGrid}>
+              <View style={[styles.financialCard, styles.financialCardSpaced]}>
+                <Text style={styles.financialLabel}>Type de contrat</Text>
+                <Text style={styles.financialValue}>{serviceType}</Text>
+              </View>
+              <View style={[styles.financialCard, styles.financialCardSpaced]}>
+                <Text style={styles.financialLabel}>Objet / nature</Text>
+                <Text style={styles.financialValue}>{contractNature}</Text>
+              </View>
+              <View style={[styles.financialCard, styles.financialCardSpaced]}>
+                <Text style={styles.financialLabel}>Délai d’intervention garanti (SLA)</Text>
+                <Text style={styles.financialValue}>{responseSla}</Text>
+              </View>
+              <View style={styles.financialCard}>
+                <Text style={styles.financialLabel}>Tacite reconduction</Text>
+                <Text style={styles.financialValue}>
+                  {automaticRenewal ? 'Oui — renouvellement automatique' : 'Non'}
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>3. Spécifications et engagements de service</Text>
-          <View style={styles.financialGrid}>
-            <View style={[styles.financialCard, styles.financialCardSpaced]}>
-              <Text style={styles.financialLabel}>Type de contrat</Text>
-              <Text style={styles.financialValue}>{serviceType}</Text>
-            </View>
-            <View style={[styles.financialCard, styles.financialCardSpaced]}>
-              <Text style={styles.financialLabel}>Objet / nature</Text>
-              <Text style={styles.financialValue}>{contractNature}</Text>
-            </View>
-            <View style={[styles.financialCard, styles.financialCardSpaced]}>
-              <Text style={styles.financialLabel}>Délai d’intervention garanti (SLA)</Text>
-              <Text style={styles.financialValue}>{responseSla}</Text>
-            </View>
-            <View style={styles.financialCard}>
-              <Text style={styles.financialLabel}>Tacite reconduction</Text>
-              <Text style={styles.financialValue}>
-                {automaticRenewal ? 'Oui — renouvellement automatique' : 'Non'}
-              </Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>4. Clauses du contrat</Text>
+            <View style={styles.clauseBox}>
+              <Text style={styles.clauseText}>{clauses}</Text>
             </View>
           </View>
-        </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>4. Clauses du contrat</Text>
-          <View style={styles.clauseBox}>
-            <Text style={styles.clauseText}>{clauses}</Text>
-          </View>
-        </View>
-
-        <View style={styles.signatures} wrap={false}>
-          <View style={[styles.signatureBox, styles.signatureBoxSpaced]}>
-            <Text style={styles.signatureTitle}>Le Prestataire</Text>
-            <Text style={styles.signatureHint}>{companyName}</Text>
-          </View>
-          <View style={styles.signatureBox}>
-            <Text style={styles.signatureTitle}>Le Client</Text>
-            <Text style={styles.signatureHint}>Lu et approuvé</Text>
+          <View style={styles.signatures} wrap={false}>
+            <View style={styles.signatureBox}>
+              <Text style={styles.signatureTitle}>Le Prestataire</Text>
+              <Text style={styles.signatureHint}>{companyName}</Text>
+              <View style={styles.signatureLine} />
+            </View>
+            <View style={styles.signatureBox}>
+              <Text style={styles.signatureTitle}>Le Client</Text>
+              <Text style={styles.signatureHint}>Lu et approuvé</Text>
+              <View style={styles.signatureLine} />
+            </View>
           </View>
         </View>
 
         <View fixed style={styles.footer}>
-          <View style={styles.footerDetails}>
-            <Text style={styles.legalText}>{getLegalDetails(companyInfo)}</Text>
+          <View style={styles.footerColumn}>
+            {legalDetails.banking.map((detail) => (
+              <Text key={detail} style={styles.legalText}>
+                {detail}
+              </Text>
+            ))}
+          </View>
+          <View style={styles.footerColumn}>
+            {legalDetails.registrations.map((detail) => (
+              <Text key={detail} style={styles.legalText}>
+                {detail}
+              </Text>
+            ))}
+          </View>
+          <View style={styles.footerPageColumn}>
+            {legalDetails.legal.map((detail) => (
+              <Text key={detail} style={styles.legalText}>
+                {detail}
+              </Text>
+            ))}
             <Text style={styles.legalText}>
               Contrat d’entretien · Exemplaire destiné aux parties signataires.
             </Text>
+            <Text
+              fixed
+              render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
+              style={styles.footerPage}
+            />
           </View>
-          <Text
-            fixed
-            render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
-            style={styles.pageNumber}
-          />
         </View>
       </Page>
     </Document>

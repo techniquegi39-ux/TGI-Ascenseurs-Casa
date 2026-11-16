@@ -4,103 +4,121 @@ const NAVY = '#1E3A8A'
 const BORDER = '#E2E8F0'
 const MUTED = '#475569'
 const PALE_BLUE = '#F8FAFC'
+const PALE_GRAY = '#F3F4F6'
 
 const styles = StyleSheet.create({
-  page: {
-    paddingTop: 226,
-    paddingRight: 42,
-    paddingBottom: 92,
-    paddingLeft: 42,
-    backgroundColor: '#FFFFFF',
-    color: '#1E293B',
-    fontFamily: 'Helvetica',
-    fontSize: 10,
-  },
   header: {
-    position: 'absolute',
-    top: 22,
-    right: 42,
-    left: 42,
-    height: 132,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-  },
-  logo: {
-    width: 86,
-    height: 60,
-    objectFit: 'contain',
-  },
-  companyBlock: {
-    width: '48%',
-  },
-  companyName: {
-    marginTop: 5,
-    marginBottom: 2,
-    color: NAVY,
-    fontSize: 12,
-    fontFamily: 'Helvetica-Bold',
-  },
-  companyDetail: {
-    marginTop: 1.5,
-    color: MUTED,
-    fontSize: 8,
-  },
-  titleBlock: {
-    position: 'absolute',
-    top: 174,
-    right: 42,
-    left: 42,
-  },
-  titleBanner: {
-    minHeight: 42,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    width: '100%',
+    paddingTop: 40,
+    paddingBottom: 40,
+    paddingHorizontal: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: NAVY,
-    borderRadius: 2,
   },
-  title: {
-    flexGrow: 1,
-    paddingRight: 8,
+  headerIdentity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoFrame: {
+    width: 82,
+    height: 70,
+    padding: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
+  },
+  logo: {
+    width: 72,
+    height: 60,
+    objectFit: 'contain',
+  },
+  documentTitle: {
+    marginLeft: 16,
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 28,
     fontFamily: 'Helvetica-Bold',
   },
-  quoteDates: {
+  companyBlock: {
+    width: '47%',
     alignItems: 'flex-end',
   },
-  dateText: {
+  companyName: {
+    marginBottom: 3,
+    color: '#FFFFFF',
+    opacity: 0.9,
+    fontSize: 12,
+    fontFamily: 'Helvetica-Bold',
+    textAlign: 'right',
+  },
+  companyDetail: {
     marginTop: 2,
     color: '#FFFFFF',
+    opacity: 0.9,
     fontSize: 8,
+    textAlign: 'right',
   },
-  sectionLabel: {
-    marginBottom: 5,
+  content: {
+    paddingBottom: 120,
+  },
+  clientDetails: {
+    paddingTop: 30,
+    paddingBottom: 20,
+    paddingHorizontal: 40,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  clientBlock: {
+    width: '48%',
+    paddingTop: 4,
+  },
+  quoteInfo: {
+    width: '42%',
+    padding: 12,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 4,
+  },
+  quoteInfoRow: {
+    marginTop: 5,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  quoteInfoLabel: {
+    width: '43%',
+    paddingRight: 6,
     color: MUTED,
     fontSize: 8,
+  },
+  quoteInfoValue: {
+    width: '57%',
+    color: '#111827',
+    fontSize: 9,
+    fontFamily: 'Helvetica-Bold',
+    textAlign: 'right',
+  },
+  title: {
+    marginBottom: 7,
+    color: MUTED,
+    fontSize: 9,
     fontFamily: 'Helvetica-Bold',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
-  clientInfo: {
-    width: '48%',
-    padding: 10,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 4,
-  },
   clientName: {
-    marginBottom: 3,
-    color: NAVY,
+    marginBottom: 4,
+    color: '#111827',
     fontSize: 12,
     fontFamily: 'Helvetica-Bold',
   },
   clientDetail: {
-    marginTop: 1.5,
-    color: MUTED,
-    fontSize: 8,
+    marginTop: 2,
+    color: '#1F2937',
+    fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
   },
   table: {
     width: '100%',
@@ -110,23 +128,23 @@ const styles = StyleSheet.create({
     backgroundColor: NAVY,
   },
   headerCell: {
-    paddingVertical: 6,
-    paddingHorizontal: 7,
+    padding: 10,
     color: '#FFFFFF',
     fontSize: 9,
     fontFamily: 'Helvetica-Bold',
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
   },
   tableRow: {
     flexDirection: 'row',
-    borderBottomWidth: 0.6,
+    padding: 10,
+    borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
   alternateRow: {
     backgroundColor: PALE_BLUE,
   },
   cell: {
-    paddingVertical: 7,
-    paddingHorizontal: 7,
     color: '#334155',
     fontSize: 10,
   },
@@ -142,26 +160,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginTop: 14,
-  },
-  quoteNotes: {
-    width: '50%',
-    paddingRight: 12,
-    paddingTop: 4,
+    marginTop: 22,
   },
   note: {
-    marginTop: 4,
+    marginTop: 8,
     color: MUTED,
-    fontSize: 9,
+    fontSize: 8,
     lineHeight: 1.4,
   },
   documentConditions: {
-    marginTop: 12,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 3,
+    marginTop: 16,
+    padding: 12,
     backgroundColor: PALE_BLUE,
+    borderRadius: 4,
   },
   conditionsHeading: {
     marginBottom: 5,
@@ -177,7 +188,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   conditionLabel: {
-    width: '32%',
+    width: '30%',
     paddingRight: 8,
     color: MUTED,
     fontSize: 9,
@@ -190,9 +201,11 @@ const styles = StyleSheet.create({
     lineHeight: 1.35,
   },
   totals: {
-    width: '50%',
+    width: '48%',
     alignItems: 'stretch',
-    paddingLeft: 8,
+    padding: 12,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 4,
   },
   totalRow: {
     flexDirection: 'row',
@@ -225,62 +238,64 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Helvetica-Bold',
   },
-  signatureArea: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 15,
-  },
   signatureBox: {
-    width: 220,
-    height: 82,
-    padding: 9,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderStyle: 'dashed',
-    borderRadius: 3,
+    minHeight: 135,
+    padding: 14,
+    backgroundColor: PALE_GRAY,
+    borderRadius: 4,
   },
   signatureTitle: {
-    marginBottom: 5,
-    color: NAVY,
-    fontSize: 8,
+    marginBottom: 7,
+    color: '#111827',
+    fontSize: 11,
     fontFamily: 'Helvetica-Bold',
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
+    textAlign: 'left',
   },
   signatureHint: {
     color: MUTED,
-    fontSize: 7,
-    textAlign: 'center',
+    fontSize: 8,
+    textAlign: 'left',
+  },
+  signatureLine: {
+    height: 48,
+    marginTop: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#9CA3AF',
   },
   footer: {
     position: 'absolute',
-    right: 42,
-    bottom: 20,
-    left: 42,
-    paddingTop: 7,
-    borderTopWidth: 2,
-    borderTopColor: NAVY,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingTop: 10,
+    paddingBottom: 16,
+    paddingHorizontal: 40,
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-  },
-  footerDetails: {
-    flexDirection: 'row',
-    flexGrow: 1,
-    paddingRight: 12,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 3,
+    borderTopColor: '#F97316',
   },
   footerColumn: {
-    width: '50%',
+    width: '32%',
     paddingRight: 8,
   },
   legalText: {
+    marginTop: 2,
     color: MUTED,
-    fontSize: 8,
+    fontSize: 7,
     lineHeight: 1.3,
-    marginTop: 1,
   },
-  pageNumber: {
+  tableWrap: {
+    paddingHorizontal: 40,
+  },
+  footerPageColumn: {
+    width: '32%',
+    paddingRight: 8,
+    alignItems: 'flex-end',
+  },
+  footerPage: {
     color: NAVY,
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
@@ -428,7 +443,7 @@ function getLegalDetails(companyInfo) {
       ? `Capital social : ${getText(companyInfo, 'capitalSocial', 'capital')}`
       : '',
   ].filter(Boolean)
-  const legal = [
+  const registrations = [
     getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')
       ? `IF : ${getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')}`
       : '',
@@ -438,15 +453,17 @@ function getLegalDetails(companyInfo) {
     getText(companyInfo, 'rc') ? `RC : ${getText(companyInfo, 'rc')}` : '',
     getText(companyInfo, 'ice') ? `ICE : ${getText(companyInfo, 'ice')}` : '',
     getText(companyInfo, 'patente') ? `Patente : ${getText(companyInfo, 'patente')}` : '',
+  ].filter(Boolean)
+  const legal = [
     getText(companyInfo, 'mentionsLegales', 'legalMentions'),
   ].filter(Boolean)
 
-  if (banking.length === 0 && legal.length === 0) {
+  if (banking.length === 0 && registrations.length === 0 && legal.length === 0) {
     banking.push('TGI Ascenseurs Casa')
     legal.push('Document généré par TGI Manager Pro')
   }
 
-  return { banking, legal }
+  return { banking, registrations, legal }
 }
 
 function getQuoteNumber(quote) {
@@ -487,13 +504,18 @@ export default function QuotePdfDocument({ quote = {} }) {
       subject={`Devis ${getQuoteNumber(quote)}`}
       title={`Devis ${getQuoteNumber(quote)}`}
     >
-      <Page size="A4" style={styles.page} wrap>
-        <View fixed style={styles.header}>
+      <Page size="A4" style={{ padding: 0, backgroundColor: '#FFFFFF' }} wrap>
+        <View style={styles.header}>
+          <View style={styles.headerIdentity}>
+            <View style={styles.logoFrame}>
+              <Image
+                src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
+                style={styles.logo}
+              />
+            </View>
+            <Text style={styles.documentTitle}>DEVIS</Text>
+          </View>
           <View style={styles.companyBlock}>
-            <Image
-              src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
-              style={styles.logo}
-            />
             <Text style={styles.companyName}>{companyName}</Text>
             {companyDetails.map((detail) => (
               <Text key={detail} style={styles.companyDetail}>
@@ -501,149 +523,160 @@ export default function QuotePdfDocument({ quote = {} }) {
               </Text>
             ))}
           </View>
-          <View style={styles.clientInfo} wrap={false}>
-            <Text style={styles.sectionLabel}>Proposé à :</Text>
-            <Text style={styles.clientName}>{clientName}</Text>
-            {clientDetails.map((detail) => (
-              <Text key={detail} style={styles.clientDetail}>
+        </View>
+
+        <View style={styles.content}>
+          <View style={styles.clientDetails}>
+            <View style={styles.clientBlock}>
+              <Text style={styles.title}>Proposé à :</Text>
+              <Text style={styles.clientName}>{clientName}</Text>
+              {clientDetails.map((detail) => (
+                <Text key={detail} style={styles.clientDetail}>
+                  {detail}
+                </Text>
+              ))}
+            </View>
+            <View style={styles.quoteInfo}>
+              <View style={styles.quoteInfoRow}>
+                <Text style={styles.quoteInfoLabel}>N° de devis</Text>
+                <Text style={styles.quoteInfoValue}>{getQuoteNumber(quote)}</Text>
+              </View>
+              <View style={styles.quoteInfoRow}>
+                <Text style={styles.quoteInfoLabel}>Date d’émission</Text>
+                <Text style={styles.quoteInfoValue}>{formatDate(issueDate)}</Text>
+              </View>
+              <View style={styles.quoteInfoRow}>
+                <Text style={styles.quoteInfoLabel}>Date de validité</Text>
+                <Text style={styles.quoteInfoValue}>{formatDate(validityDate)}</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.tableWrap}>
+            <View style={styles.table}>
+              <View fixed style={styles.tableHeader}>
+                <Text style={[styles.headerCell, { width: '43%' }]}>Désignation</Text>
+                <Text style={[styles.headerCell, { width: '12%', textAlign: 'right' }]}>
+                  Qté
+                </Text>
+                <Text style={[styles.headerCell, { width: '22%', textAlign: 'right' }]}>
+                  Prix unitaire HT
+                </Text>
+                <Text style={[styles.headerCell, { width: '23%', textAlign: 'right' }]}>
+                  Total HT
+                </Text>
+              </View>
+              {items.length === 0 ? (
+                <View style={styles.tableRow} wrap={false}>
+                  <Text style={styles.emptyCell}>Aucun article renseigné.</Text>
+                </View>
+              ) : (
+                items.map((item, index) => (
+                  <View
+                    key={`${item.designation}-${index}`}
+                    style={[
+                      styles.tableRow,
+                      index % 2 === 1 ? styles.alternateRow : null,
+                    ]}
+                    wrap={false}
+                  >
+                    <Text style={[styles.cell, { width: '43%' }]}>{item.designation}</Text>
+                    <Text style={[styles.cell, { width: '12%', textAlign: 'right' }]}>
+                      {formatQuantity(item.quantity)}
+                    </Text>
+                    <Text style={[styles.cell, { width: '22%', textAlign: 'right' }]}>
+                      {formatCurrency(item.unitPrice)}
+                    </Text>
+                    <Text style={[styles.cell, { width: '23%', textAlign: 'right' }]}>
+                      {formatCurrency(item.totalHT)}
+                    </Text>
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+
+          <View style={[styles.tableWrap, styles.afterTable]}>
+            <View style={styles.signatureBox} wrap={false}>
+              <Text style={styles.signatureTitle}>Bon pour accord</Text>
+              <Text style={styles.signatureHint}>
+                Nom, date, signature et cachet du client
+              </Text>
+              <View style={styles.signatureLine} />
+            </View>
+            <View style={styles.totals} wrap={false}>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Total HT</Text>
+                <Text style={styles.totalValue}>{formatCurrency(totals.totalHT)}</Text>
+              </View>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>{vatLabel}</Text>
+                <Text style={styles.totalValue}>{formatCurrency(totals.totalTVA)}</Text>
+              </View>
+              <View style={styles.grandTotal}>
+                <Text style={styles.grandTotalLabel}>TOTAL TTC</Text>
+                <Text style={styles.grandTotalValue}>{formatCurrency(totals.totalTTC)}</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={[styles.tableWrap, styles.documentConditions]}>
+            <Text style={styles.conditionsHeading}>Conditions commerciales</Text>
+            <View style={styles.conditionRow}>
+              <Text style={styles.conditionLabel}>Conditions de règlement</Text>
+              <Text style={styles.conditionValue}>{paymentTerms || 'Non renseignées'}</Text>
+            </View>
+            <View style={styles.conditionRow}>
+              <Text style={styles.conditionLabel}>Mode de paiement</Text>
+              <Text style={styles.conditionValue}>{paymentMethod || 'Non renseigné'}</Text>
+            </View>
+            <View style={styles.conditionRow}>
+              <Text style={styles.conditionLabel}>Conditions particulières</Text>
+              <Text style={styles.conditionValue}>{specialConditions || 'Aucune'}</Text>
+            </View>
+          </View>
+
+          {(quote.reference || quote.notes) && (
+            <View style={[styles.tableWrap, { marginTop: 12 }]}>
+              {quote.reference && (
+                <Text style={styles.note}>Référence : {String(quote.reference)}</Text>
+              )}
+              {quote.notes && <Text style={styles.note}>{String(quote.notes)}</Text>}
+            </View>
+          )}
+        </View>
+
+        <View fixed style={styles.footer}>
+          <View style={styles.footerColumn}>
+            {legalDetails.banking.map((detail) => (
+              <Text key={detail} style={styles.legalText}>
                 {detail}
               </Text>
             ))}
           </View>
-        </View>
-
-        <View fixed style={styles.titleBlock}>
-          <View style={styles.titleBanner}>
-            <Text style={styles.title}>DEVIS N° {getQuoteNumber(quote)}</Text>
-            <View style={styles.quoteDates}>
-              <Text style={styles.dateText}>— {formatDate(issueDate)}</Text>
-              <Text style={styles.dateText}>Valide jusqu’au : {formatDate(validityDate)}</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.table}>
-          <View fixed style={styles.tableHeader}>
-            <Text style={[styles.headerCell, { width: '43%' }]}>Désignation</Text>
-            <Text style={[styles.headerCell, { width: '12%', textAlign: 'right' }]}>
-              Qté
-            </Text>
-            <Text style={[styles.headerCell, { width: '22%', textAlign: 'right' }]}>
-              Prix unitaire HT
-            </Text>
-            <Text style={[styles.headerCell, { width: '23%', textAlign: 'right' }]}>
-              Total HT
-            </Text>
-          </View>
-          {items.length === 0 ? (
-            <View style={styles.tableRow} wrap={false}>
-              <Text style={styles.emptyCell}>Aucun article renseigné.</Text>
-            </View>
-          ) : (
-            items.map((item, index) => (
-              <View
-                key={`${item.designation}-${index}`}
-                style={[
-                  styles.tableRow,
-                  index % 2 === 1 ? styles.alternateRow : null,
-                ]}
-                wrap={false}
-              >
-                <Text style={[styles.cell, { width: '43%' }]}>{item.designation}</Text>
-                <Text style={[styles.cell, { width: '12%', textAlign: 'right' }]}>
-                  {formatQuantity(item.quantity)}
-                </Text>
-                <Text style={[styles.cell, { width: '22%', textAlign: 'right' }]}>
-                  {formatCurrency(item.unitPrice)}
-                </Text>
-                <Text
-                  style={[
-                    styles.cell,
-                    { width: '23%', textAlign: 'right' },
-                  ]}
-                >
-                  {formatCurrency(item.totalHT)}
-                </Text>
-              </View>
-            ))
-          )}
-        </View>
-
-        <View style={styles.afterTable}>
-          <View style={styles.quoteNotes}>
-            {quote.reference && (
-              <Text style={styles.note}>Référence : {String(quote.reference)}</Text>
-            )}
-            {quote.notes && <Text style={styles.note}>{String(quote.notes)}</Text>}
-          </View>
-
-          <View style={styles.totals} wrap={false}>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Total HT</Text>
-              <Text style={styles.totalValue}>{formatCurrency(totals.totalHT)}</Text>
-            </View>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>{vatLabel}</Text>
-              <Text style={styles.totalValue}>{formatCurrency(totals.totalTVA)}</Text>
-            </View>
-            <View style={[styles.totalRow, styles.grandTotal]}>
-              <Text style={styles.grandTotalLabel}>Total TTC</Text>
-              <Text style={styles.grandTotalValue}>{formatCurrency(totals.totalTTC)}</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.signatureArea} wrap={false}>
-          <View style={styles.signatureBox}>
-            <Text style={styles.signatureTitle}>Bon pour accord</Text>
-            <Text style={styles.signatureHint}>
-              Nom, date, signature et cachet du client
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.documentConditions}>
-          <Text style={styles.conditionsHeading}>Conditions commerciales</Text>
-          <View style={styles.conditionRow}>
-            <Text style={styles.conditionLabel}>Conditions de règlement</Text>
-            <Text style={styles.conditionValue}>{paymentTerms || 'Non renseignées'}</Text>
-          </View>
-          <View style={styles.conditionRow}>
-            <Text style={styles.conditionLabel}>Mode de paiement</Text>
-            <Text style={styles.conditionValue}>{paymentMethod || 'Non renseigné'}</Text>
-          </View>
-          <View style={styles.conditionRow}>
-            <Text style={styles.conditionLabel}>Conditions particulières</Text>
-            <Text style={styles.conditionValue}>{specialConditions || 'Aucune'}</Text>
-          </View>
-        </View>
-
-        <View fixed style={styles.footer}>
-          <View style={styles.footerDetails}>
-            <View style={styles.footerColumn}>
-              {legalDetails.banking.map((detail) => (
-                <Text key={detail} style={styles.legalText}>
-                  {detail}
-                </Text>
-              ))}
-            </View>
-            <View style={styles.footerColumn}>
-              {legalDetails.legal.map((detail) => (
-                <Text key={detail} style={styles.legalText}>
-                  {detail}
-                </Text>
-              ))}
-              <Text style={styles.legalText}>
-                Ce devis est valable jusqu’à la date indiquée ci-dessus, sous réserve de
-                disponibilité des équipements.
+          <View style={styles.footerColumn}>
+            {legalDetails.registrations.map((detail) => (
+              <Text key={detail} style={styles.legalText}>
+                {detail}
               </Text>
-            </View>
+            ))}
           </View>
-          <Text
-            fixed
-            render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
-            style={styles.pageNumber}
-          />
+          <View style={styles.footerPageColumn}>
+            {legalDetails.legal.map((detail) => (
+              <Text key={detail} style={styles.legalText}>
+                {detail}
+              </Text>
+            ))}
+            <Text style={styles.legalText}>
+              Ce devis est valable jusqu’à la date indiquée ci-dessus, sous réserve de
+              disponibilité des équipements.
+            </Text>
+            <Text
+              fixed
+              render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
+              style={styles.footerPage}
+            />
+          </View>
         </View>
       </Page>
     </Document>

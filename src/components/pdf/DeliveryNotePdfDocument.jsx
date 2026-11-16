@@ -1,223 +1,220 @@
 import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 
 const NAVY = '#1E3A8A'
-const STEEL_BLUE = '#1E3A8A'
 const BORDER = '#E2E8F0'
 const MUTED = '#475569'
 const PALE_BLUE = '#F8FAFC'
 
 const styles = StyleSheet.create({
-  page: {
-    paddingTop: 164,
-    paddingRight: 38,
-    paddingBottom: 92,
-    paddingLeft: 38,
-    backgroundColor: '#FFFFFF',
-    color: '#1E293B',
-    fontFamily: 'Helvetica',
-    fontSize: 9,
-  },
   header: {
-    position: 'absolute',
-    top: 24,
-    right: 38,
-    left: 38,
-    height: 66,
+    width: '100%',
+    paddingTop: 40,
+    paddingBottom: 40,
+    paddingHorizontal: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: 10,
-    borderBottomWidth: 1.5,
-    borderBottomColor: STEEL_BLUE,
+    backgroundColor: NAVY,
+  },
+  headerIdentity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoFrame: {
+    width: 82,
+    height: 70,
+    padding: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
   },
   logo: {
-    width: 76,
+    width: 72,
     height: 60,
     objectFit: 'contain',
   },
+  documentTitle: {
+    maxWidth: 210,
+    marginLeft: 16,
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontFamily: 'Helvetica-Bold',
+  },
   companyBlock: {
-    flexGrow: 1,
+    width: '47%',
     alignItems: 'flex-end',
-    marginLeft: 18,
   },
   companyName: {
     marginBottom: 3,
-    color: NAVY,
-    fontSize: 15,
+    color: '#FFFFFF',
+    opacity: 0.9,
+    fontSize: 12,
     fontFamily: 'Helvetica-Bold',
+    textAlign: 'right',
   },
   companyDetail: {
     marginTop: 2,
-    color: MUTED,
+    color: '#FFFFFF',
+    opacity: 0.9,
     fontSize: 8,
     textAlign: 'right',
   },
-  titleBlock: {
-    position: 'absolute',
-    top: 104,
-    right: 38,
-    left: 38,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+  content: {
+    paddingBottom: 120,
   },
-  title: {
-    color: NAVY,
-    fontSize: 17,
-    fontFamily: 'Helvetica-Bold',
-    letterSpacing: 0.4,
-  },
-  documentDetails: {
+  clientDetails: {
+    paddingTop: 30,
+    paddingBottom: 20,
+    paddingHorizontal: 40,
     flexDirection: 'row',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginTop: 7,
   },
-  detailText: {
-    color: MUTED,
-    fontSize: 8,
+  clientBlock: {
+    width: '48%',
+    paddingTop: 4,
   },
   sectionLabel: {
-    marginBottom: 6,
-    color: NAVY,
-    fontSize: 8,
+    marginBottom: 7,
+    color: MUTED,
+    fontSize: 9,
     fontFamily: 'Helvetica-Bold',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  clientInfo: {
-    marginBottom: 14,
-    padding: 11,
-    backgroundColor: PALE_BLUE,
-    borderLeftWidth: 3,
-    borderLeftColor: STEEL_BLUE,
-    borderRadius: 3,
+    letterSpacing: 0.4,
   },
   clientName: {
-    marginBottom: 5,
-    color: NAVY,
-    fontSize: 11,
+    marginBottom: 4,
+    color: '#111827',
+    fontSize: 12,
     fontFamily: 'Helvetica-Bold',
   },
   clientDetail: {
     marginTop: 2,
-    color: '#475569',
-    fontSize: 8,
-  },
-  deliveryInfo: {
-    marginBottom: 14,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 3,
-    backgroundColor: '#F8FAFC',
-  },
-  deliveryInfoRow: {
-    flexDirection: 'row',
-    marginTop: 3,
-  },
-  deliveryInfoLabel: {
-    width: 140,
-    color: MUTED,
-    fontSize: 8,
+    color: '#1F2937',
+    fontSize: 10,
     fontFamily: 'Helvetica-Bold',
   },
-  deliveryInfoValue: {
-    flexGrow: 1,
-    color: '#334155',
+  deliveryInfo: {
+    width: '44%',
+    padding: 12,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 4,
+  },
+  deliveryInfoRow: {
+    marginTop: 5,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  deliveryInfoLabel: {
+    width: '45%',
+    paddingRight: 6,
+    color: MUTED,
     fontSize: 8,
+  },
+  deliveryInfoValue: {
+    width: '55%',
+    color: '#111827',
+    fontSize: 9,
+    fontFamily: 'Helvetica-Bold',
+    textAlign: 'right',
+  },
+  tableWrap: {
+    paddingHorizontal: 40,
   },
   table: {
     width: '100%',
-    borderWidth: 1,
-    borderColor: BORDER,
   },
   tableHeader: {
+    padding: 10,
     flexDirection: 'row',
     backgroundColor: NAVY,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
   },
   headerCell: {
-    paddingVertical: 9,
-    paddingHorizontal: 8,
     color: '#FFFFFF',
-    fontSize: 8,
+    fontSize: 9,
     fontFamily: 'Helvetica-Bold',
   },
   tableRow: {
+    padding: 10,
     flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
   },
   alternateRow: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: PALE_BLUE,
   },
   cell: {
-    paddingVertical: 10,
-    paddingHorizontal: 8,
     color: '#334155',
-    fontSize: 9,
-    borderRightWidth: 1,
-    borderRightColor: BORDER,
-  },
-  lastCell: {
-    borderRightWidth: 0,
+    fontSize: 10,
   },
   emptyCell: {
     width: '100%',
-    paddingVertical: 14,
-    paddingHorizontal: 8,
     color: MUTED,
-    fontSize: 9,
+    fontSize: 10,
     textAlign: 'center',
   },
-  signatureArea: {
-    marginTop: 26,
-  },
   signatureBox: {
-    minHeight: 150,
+    minHeight: 135,
     padding: 14,
-    borderWidth: 1.5,
-    borderColor: STEEL_BLUE,
-    borderStyle: 'dashed',
+    backgroundColor: '#F3F4F6',
     borderRadius: 4,
   },
   signatureTitle: {
-    marginBottom: 8,
-    color: NAVY,
-    fontSize: 10,
+    marginBottom: 7,
+    color: '#111827',
+    fontSize: 11,
     fontFamily: 'Helvetica-Bold',
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
   },
   signatureHint: {
     color: MUTED,
     fontSize: 8,
-    textAlign: 'center',
+    lineHeight: 1.35,
+  },
+  signatureLine: {
+    height: 48,
+    marginTop: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#9CA3AF',
   },
   footer: {
     position: 'absolute',
-    right: 38,
-    bottom: 20,
-    left: 38,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingTop: 10,
+    paddingBottom: 16,
+    paddingHorizontal: 40,
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 3,
+    borderTopColor: '#F97316',
   },
-  footerDetails: {
-    maxWidth: '80%',
+  footerColumn: {
+    width: '32%',
+    paddingRight: 8,
   },
   legalText: {
+    marginTop: 2,
     color: MUTED,
     fontSize: 7,
-    lineHeight: 1.35,
+    lineHeight: 1.3,
   },
-  pageNumber: {
+  footerPageColumn: {
+    width: '32%',
+    paddingRight: 8,
+    alignItems: 'flex-end',
+  },
+  footerPage: {
     color: NAVY,
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
+    textAlign: 'right',
   },
 })
 
@@ -290,7 +287,7 @@ function getCompanyDetails(companyInfo) {
 }
 
 function getLegalDetails(companyInfo) {
-  const details = [
+  const banking = [
     getText(companyInfo, 'banque', 'bank')
       ? `Banque : ${getText(companyInfo, 'banque', 'bank')}`
       : '',
@@ -298,6 +295,8 @@ function getLegalDetails(companyInfo) {
     getText(companyInfo, 'capitalSocial', 'capital')
       ? `Capital social : ${getText(companyInfo, 'capitalSocial', 'capital')}`
       : '',
+  ].filter(Boolean)
+  const registrations = [
     getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')
       ? `IF : ${getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')}`
       : '',
@@ -307,12 +306,17 @@ function getLegalDetails(companyInfo) {
     getText(companyInfo, 'rc') ? `RC : ${getText(companyInfo, 'rc')}` : '',
     getText(companyInfo, 'ice') ? `ICE : ${getText(companyInfo, 'ice')}` : '',
     getText(companyInfo, 'patente') ? `Patente : ${getText(companyInfo, 'patente')}` : '',
+  ].filter(Boolean)
+  const legal = [
     getText(companyInfo, 'mentionsLegales', 'legalMentions'),
   ].filter(Boolean)
 
-  return details.length
-    ? details.join('  ·  ')
-    : 'TGI Ascenseurs Casa · Bon de livraison généré par TGI Manager Pro'
+  if (banking.length === 0 && registrations.length === 0 && legal.length === 0) {
+    banking.push('TGI Ascenseurs Casa')
+    legal.push('Bon de livraison généré par TGI Manager Pro')
+  }
+
+  return { banking, registrations, legal }
 }
 
 function getDeliveryNoteItems(deliveryNote) {
@@ -341,6 +345,7 @@ export default function DeliveryNotePdfDocument({ deliveryNote = {} }) {
     getText(clientInfo, 'adresse', 'address'),
   ].filter(Boolean)
   const companyDetails = getCompanyDetails(companyInfo)
+  const legalDetails = getLegalDetails(companyInfo)
   const items = getDeliveryNoteItems(deliveryNote)
   const deliveryDate =
     deliveryNote.dateLivraison || deliveryNote.deliveryDate || deliveryNote.date
@@ -368,12 +373,17 @@ export default function DeliveryNotePdfDocument({ deliveryNote = {} }) {
       subject={`Bon de livraison ${getDeliveryNoteNumber(deliveryNote)}`}
       title={`Bon de livraison ${getDeliveryNoteNumber(deliveryNote)}`}
     >
-      <Page size="A4" style={styles.page} wrap>
-        <View fixed style={styles.header}>
-          <Image
-            src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
-            style={styles.logo}
-          />
+      <Page size="A4" style={{ padding: 0, backgroundColor: '#FFFFFF' }} wrap>
+        <View style={styles.header}>
+          <View style={styles.headerIdentity}>
+            <View style={styles.logoFrame}>
+              <Image
+                src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
+                style={styles.logo}
+              />
+            </View>
+            <Text style={styles.documentTitle}>BON DE LIVRAISON</Text>
+          </View>
           <View style={styles.companyBlock}>
             <Text style={styles.companyName}>{companyName}</Text>
             {companyDetails.map((detail) => (
@@ -384,97 +394,123 @@ export default function DeliveryNotePdfDocument({ deliveryNote = {} }) {
           </View>
         </View>
 
-        <View fixed style={styles.titleBlock}>
-          <Text style={styles.title}>
-            BON DE LIVRAISON N° {getDeliveryNoteNumber(deliveryNote)}
-          </Text>
-          <View style={styles.documentDetails}>
-            <Text style={styles.detailText}>Date de livraison : {formatDate(deliveryDate)}</Text>
-            {reference ? (
-              <Text style={styles.detailText}>Référence commande : {reference}</Text>
-            ) : null}
-          </View>
-        </View>
-
-        <View style={styles.clientInfo} wrap={false}>
-          <Text style={styles.sectionLabel}>Livré à</Text>
-          <Text style={styles.clientName}>{clientName}</Text>
-          {clientDetails.map((detail) => (
-            <Text key={detail} style={styles.clientDetail}>
-              {detail}
-            </Text>
-          ))}
-        </View>
-
-        <View style={styles.deliveryInfo}>
-          <Text style={styles.sectionLabel}>Détails de livraison</Text>
-          <View style={styles.deliveryInfoRow}>
-            <Text style={styles.deliveryInfoLabel}>Lieu de livraison</Text>
-            <Text style={styles.deliveryInfoValue}>{deliveryLocation || 'Non renseigné'}</Text>
-          </View>
-          <View style={styles.deliveryInfoRow}>
-            <Text style={styles.deliveryInfoLabel}>Transporteur / Réceptionnaire</Text>
-            <Text style={styles.deliveryInfoValue}>{carrierReceiver || 'Non renseigné'}</Text>
-          </View>
-        </View>
-
-        <View style={styles.table}>
-          <View fixed style={styles.tableHeader}>
-            <Text style={[styles.headerCell, { width: '78%' }]}>Désignation</Text>
-            <Text style={[styles.headerCell, { width: '22%', textAlign: 'right' }]}>
-              Quantité
-            </Text>
-          </View>
-          {items.length === 0 ? (
-            <View style={styles.tableRow} wrap={false}>
-              <Text style={styles.emptyCell}>Aucun article renseigné.</Text>
+        <View style={styles.content}>
+          <View style={styles.clientDetails}>
+            <View style={styles.clientBlock}>
+              <Text style={styles.sectionLabel}>Livré à</Text>
+              <Text style={styles.clientName}>{clientName}</Text>
+              {clientDetails.map((detail) => (
+                <Text key={detail} style={styles.clientDetail}>
+                  {detail}
+                </Text>
+              ))}
             </View>
-          ) : (
-            items.map((item, index) => (
-              <View
-                key={`${item.designation}-${index}`}
-                style={[
-                  styles.tableRow,
-                  index % 2 === 1 ? styles.alternateRow : null,
-                ]}
-                wrap={false}
-              >
-                <Text style={[styles.cell, { width: '78%' }]}>{item.designation}</Text>
-                <Text
-                  style={[
-                    styles.cell,
-                    styles.lastCell,
-                    { width: '22%', textAlign: 'right' },
-                  ]}
-                >
-                  {formatQuantity(item.quantity)}
+            <View style={styles.deliveryInfo}>
+              <Text style={styles.sectionLabel}>Détails de livraison</Text>
+              <View style={styles.deliveryInfoRow}>
+                <Text style={styles.deliveryInfoLabel}>N° de bon</Text>
+                <Text style={styles.deliveryInfoValue}>
+                  {getDeliveryNoteNumber(deliveryNote)}
                 </Text>
               </View>
-            ))
-          )}
-        </View>
+              <View style={styles.deliveryInfoRow}>
+                <Text style={styles.deliveryInfoLabel}>Date de livraison</Text>
+                <Text style={styles.deliveryInfoValue}>{formatDate(deliveryDate)}</Text>
+              </View>
+              {reference && (
+                <View style={styles.deliveryInfoRow}>
+                  <Text style={styles.deliveryInfoLabel}>Référence commande</Text>
+                  <Text style={styles.deliveryInfoValue}>{reference}</Text>
+                </View>
+              )}
+              <View style={styles.deliveryInfoRow}>
+                <Text style={styles.deliveryInfoLabel}>Lieu</Text>
+                <Text style={styles.deliveryInfoValue}>
+                  {deliveryLocation || 'Non renseigné'}
+                </Text>
+              </View>
+              <View style={styles.deliveryInfoRow}>
+                <Text style={styles.deliveryInfoLabel}>Transporteur / Réceptionnaire</Text>
+                <Text style={styles.deliveryInfoValue}>
+                  {carrierReceiver || 'Non renseigné'}
+                </Text>
+              </View>
+            </View>
+          </View>
 
-        <View style={styles.signatureArea} wrap={false}>
-          <View style={styles.signatureBox}>
-            <Text style={styles.signatureTitle}>Accusé de réception</Text>
-            <Text style={styles.signatureHint}>
-              Nom, Date, Signature et Cachet du client
-            </Text>
+          <View style={styles.tableWrap}>
+            <View style={styles.table}>
+              <View fixed style={styles.tableHeader}>
+                <Text style={[styles.headerCell, { width: '78%' }]}>Désignation</Text>
+                <Text style={[styles.headerCell, { width: '22%', textAlign: 'right' }]}>
+                  Quantité
+                </Text>
+              </View>
+              {items.length === 0 ? (
+                <View style={styles.tableRow} wrap={false}>
+                  <Text style={styles.emptyCell}>Aucun article renseigné.</Text>
+                </View>
+              ) : (
+                items.map((item, index) => (
+                  <View
+                    key={`${item.designation}-${index}`}
+                    style={[
+                      styles.tableRow,
+                      index % 2 === 1 ? styles.alternateRow : null,
+                    ]}
+                    wrap={false}
+                  >
+                    <Text style={[styles.cell, { width: '78%' }]}>{item.designation}</Text>
+                    <Text style={[styles.cell, { width: '22%', textAlign: 'right' }]}>
+                      {formatQuantity(item.quantity)}
+                    </Text>
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+
+          <View style={styles.tableWrap}>
+            <View style={styles.signatureBox} wrap={false}>
+              <Text style={styles.signatureTitle}>Accusé de réception</Text>
+              <Text style={styles.signatureHint}>
+                Nom, date, signature et cachet du client
+              </Text>
+              <View style={styles.signatureLine} />
+            </View>
           </View>
         </View>
 
         <View fixed style={styles.footer}>
-          <View style={styles.footerDetails}>
-            <Text style={styles.legalText}>{getLegalDetails(companyInfo)}</Text>
+          <View style={styles.footerColumn}>
+            {legalDetails.banking.map((detail) => (
+              <Text key={detail} style={styles.legalText}>
+                {detail}
+              </Text>
+            ))}
+          </View>
+          <View style={styles.footerColumn}>
+            {legalDetails.registrations.map((detail) => (
+              <Text key={detail} style={styles.legalText}>
+                {detail}
+              </Text>
+            ))}
+          </View>
+          <View style={styles.footerPageColumn}>
+            {legalDetails.legal.map((detail) => (
+              <Text key={detail} style={styles.legalText}>
+                {detail}
+              </Text>
+            ))}
             <Text style={styles.legalText}>
               Veuillez vérifier les quantités reçues et signaler toute réserve à la livraison.
             </Text>
+            <Text
+              fixed
+              render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
+              style={styles.footerPage}
+            />
           </View>
-          <Text
-            fixed
-            render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
-            style={styles.pageNumber}
-          />
         </View>
       </Page>
     </Document>

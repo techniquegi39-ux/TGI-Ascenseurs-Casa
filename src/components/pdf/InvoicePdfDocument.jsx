@@ -3,165 +3,236 @@ import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/render
 const NAVY = '#1E3A8A'
 const BORDER = '#E2E8F0'
 const MUTED = '#475569'
-const PALE_BLUE = '#F8FAFC'
+const PALE_GRAY = '#F3F4F6'
 
 const styles = StyleSheet.create({
-  page: {
-    paddingTop: 226,
-    paddingRight: 42,
-    paddingBottom: 92,
-    paddingLeft: 42,
-    backgroundColor: '#FFFFFF',
-    color: '#1E293B',
-    fontFamily: 'Helvetica',
-    fontSize: 10,
-  },
   header: {
-    position: 'absolute',
-    top: 22,
-    right: 42,
-    left: 42,
-    height: 132,
+    width: '100%',
+    paddingTop: 40,
+    paddingBottom: 40,
+    paddingHorizontal: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: NAVY,
+  },
+  headerIdentity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoFrame: {
+    width: 82,
+    height: 70,
+    padding: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
+  },
+  logo: {
+    width: 72,
+    height: 60,
+    objectFit: 'contain',
+  },
+  documentTitle: {
+    marginLeft: 16,
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontFamily: 'Helvetica-Bold',
+  },
+  companyBlock: {
+    width: '47%',
+    alignItems: 'flex-end',
+  },
+  companyName: {
+    marginBottom: 3,
+    color: '#FFFFFF',
+    opacity: 0.9,
+    fontSize: 12,
+    fontFamily: 'Helvetica-Bold',
+    textAlign: 'right',
+  },
+  companyDetail: {
+    marginTop: 2,
+    color: '#FFFFFF',
+    opacity: 0.9,
+    fontSize: 8,
+    textAlign: 'right',
+  },
+  content: {
+    paddingBottom: 120,
+  },
+  clientDetails: {
+    paddingTop: 30,
+    paddingBottom: 20,
+    paddingHorizontal: 40,
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
-  logo: {
-    width: 86,
-    height: 60,
-    objectFit: 'contain',
-  },
-  companyBlock: {
+  clientBlock: {
     width: '48%',
-  },
-  companyName: {
-    marginTop: 5,
-    marginBottom: 2,
-    color: NAVY,
-    fontSize: 12,
-    fontFamily: 'Helvetica-Bold',
-  },
-  companyDetail: {
-    marginTop: 1.5,
-    color: MUTED,
-    fontSize: 8,
-  },
-  clientInfo: {
-    width: '48%',
-    padding: 10,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 4,
+    paddingTop: 4,
   },
   sectionLabel: {
-    marginBottom: 5,
+    marginBottom: 7,
     color: MUTED,
-    fontSize: 8,
+    fontSize: 9,
     fontFamily: 'Helvetica-Bold',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
   clientName: {
-    marginBottom: 3,
-    color: NAVY,
+    marginBottom: 4,
+    color: '#111827',
     fontSize: 12,
     fontFamily: 'Helvetica-Bold',
   },
   clientDetail: {
-    marginTop: 1.5,
+    marginTop: 2,
+    color: '#1F2937',
+    fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
+  },
+  invoiceInfo: {
+    width: '42%',
+    padding: 12,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 4,
+  },
+  invoiceInfoRow: {
+    marginTop: 5,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  invoiceInfoLabel: {
+    width: '43%',
+    paddingRight: 6,
     color: MUTED,
     fontSize: 8,
   },
-  titleBlock: {
-    position: 'absolute',
-    top: 174,
-    right: 42,
-    left: 42,
-  },
-  titleBanner: {
-    minHeight: 42,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: NAVY,
-    borderRadius: 2,
-  },
-  title: {
-    flexGrow: 1,
-    paddingRight: 8,
-    color: '#FFFFFF',
-    fontSize: 18,
+  invoiceInfoValue: {
+    width: '57%',
+    color: '#111827',
+    fontSize: 9,
     fontFamily: 'Helvetica-Bold',
+    textAlign: 'right',
   },
-  invoiceDates: {
-    alignItems: 'flex-end',
-  },
-  dateText: {
-    marginTop: 2,
-    color: '#FFFFFF',
-    fontSize: 8,
+  tableWrap: {
+    paddingHorizontal: 40,
   },
   table: {
     width: '100%',
   },
   tableHeader: {
+    padding: 10,
     flexDirection: 'row',
     backgroundColor: NAVY,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
   },
   headerCell: {
-    paddingVertical: 6,
-    paddingHorizontal: 7,
     color: '#FFFFFF',
     fontSize: 9,
     fontFamily: 'Helvetica-Bold',
   },
   tableRow: {
+    padding: 10,
     flexDirection: 'row',
-    borderBottomWidth: 0.6,
+    borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
-  alternateRow: {
-    backgroundColor: PALE_BLUE,
-  },
   cell: {
-    paddingVertical: 7,
-    paddingHorizontal: 7,
-    color: '#334155',
+    color: '#1F2937',
     fontSize: 10,
   },
   emptyCell: {
     width: '100%',
-    paddingVertical: 13,
-    paddingHorizontal: 7,
     color: MUTED,
     fontSize: 10,
     textAlign: 'center',
   },
-  afterTable: {
+  closingSection: {
+    marginTop: 22,
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginTop: 14,
   },
-  paymentNotes: {
-    width: '50%',
-    paddingRight: 12,
-    paddingTop: 4,
+  signatureBox: {
+    width: '45%',
+    minHeight: 135,
+    padding: 14,
+    backgroundColor: PALE_GRAY,
+    borderRadius: 4,
   },
-  note: {
-    marginTop: 4,
+  signatureTitle: {
+    marginBottom: 7,
+    color: '#111827',
+    fontSize: 11,
+    fontFamily: 'Helvetica-Bold',
+  },
+  signatureHint: {
+    color: MUTED,
+    fontSize: 8,
+    lineHeight: 1.35,
+  },
+  signatureLine: {
+    height: 48,
+    marginTop: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#9CA3AF',
+  },
+  totals: {
+    width: '48%',
+    padding: 12,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 4,
+  },
+  totalRow: {
+    paddingVertical: 5,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  totalLabel: {
     color: MUTED,
     fontSize: 9,
-    lineHeight: 1.4,
+  },
+  totalValue: {
+    color: '#111827',
+    fontSize: 9,
+    fontFamily: 'Helvetica-Bold',
+  },
+  grandTotal: {
+    marginTop: 7,
+    padding: 11,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: NAVY,
+    borderRadius: 4,
+  },
+  grandTotalLabel: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'Helvetica-Bold',
+  },
+  grandTotalValue: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'Helvetica-Bold',
+    textAlign: 'right',
+  },
+  balanceRow: {
+    marginTop: 4,
+    paddingTop: 7,
+    borderTopWidth: 1,
+    borderTopColor: BORDER,
   },
   documentConditions: {
-    marginTop: 12,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 3,
-    backgroundColor: PALE_BLUE,
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 4,
   },
   conditionsHeading: {
     marginBottom: 5,
@@ -172,12 +243,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   conditionRow: {
+    marginTop: 4,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginTop: 3,
   },
   conditionLabel: {
-    width: '32%',
+    width: '30%',
     paddingRight: 8,
     color: MUTED,
     fontSize: 8,
@@ -189,91 +260,38 @@ const styles = StyleSheet.create({
     fontSize: 9,
     lineHeight: 1.35,
   },
-  totals: {
-    width: '50%',
-    alignItems: 'stretch',
-    paddingLeft: 8,
-  },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 4,
-  },
-  totalLabel: {
+  notes: {
+    marginTop: 12,
     color: MUTED,
     fontSize: 9,
-  },
-  totalValue: {
-    color: '#1E293B',
-    fontSize: 9,
-    fontFamily: 'Helvetica-Bold',
-  },
-  grandTotal: {
-    marginTop: 5,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    backgroundColor: NAVY,
-    borderRadius: 2,
-  },
-  grandTotalLabel: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontFamily: 'Helvetica-Bold',
-  },
-  grandTotalValue: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontFamily: 'Helvetica-Bold',
-  },
-  signatureArea: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 15,
-  },
-  stampBox: {
-    width: 190,
-    height: 68,
-    padding: 8,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderStyle: 'dashed',
-    borderRadius: 3,
-  },
-  stampLabel: {
-    color: MUTED,
-    fontSize: 7,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
+    lineHeight: 1.4,
   },
   footer: {
     position: 'absolute',
-    right: 42,
-    bottom: 20,
-    left: 42,
-    paddingTop: 7,
-    borderTopWidth: 2,
-    borderTopColor: NAVY,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingTop: 10,
+    paddingBottom: 16,
+    paddingHorizontal: 40,
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-  },
-  footerDetails: {
-    flexDirection: 'row',
-    flexGrow: 1,
-    paddingRight: 12,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 3,
+    borderTopColor: '#F97316',
   },
   footerColumn: {
-    width: '50%',
+    width: '32%',
     paddingRight: 8,
   },
   legalText: {
+    marginTop: 2,
     color: MUTED,
-    fontSize: 8,
+    fontSize: 7,
     lineHeight: 1.3,
-    marginTop: 1,
   },
-  pageNumber: {
+  footerPage: {
     color: NAVY,
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
@@ -430,7 +448,7 @@ function getLegalDetails(companyInfo, invoice) {
       ? `Capital social : ${getText(companyInfo, 'capitalSocial', 'capital')}`
       : '',
   ].filter(Boolean)
-  const legal = [
+  const registrations = [
     getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')
       ? `IF : ${getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')}`
       : '',
@@ -440,15 +458,17 @@ function getLegalDetails(companyInfo, invoice) {
     getText(companyInfo, 'rc') ? `RC : ${getText(companyInfo, 'rc')}` : '',
     getText(companyInfo, 'ice') ? `ICE : ${getText(companyInfo, 'ice')}` : '',
     getText(companyInfo, 'patente') ? `Patente : ${getText(companyInfo, 'patente')}` : '',
+  ].filter(Boolean)
+  const legal = [
     getText(companyInfo, 'mentionsLegales', 'legalMentions'),
   ].filter(Boolean)
 
-  if (banking.length === 0 && legal.length === 0) {
+  if (banking.length === 0 && registrations.length === 0 && legal.length === 0) {
     banking.push('TGI Ascenseurs Casa')
     legal.push('Document généré par TGI Manager Pro')
   }
 
-  return { banking, legal }
+  return { banking, registrations, legal }
 }
 
 function getInvoiceNumber(invoice) {
@@ -494,13 +514,18 @@ export default function InvoicePdfDocument({ invoice = {} }) {
       subject={`Facture ${getInvoiceNumber(invoice)}`}
       title={`Facture ${getInvoiceNumber(invoice)}`}
     >
-      <Page size="A4" style={styles.page} wrap>
-        <View fixed style={styles.header}>
+      <Page size="A4" style={{ padding: 0, backgroundColor: '#FFFFFF' }} wrap>
+        <View style={styles.header}>
+          <View style={styles.headerIdentity}>
+            <View style={styles.logoFrame}>
+              <Image
+                src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
+                style={styles.logo}
+              />
+            </View>
+            <Text style={styles.documentTitle}>FACTURE</Text>
+          </View>
           <View style={styles.companyBlock}>
-            <Image
-              src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
-              style={styles.logo}
-            />
             <Text style={styles.companyName}>{companyName}</Text>
             {companyDetails.map((detail) => (
               <Text key={detail} style={styles.companyDetail}>
@@ -508,156 +533,164 @@ export default function InvoicePdfDocument({ invoice = {} }) {
               </Text>
             ))}
           </View>
-          <View style={styles.clientInfo} wrap={false}>
-            <Text style={styles.sectionLabel}>Facturé à :</Text>
-            <Text style={styles.clientName}>{clientName}</Text>
-            {clientDetails.map((detail) => (
-              <Text key={detail} style={styles.clientDetail}>
+        </View>
+
+        <View style={styles.content}>
+          <View style={styles.clientDetails}>
+            <View style={styles.clientBlock}>
+              <Text style={styles.sectionLabel}>Facturé à :</Text>
+              <Text style={styles.clientName}>{clientName}</Text>
+              {clientDetails.map((detail) => (
+                <Text key={detail} style={styles.clientDetail}>
+                  {detail}
+                </Text>
+              ))}
+            </View>
+            <View style={styles.invoiceInfo}>
+              <View style={styles.invoiceInfoRow}>
+                <Text style={styles.invoiceInfoLabel}>Date de la facture</Text>
+                <Text style={styles.invoiceInfoValue}>{formatDate(invoiceDate)}</Text>
+              </View>
+              <View style={styles.invoiceInfoRow}>
+                <Text style={styles.invoiceInfoLabel}>N° de facture</Text>
+                <Text style={styles.invoiceInfoValue}>{getInvoiceNumber(invoice)}</Text>
+              </View>
+              <View style={styles.invoiceInfoRow}>
+                <Text style={styles.invoiceInfoLabel}>Date d’échéance</Text>
+                <Text style={styles.invoiceInfoValue}>{formatDate(dueDate)}</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.tableWrap}>
+            <View style={styles.table}>
+              <View fixed style={styles.tableHeader}>
+                <Text style={[styles.headerCell, { width: '43%' }]}>Désignation</Text>
+                <Text style={[styles.headerCell, { width: '12%', textAlign: 'right' }]}>
+                  Qté
+                </Text>
+                <Text style={[styles.headerCell, { width: '22%', textAlign: 'right' }]}>
+                  Prix unitaire HT
+                </Text>
+                <Text style={[styles.headerCell, { width: '23%', textAlign: 'right' }]}>
+                  Total HT
+                </Text>
+              </View>
+              {items.length === 0 ? (
+                <View style={styles.tableRow} wrap={false}>
+                  <Text style={styles.emptyCell}>Aucun article renseigné.</Text>
+                </View>
+              ) : (
+                items.map((item, index) => (
+                  <View
+                    key={`${item.designation}-${index}`}
+                    style={styles.tableRow}
+                    wrap={false}
+                  >
+                    <Text style={[styles.cell, { width: '43%' }]}>{item.designation}</Text>
+                    <Text style={[styles.cell, { width: '12%', textAlign: 'right' }]}>
+                      {formatQuantity(item.quantity)}
+                    </Text>
+                    <Text style={[styles.cell, { width: '22%', textAlign: 'right' }]}>
+                      {formatCurrency(item.unitPrice)}
+                    </Text>
+                    <Text style={[styles.cell, { width: '23%', textAlign: 'right' }]}>
+                      {formatCurrency(item.totalHT)}
+                    </Text>
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+
+          <View style={[styles.tableWrap, styles.closingSection]}>
+            <View style={styles.signatureBox} wrap={false}>
+              <Text style={styles.signatureTitle}>Bon pour accord et signature</Text>
+              <Text style={styles.signatureHint}>
+                Nom, date, signature et cachet du client
+              </Text>
+              <View style={styles.signatureLine} />
+            </View>
+
+            <View style={styles.totals} wrap={false}>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Sous-total HT</Text>
+                <Text style={styles.totalValue}>{formatCurrency(totals.totalHT)}</Text>
+              </View>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>{vatLabel}</Text>
+                <Text style={styles.totalValue}>{formatCurrency(totals.totalTVA)}</Text>
+              </View>
+              <View style={styles.grandTotal}>
+                <Text style={styles.grandTotalLabel}>TOTAL TTC</Text>
+                <Text style={styles.grandTotalValue}>{formatCurrency(totals.totalTTC)}</Text>
+              </View>
+              <View style={[styles.totalRow, styles.balanceRow]}>
+                <Text style={styles.totalLabel}>Montant payé</Text>
+                <Text style={styles.totalValue}>{formatCurrency(totals.amountPaid)}</Text>
+              </View>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Reste à payer</Text>
+                <Text style={styles.totalValue}>{formatCurrency(totals.remaining)}</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={[styles.tableWrap, styles.documentConditions]}>
+            <Text style={styles.conditionsHeading}>Conditions commerciales</Text>
+            <View style={styles.conditionRow}>
+              <Text style={styles.conditionLabel}>Conditions de règlement</Text>
+              <Text style={styles.conditionValue}>{paymentTerms || 'Non renseignées'}</Text>
+            </View>
+            <View style={styles.conditionRow}>
+              <Text style={styles.conditionLabel}>Mode de paiement</Text>
+              <Text style={styles.conditionValue}>{paymentMethod || 'Non renseigné'}</Text>
+            </View>
+            <View style={styles.conditionRow}>
+              <Text style={styles.conditionLabel}>Conditions particulières</Text>
+              <Text style={styles.conditionValue}>{specialConditions || 'Aucune'}</Text>
+            </View>
+          </View>
+
+          {(invoice.referenceDevis || invoice.notes) && (
+            <View style={[styles.tableWrap, styles.notes]}>
+              {invoice.referenceDevis && (
+                <Text style={styles.legalText}>
+                  Référence du devis : {String(invoice.referenceDevis)}
+                </Text>
+              )}
+              {invoice.notes && <Text style={styles.legalText}>{String(invoice.notes)}</Text>}
+            </View>
+          )}
+        </View>
+
+        <View fixed style={styles.footer}>
+          <View style={styles.footerColumn}>
+            {legalDetails.banking.map((detail) => (
+              <Text key={detail} style={styles.legalText}>
                 {detail}
               </Text>
             ))}
           </View>
-        </View>
-
-        <View fixed style={styles.titleBlock}>
-          <View style={styles.titleBanner}>
-            <Text style={styles.title}>FACTURE N° {getInvoiceNumber(invoice)}</Text>
-            <View style={styles.invoiceDates}>
-              <Text style={styles.dateText}>— {formatDate(invoiceDate)}</Text>
-              <Text style={styles.dateText}>Échéance : {formatDate(dueDate)}</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.table}>
-          <View fixed style={styles.tableHeader}>
-            <Text style={[styles.headerCell, { width: '43%' }]}>Désignation</Text>
-            <Text style={[styles.headerCell, { width: '12%', textAlign: 'right' }]}>
-              Qté
-            </Text>
-            <Text style={[styles.headerCell, { width: '22%', textAlign: 'right' }]}>
-              Prix unitaire HT
-            </Text>
-            <Text style={[styles.headerCell, { width: '23%', textAlign: 'right' }]}>
-              Total HT
-            </Text>
-          </View>
-          {items.length === 0 ? (
-            <View style={styles.tableRow} wrap={false}>
-              <Text style={styles.emptyCell}>Aucun article renseigné.</Text>
-            </View>
-          ) : (
-            items.map((item, index) => (
-              <View
-                key={`${item.designation}-${index}`}
-                style={[
-                  styles.tableRow,
-                  index % 2 === 1 ? styles.alternateRow : null,
-                ]}
-                wrap={false}
-              >
-                <Text style={[styles.cell, { width: '43%' }]}>{item.designation}</Text>
-                <Text style={[styles.cell, { width: '12%', textAlign: 'right' }]}>
-                  {formatQuantity(item.quantity)}
-                </Text>
-                <Text style={[styles.cell, { width: '22%', textAlign: 'right' }]}>
-                  {formatCurrency(item.unitPrice)}
-                </Text>
-                <Text
-                  style={[
-                    styles.cell,
-                    { width: '23%', textAlign: 'right' },
-                  ]}
-                >
-                  {formatCurrency(item.totalHT)}
-                </Text>
-              </View>
-            ))
-          )}
-        </View>
-
-        <View style={styles.afterTable}>
-          <View style={styles.paymentNotes}>
-            {invoice.referenceDevis && (
-              <Text style={styles.note}>
-                Référence du devis : {String(invoice.referenceDevis)}
+          <View style={styles.footerColumn}>
+            {legalDetails.registrations.map((detail) => (
+              <Text key={detail} style={styles.legalText}>
+                {detail}
               </Text>
-            )}
-            {invoice.notes && <Text style={styles.note}>{String(invoice.notes)}</Text>}
+            ))}
           </View>
-
-          <View style={styles.totals} wrap={false}>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Total HT</Text>
-              <Text style={styles.totalValue}>{formatCurrency(totals.totalHT)}</Text>
-            </View>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>{vatLabel}</Text>
-              <Text style={styles.totalValue}>{formatCurrency(totals.totalTVA)}</Text>
-            </View>
-            <View style={[styles.totalRow, styles.grandTotal]}>
-              <Text style={styles.grandTotalLabel}>Total TTC</Text>
-              <Text style={styles.grandTotalValue}>{formatCurrency(totals.totalTTC)}</Text>
-            </View>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Montant payé</Text>
-              <Text style={styles.totalValue}>{formatCurrency(totals.amountPaid)}</Text>
-            </View>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Reste à payer</Text>
-              <Text style={styles.totalValue}>{formatCurrency(totals.remaining)}</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.signatureArea} wrap={false}>
-          <View style={styles.stampBox}>
-            <Text style={styles.stampLabel}>Cachet et signature</Text>
-          </View>
-        </View>
-
-        <View style={styles.documentConditions}>
-          <Text style={styles.conditionsHeading}>Conditions commerciales</Text>
-          <View style={styles.conditionRow}>
-            <Text style={styles.conditionLabel}>Conditions de règlement</Text>
-            <Text style={styles.conditionValue}>{paymentTerms || 'Non renseignées'}</Text>
-          </View>
-          <View style={styles.conditionRow}>
-            <Text style={styles.conditionLabel}>Mode de paiement</Text>
-            <Text style={styles.conditionValue}>{paymentMethod || 'Non renseigné'}</Text>
-          </View>
-          <View style={styles.conditionRow}>
-            <Text style={styles.conditionLabel}>Conditions particulières</Text>
-            <Text style={styles.conditionValue}>{specialConditions || 'Aucune'}</Text>
-          </View>
-        </View>
-
-        <View fixed style={styles.footer}>
-          <View style={styles.footerDetails}>
-            <View style={styles.footerColumn}>
-              {legalDetails.banking.map((detail) => (
-                <Text key={detail} style={styles.legalText}>
-                  {detail}
-                </Text>
-              ))}
-            </View>
-            <View style={styles.footerColumn}>
-              {legalDetails.legal.map((detail) => (
-                <Text key={detail} style={styles.legalText}>
-                  {detail}
-                </Text>
-              ))}
-              <Text style={styles.legalText}>
-                Merci de votre confiance. Pour toute question relative à cette facture, veuillez
-                contacter TGI Ascenseurs Casa.
+          <View style={[styles.footerColumn, { alignItems: 'flex-end' }]}>
+            {legalDetails.legal.map((detail) => (
+              <Text key={detail} style={styles.legalText}>
+                {detail}
               </Text>
-            </View>
+            ))}
+            <Text
+              fixed
+              render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
+              style={styles.footerPage}
+            />
           </View>
-          <Text
-            fixed
-            render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
-            style={styles.pageNumber}
-          />
         </View>
       </Page>
     </Document>

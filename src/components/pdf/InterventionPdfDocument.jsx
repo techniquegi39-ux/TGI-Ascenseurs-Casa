@@ -1,127 +1,117 @@
 import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 
 const NAVY = '#1E3A8A'
-const STEEL_BLUE = '#1E3A8A'
 const BORDER = '#E2E8F0'
 const MUTED = '#475569'
 const PALE_BLUE = '#F8FAFC'
-const PALE_GRAY = '#F8FAFC'
+const PALE_GRAY = '#F3F4F6'
 
 const styles = StyleSheet.create({
-  page: {
-    paddingTop: 164,
-    paddingRight: 38,
-    paddingBottom: 92,
-    paddingLeft: 38,
-    backgroundColor: '#FFFFFF',
-    color: '#1E293B',
-    fontFamily: 'Helvetica',
-    fontSize: 9,
-  },
   header: {
-    position: 'absolute',
-    top: 24,
-    right: 38,
-    left: 38,
-    height: 66,
+    width: '100%',
+    paddingTop: 40,
+    paddingBottom: 40,
+    paddingHorizontal: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: 10,
-    borderBottomWidth: 1.5,
-    borderBottomColor: STEEL_BLUE,
+    backgroundColor: NAVY,
+  },
+  headerIdentity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoFrame: {
+    width: 82,
+    height: 70,
+    padding: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
   },
   logo: {
-    width: 76,
+    width: 72,
     height: 60,
     objectFit: 'contain',
   },
+  documentTitle: {
+    maxWidth: 240,
+    marginLeft: 14,
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontFamily: 'Helvetica-Bold',
+  },
   companyBlock: {
-    flexGrow: 1,
+    width: '47%',
     alignItems: 'flex-end',
-    marginLeft: 18,
   },
   companyName: {
     marginBottom: 3,
-    color: NAVY,
-    fontSize: 15,
+    color: '#FFFFFF',
+    opacity: 0.9,
+    fontSize: 12,
     fontFamily: 'Helvetica-Bold',
+    textAlign: 'right',
   },
   companyDetail: {
     marginTop: 2,
-    color: MUTED,
+    color: '#FFFFFF',
+    opacity: 0.9,
     fontSize: 8,
     textAlign: 'right',
   },
-  titleBlock: {
-    position: 'absolute',
-    top: 104,
-    right: 38,
-    left: 38,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-  },
-  title: {
-    color: NAVY,
-    fontSize: 17,
-    fontFamily: 'Helvetica-Bold',
-    letterSpacing: 0.35,
-  },
-  sectionLabel: {
-    marginBottom: 7,
-    color: NAVY,
-    fontSize: 8,
-    fontFamily: 'Helvetica-Bold',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  content: {
+    paddingBottom: 120,
   },
   infoGrid: {
+    paddingTop: 30,
+    paddingHorizontal: 40,
     flexDirection: 'row',
     alignItems: 'stretch',
-    marginBottom: 12,
+    justifyContent: 'space-between',
   },
   infoCard: {
-    flexGrow: 1,
-    flexBasis: 0,
-    padding: 10,
-    backgroundColor: PALE_BLUE,
-    borderLeftWidth: 3,
-    borderLeftColor: STEEL_BLUE,
-    borderRadius: 3,
-  },
-  infoCardSpaced: {
-    marginRight: 10,
+    width: '48%',
+    padding: 12,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 4,
   },
   infoCardTitle: {
-    marginBottom: 5,
-    color: NAVY,
-    fontSize: 9,
+    marginBottom: 4,
+    color: '#111827',
+    fontSize: 12,
     fontFamily: 'Helvetica-Bold',
   },
   infoText: {
     marginTop: 2,
-    color: '#475569',
-    fontSize: 8,
-    lineHeight: 1.35,
+    color: '#1F2937',
+    fontSize: 9,
+    lineHeight: 1.4,
+  },
+  sectionLabel: {
+    marginBottom: 7,
+    color: MUTED,
+    fontSize: 9,
+    fontFamily: 'Helvetica-Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   details: {
+    marginTop: 14,
+    paddingHorizontal: 40,
+    paddingVertical: 12,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 14,
-    padding: 10,
-    backgroundColor: PALE_GRAY,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 3,
+    backgroundColor: '#FFFFFF',
   },
   detailItem: {
     width: '33.33%',
-    paddingRight: 8,
-    paddingVertical: 3,
+    padding: 8,
+    backgroundColor: PALE_GRAY,
   },
   detailLabel: {
-    marginBottom: 3,
+    marginBottom: 4,
     color: MUTED,
     fontSize: 7,
     fontFamily: 'Helvetica-Bold',
@@ -129,160 +119,154 @@ const styles = StyleSheet.create({
   },
   detailValue: {
     color: '#1E293B',
-    fontSize: 8,
+    fontSize: 9,
+    fontFamily: 'Helvetica-Bold',
   },
   maintenanceChecklist: {
     marginBottom: 14,
-    padding: 10,
+    padding: 12,
     backgroundColor: PALE_BLUE,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 3,
+    borderRadius: 4,
   },
   checklistTitle: {
-    marginBottom: 5,
+    marginBottom: 7,
     color: NAVY,
-    fontSize: 8,
+    fontSize: 10,
     fontFamily: 'Helvetica-Bold',
   },
   checklistItem: {
-    marginTop: 3,
+    marginTop: 4,
     color: '#334155',
-    fontSize: 8,
+    fontSize: 9,
+  },
+  sectionWrap: {
+    marginTop: 14,
+    paddingHorizontal: 40,
   },
   report: {
-    marginBottom: 14,
-    padding: 12,
+    padding: 15,
     backgroundColor: PALE_GRAY,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderLeftWidth: 3,
-    borderLeftColor: STEEL_BLUE,
-    borderRadius: 3,
+    borderLeftWidth: 4,
+    borderLeftColor: NAVY,
+    borderRadius: 4,
   },
   reportText: {
     color: '#334155',
-    fontSize: 9,
+    fontSize: 10,
     lineHeight: 1.55,
   },
   problem: {
-    marginBottom: 12,
-    padding: 10,
+    padding: 12,
     backgroundColor: '#FFFBEB',
     borderWidth: 1,
     borderColor: '#FDE68A',
-    borderRadius: 3,
+    borderRadius: 4,
   },
   problemTitle: {
-    marginBottom: 4,
+    marginBottom: 5,
     color: '#92400E',
-    fontSize: 8,
+    fontSize: 9,
     fontFamily: 'Helvetica-Bold',
   },
   problemText: {
     color: '#78350F',
-    fontSize: 8,
+    fontSize: 9,
     lineHeight: 1.4,
   },
   tableSection: {
-    marginTop: 2,
-    marginBottom: 14,
+    marginTop: 14,
+    paddingHorizontal: 40,
   },
   table: {
     width: '100%',
-    borderWidth: 1,
-    borderColor: BORDER,
   },
   tableHeader: {
+    padding: 10,
     flexDirection: 'row',
     backgroundColor: NAVY,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
   },
   headerCell: {
-    paddingVertical: 8,
-    paddingHorizontal: 8,
     color: '#FFFFFF',
-    fontSize: 8,
+    fontSize: 9,
     fontFamily: 'Helvetica-Bold',
   },
   tableRow: {
+    padding: 10,
     flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
   },
   alternateRow: {
     backgroundColor: PALE_GRAY,
   },
   cell: {
-    paddingVertical: 8,
-    paddingHorizontal: 8,
     color: '#334155',
-    fontSize: 8,
-    borderRightWidth: 1,
-    borderRightColor: BORDER,
-  },
-  lastCell: {
-    borderRightWidth: 0,
-  },
-  emptyCell: {
-    width: '100%',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    color: MUTED,
-    fontSize: 8,
-    textAlign: 'center',
+    fontSize: 10,
   },
   signatures: {
-    flexDirection: 'row',
     marginTop: 18,
+    paddingHorizontal: 40,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   signatureBox: {
-    flexGrow: 1,
-    flexBasis: 0,
-    minHeight: 112,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderStyle: 'dashed',
-    borderRadius: 3,
-  },
-  signatureBoxSpaced: {
-    marginRight: 12,
+    width: '48%',
+    minHeight: 110,
+    padding: 14,
+    backgroundColor: PALE_GRAY,
+    borderRadius: 4,
   },
   signatureTitle: {
-    color: NAVY,
-    fontSize: 8,
+    color: '#111827',
+    fontSize: 10,
     fontFamily: 'Helvetica-Bold',
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 0.35,
+    textAlign: 'left',
   },
   signatureHint: {
     marginTop: 5,
     color: MUTED,
-    fontSize: 7,
-    textAlign: 'center',
+    fontSize: 8,
+    textAlign: 'left',
+  },
+  signatureLine: {
+    height: 42,
+    marginTop: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#9CA3AF',
   },
   footer: {
     position: 'absolute',
-    right: 38,
-    bottom: 20,
-    left: 38,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingTop: 10,
+    paddingBottom: 16,
+    paddingHorizontal: 40,
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 3,
+    borderTopColor: '#F97316',
   },
-  footerDetails: {
-    maxWidth: '80%',
+  footerColumn: {
+    width: '32%',
+    paddingRight: 8,
   },
   legalText: {
+    marginTop: 2,
     color: MUTED,
     fontSize: 7,
-    lineHeight: 1.35,
+    lineHeight: 1.3,
   },
-  pageNumber: {
+  footerPageColumn: {
+    width: '32%',
+    paddingRight: 8,
+    alignItems: 'flex-end',
+  },
+  footerPage: {
     color: NAVY,
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
@@ -346,7 +330,7 @@ function getCompanyDetails(companyInfo) {
 }
 
 function getLegalDetails(companyInfo) {
-  const details = [
+  const banking = [
     getText(companyInfo, 'banque', 'bank')
       ? `Banque : ${getText(companyInfo, 'banque', 'bank')}`
       : '',
@@ -354,6 +338,8 @@ function getLegalDetails(companyInfo) {
     getText(companyInfo, 'capitalSocial', 'capital')
       ? `Capital social : ${getText(companyInfo, 'capitalSocial', 'capital')}`
       : '',
+  ].filter(Boolean)
+  const registrations = [
     getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')
       ? `IF : ${getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')}`
       : '',
@@ -363,12 +349,17 @@ function getLegalDetails(companyInfo) {
     getText(companyInfo, 'rc') ? `RC : ${getText(companyInfo, 'rc')}` : '',
     getText(companyInfo, 'ice') ? `ICE : ${getText(companyInfo, 'ice')}` : '',
     getText(companyInfo, 'patente') ? `Patente : ${getText(companyInfo, 'patente')}` : '',
+  ].filter(Boolean)
+  const legal = [
     getText(companyInfo, 'mentionsLegales', 'legalMentions'),
   ].filter(Boolean)
 
-  return details.length
-    ? details.join('  ·  ')
-    : 'TGI Ascenseurs Casa · Fiche technique générée par TGI Manager Pro'
+  if (banking.length === 0 && registrations.length === 0 && legal.length === 0) {
+    banking.push('TGI Ascenseurs Casa')
+    legal.push('Fiche d’intervention générée par TGI Manager Pro')
+  }
+
+  return { banking, registrations, legal }
 }
 
 function getParts(intervention) {
@@ -533,6 +524,7 @@ export default function InterventionPdfDocument({ intervention = {} }) {
   const parts = getParts(intervention)
   const maintenanceChecklist = getMaintenanceChecklist(intervention)
   const companyDetails = getCompanyDetails(companyInfo)
+  const legalDetails = getLegalDetails(companyInfo)
 
   return (
     <Document
@@ -540,12 +532,17 @@ export default function InterventionPdfDocument({ intervention = {} }) {
       subject={`Fiche d’intervention ${getInterventionNumber(intervention)}`}
       title={`Fiche d’intervention ${getInterventionNumber(intervention)}`}
     >
-      <Page size="A4" style={styles.page} wrap>
-        <View fixed style={styles.header}>
-          <Image
-            src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
-            style={styles.logo}
-          />
+      <Page size="A4" style={{ padding: 0, backgroundColor: '#FFFFFF' }} wrap>
+        <View style={styles.header}>
+          <View style={styles.headerIdentity}>
+            <View style={styles.logoFrame}>
+              <Image
+                src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
+                style={styles.logo}
+              />
+            </View>
+            <Text style={styles.documentTitle}>FICHE D’INTERVENTION</Text>
+          </View>
           <View style={styles.companyBlock}>
             <Text style={styles.companyName}>{companyName}</Text>
             {companyDetails.map((detail) => (
@@ -556,148 +553,166 @@ export default function InterventionPdfDocument({ intervention = {} }) {
           </View>
         </View>
 
-        <View fixed style={styles.titleBlock}>
-          <Text style={styles.title}>
-            FICHE D’INTERVENTION N° {getInterventionNumber(intervention)}
-          </Text>
-        </View>
-
-        <View style={styles.infoGrid}>
-          <View style={[styles.infoCard, styles.infoCardSpaced]} wrap={false}>
-            <Text style={styles.sectionLabel}>Client</Text>
-            <Text style={styles.infoCardTitle}>{clientName}</Text>
-            {clientPhone && <Text style={styles.infoText}>Tél. : {clientPhone}</Text>}
-            {clientAddress && <Text style={styles.infoText}>{clientAddress}</Text>}
-          </View>
-          <View style={styles.infoCard} wrap={false}>
-            <Text style={styles.sectionLabel}>Équipement concerné</Text>
-            <Text style={styles.infoCardTitle}>{equipmentType}</Text>
-            {equipmentReference && (
-              <Text style={styles.infoText}>N° série / Référence : {equipmentReference}</Text>
-            )}
-            {equipmentAddress && (
-              <Text style={styles.infoText}>Adresse : {equipmentAddress}</Text>
-            )}
-          </View>
-        </View>
-
-        <View style={styles.details} wrap={false}>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Date d’intervention</Text>
-            <Text style={styles.detailValue}>{formatDateTime(interventionDate)}</Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Type</Text>
-            <Text style={styles.detailValue}>{interventionType}</Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Technicien</Text>
-            <Text style={styles.detailValue}>{technician || '—'}</Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Heure d’arrivée</Text>
-            <Text style={styles.detailValue}>
-              {getText(intervention, 'heureArrivee', 'arrivalTime') || '—'}
-            </Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Heure de départ</Text>
-            <Text style={styles.detailValue}>
-              {getText(intervention, 'heureDepart', 'departureTime') || '—'}
-            </Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Temps passé</Text>
-            <Text style={styles.detailValue}>
-              {formatElapsedTime(getElapsedMinutes(intervention))}
-            </Text>
-          </View>
-        </View>
-
-        {problemDescription && (
-          <View style={styles.problem}>
-            <Text style={styles.problemTitle}>Problème signalé</Text>
-            <Text style={styles.problemText}>{problemDescription}</Text>
-          </View>
-        )}
-
-        <View style={styles.report}>
-          <Text style={styles.sectionLabel}>Travaux effectués</Text>
-          <Text style={styles.reportText}>
-            {workReport || 'Aucun rapport de travaux renseigné.'}
-          </Text>
-        </View>
-
-        {maintenanceChecklist.length > 0 && (
-          <View style={styles.maintenanceChecklist}>
-            <Text style={styles.checklistTitle}>Checklist de maintenance réalisée</Text>
-            {maintenanceChecklist.map((item, index) => (
-              <Text key={`${item}-${index}`} style={styles.checklistItem}>
-                [x] {item}
-              </Text>
-            ))}
-          </View>
-        )}
-
-        {parts.length > 0 && (
-          <View style={styles.tableSection}>
-            <Text style={styles.sectionLabel}>Pièces de rechange</Text>
-            <View style={styles.table}>
-              <View fixed style={styles.tableHeader}>
-                <Text style={[styles.headerCell, { width: '76%' }]}>Désignation</Text>
-                <Text
-                  style={[styles.headerCell, { width: '24%', textAlign: 'right' }]}
-                >
-                  Quantité
-                </Text>
-              </View>
-              {parts.map((part, index) => (
-                <View
-                  key={`${part.designation}-${index}`}
-                  style={[
-                    styles.tableRow,
-                    index % 2 === 1 ? styles.alternateRow : null,
-                  ]}
-                  wrap={false}
-                >
-                  <Text style={[styles.cell, { width: '76%' }]}>{part.designation}</Text>
-                  <Text
-                    style={[
-                      styles.cell,
-                      styles.lastCell,
-                      { width: '24%', textAlign: 'right' },
-                    ]}
-                  >
-                    {formatQuantity(part.quantity)}
-                  </Text>
-                </View>
-              ))}
+        <View style={styles.content}>
+          <View style={styles.infoGrid}>
+            <View style={styles.infoCard} wrap={false}>
+              <Text style={styles.sectionLabel}>Client</Text>
+              <Text style={styles.infoCardTitle}>{clientName}</Text>
+              {clientPhone && <Text style={styles.infoText}>Tél. : {clientPhone}</Text>}
+              {clientAddress && <Text style={styles.infoText}>{clientAddress}</Text>}
+            </View>
+            <View style={styles.infoCard} wrap={false}>
+              <Text style={styles.sectionLabel}>Équipement concerné</Text>
+              <Text style={styles.infoCardTitle}>{equipmentType}</Text>
+              {equipmentReference && (
+                <Text style={styles.infoText}>N° série / Référence : {equipmentReference}</Text>
+              )}
+              {equipmentAddress && (
+                <Text style={styles.infoText}>Adresse : {equipmentAddress}</Text>
+              )}
             </View>
           </View>
-        )}
 
-        <View style={styles.signatures} wrap={false}>
-          <View style={[styles.signatureBox, styles.signatureBoxSpaced]}>
-            <Text style={styles.signatureTitle}>Signature du Technicien</Text>
+          <View style={styles.details}>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>N° d’intervention</Text>
+              <Text style={styles.detailValue}>{getInterventionNumber(intervention)}</Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Date d’intervention</Text>
+              <Text style={styles.detailValue}>{formatDateTime(interventionDate)}</Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Type</Text>
+              <Text style={styles.detailValue}>{interventionType}</Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Technicien</Text>
+              <Text style={styles.detailValue}>{technician || '—'}</Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Heure d’arrivée</Text>
+              <Text style={styles.detailValue}>
+                {getText(intervention, 'heureArrivee', 'arrivalTime') || '—'}
+              </Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Heure de départ</Text>
+              <Text style={styles.detailValue}>
+                {getText(intervention, 'heureDepart', 'departureTime') || '—'}
+              </Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Temps passé</Text>
+              <Text style={styles.detailValue}>
+                {formatElapsedTime(getElapsedMinutes(intervention))}
+              </Text>
+            </View>
           </View>
-          <View style={styles.signatureBox}>
-            <Text style={styles.signatureTitle}>Signature du Client</Text>
-            <Text style={styles.signatureHint}>Bon pour accord</Text>
+
+          {problemDescription && (
+            <View style={styles.sectionWrap}>
+              <View style={styles.problem}>
+                <Text style={styles.problemTitle}>Problème signalé</Text>
+                <Text style={styles.problemText}>{problemDescription}</Text>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.sectionWrap}>
+            <View style={styles.report}>
+              <Text style={styles.sectionLabel}>Rapport technique · Travaux effectués</Text>
+              <Text style={styles.reportText}>
+                {workReport || 'Aucun rapport de travaux renseigné.'}
+              </Text>
+            </View>
+          </View>
+
+          {maintenanceChecklist.length > 0 && (
+            <View style={styles.sectionWrap}>
+              <View style={styles.maintenanceChecklist}>
+                <Text style={styles.checklistTitle}>Checklist de maintenance réalisée</Text>
+                {maintenanceChecklist.map((item, index) => (
+                  <Text key={`${item}-${index}`} style={styles.checklistItem}>
+                    [x] {item}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {parts.length > 0 && (
+            <View style={styles.tableSection}>
+              <Text style={styles.sectionLabel}>Pièces de rechange</Text>
+              <View style={styles.table}>
+                <View fixed style={styles.tableHeader}>
+                  <Text style={[styles.headerCell, { width: '76%' }]}>Désignation</Text>
+                  <Text style={[styles.headerCell, { width: '24%', textAlign: 'right' }]}>
+                    Quantité
+                  </Text>
+                </View>
+                {parts.map((part, index) => (
+                  <View
+                    key={`${part.designation}-${index}`}
+                    style={[
+                      styles.tableRow,
+                      index % 2 === 1 ? styles.alternateRow : null,
+                    ]}
+                    wrap={false}
+                  >
+                    <Text style={[styles.cell, { width: '76%' }]}>{part.designation}</Text>
+                    <Text style={[styles.cell, { width: '24%', textAlign: 'right' }]}>
+                      {formatQuantity(part.quantity)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          <View style={styles.signatures} wrap={false}>
+            <View style={styles.signatureBox}>
+              <Text style={styles.signatureTitle}>Signature du Technicien</Text>
+              <View style={styles.signatureLine} />
+            </View>
+            <View style={styles.signatureBox}>
+              <Text style={styles.signatureTitle}>Signature du Client</Text>
+              <Text style={styles.signatureHint}>Bon pour accord</Text>
+              <View style={styles.signatureLine} />
+            </View>
           </View>
         </View>
 
         <View fixed style={styles.footer}>
-          <View style={styles.footerDetails}>
-            <Text style={styles.legalText}>{getLegalDetails(companyInfo)}</Text>
+          <View style={styles.footerColumn}>
+            {legalDetails.banking.map((detail) => (
+              <Text key={detail} style={styles.legalText}>
+                {detail}
+              </Text>
+            ))}
+          </View>
+          <View style={styles.footerColumn}>
+            {legalDetails.registrations.map((detail) => (
+              <Text key={detail} style={styles.legalText}>
+                {detail}
+              </Text>
+            ))}
+          </View>
+          <View style={styles.footerPageColumn}>
+            {legalDetails.legal.map((detail) => (
+              <Text key={detail} style={styles.legalText}>
+                {detail}
+              </Text>
+            ))}
             <Text style={styles.legalText}>
               TGI Ascenseurs Casa · Rapport d’intervention destiné au suivi technique.
             </Text>
+            <Text
+              fixed
+              render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
+              style={styles.footerPage}
+            />
           </View>
-          <Text
-            fixed
-            render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
-            style={styles.pageNumber}
-          />
         </View>
       </Page>
     </Document>
