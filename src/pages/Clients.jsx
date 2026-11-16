@@ -18,6 +18,31 @@ import ClientForm from '../components/ClientForm.jsx'
 import TablePdfExportButton from '../components/TablePdfExportButton.jsx'
 import { db } from '../firebase.js'
 
+const PDF_COMPANY_DEFAULTS = {
+  name: 'TGI ASCENSEURS CASA',
+  address: '',
+  phone: '',
+  email: '',
+  ice: '',
+  rc: '',
+  patente: '',
+  capitalSocial: '',
+  banque: '',
+  rib: '',
+  identifiantFiscal: '',
+  cnss: '',
+  companyLogoBase64: '',
+}
+
+function getPdfCompanyInfo(settings = {}) {
+  return {
+    ...PDF_COMPANY_DEFAULTS,
+    ...Object.fromEntries(
+      Object.entries(settings).filter(([, value]) => typeof value === 'string'),
+    ),
+  }
+}
+
 function getClientName(client) {
   return String(client.nom || client.raisonSociale || client.name || 'Client sans nom')
 }
@@ -411,32 +436,27 @@ export default function Clients() {
     }
   }
 
-  async function handleExport(client) {
+  async function handleExportSingleClient(client) {
     setExportingId(client.id)
 
     try {
       const settingsSnapshot = await getDoc(doc(db, 'settings', 'company'))
-      const [{ pdf }, { PDF_COMPANY_INFO }, { default: ClientPdfDocument }] =
+      const [{ pdf }, { default: ClientPdfDocument }] =
         await Promise.all([
           import('@react-pdf/renderer'),
-          import('../utils/pdfEngine.js'),
           import('../components/pdf/ClientPdfDocument.jsx'),
         ])
       const savedCompanyInfo = settingsSnapshot.exists() ? settingsSnapshot.data() : {}
-      const companyInfo = {
-        ...PDF_COMPANY_INFO,
-        ...Object.fromEntries(
-          Object.entries(savedCompanyInfo).filter(([, value]) => typeof value === 'string'),
-        ),
-      }
+      const companyInfo = getPdfCompanyInfo(savedCompanyInfo)
 
       const blob = await pdf(
         <ClientPdfDocument client={client} companyInfo={companyInfo} />,
       ).toBlob()
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
+      const clientIdentifier = String(client.ice || client.id || getClientReference(client))
       link.href = url
-      link.download = `Fiche_Client_${getClientReference(client)
+      link.download = `Fiche_Client_${clientIdentifier
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[<>:"/\\|?*]/g, '-')
@@ -687,7 +707,7 @@ export default function Clients() {
                             aria-label={`Exporter la fiche PDF de ${getClientName(client)}`}
                             className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600/20 disabled:cursor-wait disabled:opacity-50"
                             disabled={Boolean(exportingId)}
-                            onClick={() => void handleExport(client)}
+                            onClick={() => void handleExportSingleClient(client)}
                             title="Exporter la fiche client en PDF"
                             type="button"
                           >
