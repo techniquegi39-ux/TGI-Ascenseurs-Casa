@@ -442,6 +442,17 @@ export default function ContractPdfDocument({ contract = {} }) {
   )
   const serviceType = getText(contract, 'typeContrat', 'contractType') || 'Non renseigné'
   const contractNature = getText(contract, 'type') || '—'
+  const isInstallation = [serviceType, contractNature].some(
+    (type) =>
+      type
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLocaleLowerCase('fr-FR') === 'installation',
+  )
+  const documentTitle = isInstallation ? 'CONTRAT D’INSTALLATION' : 'CONTRAT D’ENTRETIEN'
+  const documentTitleSentence = isInstallation
+    ? 'Contrat d’installation'
+    : 'Contrat d’entretien'
   const responseSla = getText(
     contract,
     'slaIntervention',
@@ -456,8 +467,8 @@ export default function ContractPdfDocument({ contract = {} }) {
   return (
     <Document
       author={companyName}
-      subject={`Contrat d’entretien ${getContractNumber(contract)}`}
-      title={`Contrat d’entretien ${getContractNumber(contract)}`}
+      subject={`${documentTitleSentence} ${getContractNumber(contract)}`}
+      title={`${documentTitleSentence} ${getContractNumber(contract)}`}
     >
       <Page size="A4" style={styles.page} wrap>
         <View fixed style={styles.header}>
@@ -468,7 +479,7 @@ export default function ContractPdfDocument({ contract = {} }) {
                 style={styles.logo}
               />
             </View>
-            <Text style={styles.documentTitle}>CONTRAT D’ENTRETIEN</Text>
+            <Text style={styles.documentTitle}>{documentTitle}</Text>
           </View>
           <View style={styles.companyBlock}>
             <Text style={styles.companyName}>{companyName}</Text>
@@ -636,7 +647,7 @@ export default function ContractPdfDocument({ contract = {} }) {
               </Text>
             ))}
             <Text style={styles.legalText}>
-              Contrat d’entretien · Exemplaire destiné aux parties signataires.
+              {documentTitleSentence} · Exemplaire destiné aux parties signataires.
             </Text>
             <Text
               fixed

@@ -4,7 +4,9 @@ import {
   CalendarClock,
   ClipboardCheck,
   LoaderCircle,
+  Plus,
   RefreshCw,
+  Trash2,
   UserRound,
   Wrench,
   X,
@@ -37,6 +39,14 @@ const MAINTENANCE_CHECKLIST_ITEMS = [
 ]
 const COMPLETED_REPORT_ERROR =
   'Le rapport technique est obligatoire pour clôturer une intervention.'
+
+function createPartId() {
+  return `part-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+function createEmptyPart() {
+  return { id: createPartId(), designation: '', quantity: '1' }
+}
 
 function getElapsedMinutes(arrival, departure) {
   if (!arrival || !departure) {
@@ -112,9 +122,19 @@ function toLocalDateTime(value) {
 }
 
 function getInitialFormData(intervention) {
-  const replacedParts = intervention?.piecesRemplacees || intervention?.partsReplaced || []
+  const replacedParts =
+    intervention?.partsUsed ??
+    intervention?.piecesRemplacees ??
+    intervention?.partsReplaced ??
+    []
   const maintenanceChecklist =
     intervention?.checklistMaintenance || intervention?.maintenanceChecklist || []
+  const sourceParts = Array.isArray(replacedParts)
+    ? replacedParts
+    : String(replacedParts)
+        .split(/\r?\n|;/)
+        .map((part) => part.trim())
+        .filter(Boolean)
 
   return {
     clientId: String(intervention?.clientId || ''),
@@ -139,9 +159,20 @@ function getInitialFormData(intervention) {
     travauxEffectues: String(
       intervention?.travauxEffectues || intervention?.rapport || intervention?.report || '',
     ),
-    piecesRemplacees: Array.isArray(replacedParts)
-      ? replacedParts.map(String).join('\n')
-      : String(replacedParts),
+    piecesRemplacees: sourceParts.length
+      ? sourceParts.map((part) => {
+          if (part && typeof part === 'object') {
+            return {
+              id: createPartId(),
+              designation: String(
+                part.designation || part.name || part.nom || part.description || part.reference || '',
+              ),
+              quantity: String(part.quantity ?? part.quantite ?? part.qty ?? 1),
+            }
+          }
+          return { id: createPartId(), designation: String(part), quantity: '1' }
+        })
+      : [createEmptyPart()],
     heureArrivee: String(intervention?.heureArrivee || intervention?.arrivalTime || ''),
     heureDepart: String(intervention?.heureDepart || intervention?.departureTime || ''),
     checklistMaintenance: Array.isArray(maintenanceChecklist)
@@ -452,8 +483,23 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
     } else if (formData.travauxEffectues.trim().length > 10000) {
       nextErrors.travauxEffectues = 'Le rapport ne doit pas dépasser 10 000 caractères.'
     }
-    if (formData.piecesRemplacees.length > 3000) {
+    const replacedParts = formData.piecesRemplacees.filter((part) => part.designation.trim())
+    const replacedPartsLength = replacedParts.reduce(
+      (total, part) => total + part.designation.trim().length,
+      0,
+    )
+    if (replacedPartsLength > 3000) {
       nextErrors.piecesRemplacees = 'La liste des pièces ne doit pas dépasser 3 000 caractères.'
+    }
+    if (
+      replacedParts.some(
+        (part) =>
+          !Number.isFinite(Number(part.quantity)) ||
+          Number(part.quantity) <= 0 ||
+          Number(part.quantity) > 1000000,
+      )
+    ) {
+      nextErrors.piecesRemplacees = 'Chaque pièce doit avoir une quantité supérieure à zéro.'
     }
     if (formData.observationsInternes.trim().length > 5000) {
       nextErrors.observationsInternes =
@@ -493,9 +539,11 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
     setIsSaving(true)
     const dateIntervention = new Date(formData.dateHeure)
     const piecesRemplacees = formData.piecesRemplacees
-      .split(/\r?\n|;/)
-      .map((part) => part.trim())
-      .filter(Boolean)
+      .filter((part) => part.designation.trim())
+      .map((part) => ({
+        designation: part.designation.trim(),
+        quantity: Number(part.quantity),
+      }))
     const payload = {
       clientId: selectedClient.id,
       clientName: getClientName(selectedClient),
@@ -562,6 +610,56 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
         ? previous.checklistMaintenance.filter((checkedItem) => checkedItem !== item)
         : [...previous.checklistMaintenance, item],
     }))
+  }
+
+  function handlePartChange(partId, field, value) {
+    setFormData((previous) => ({
+      ...previous,
+      piecesRemplacees: previous.piecesRemplacees.map((part) =>
+        part.id === partId ? { ...part, [field]: value } : part,
+      ),
+    }))
+    setErrors((previous) => {
+      if (!previous.piecesRemplacees) {
+        return previous
+      }
+      const nextErrors = { ...previous }
+      delete nextErrors.piecesRemplacees
+      return nextErrors
+    })
+    setFormError('')
+  }
+
+  function addPart() {
+    setFormData((previous) => ({
+      ...previous,
+      piecesRemplacees: [...previous.piecesRemplacees, createEmptyPart()],
+    }))
+    setErrors((previous) => {
+      if (!previous.piecesRemplacees) {
+        return previous
+      }
+      const nextErrors = { ...previous }
+      delete nextErrors.piecesRemplacees
+      return nextErrors
+    })
+    setFormError('')
+  }
+
+  function removePart(partId) {
+    setFormData((previous) => ({
+      ...previous,
+      piecesRemplacees: previous.piecesRemplacees.filter((part) => part.id !== partId),
+    }))
+    setErrors((previous) => {
+      if (!previous.piecesRemplacees) {
+        return previous
+      }
+      const nextErrors = { ...previous }
+      delete nextErrors.piecesRemplacees
+      return nextErrors
+    })
+    setFormError('')
   }
 
   const elapsedMinutes = getElapsedMinutes(formData.heureArrivee, formData.heureDepart)
@@ -928,17 +1026,95 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
                     value={formData.travauxEffectues}
                     disabled={isSaving}
                   />
-                  <TextAreaField
-                    error={errors.piecesRemplacees}
-                    id="intervention-parts"
-                    label="Pièces remplacées"
-                    name="piecesRemplacees"
-                    onChange={handleChange}
-                    placeholder={'Une pièce par ligne, par exemple :\nContacteur de porte\nFusible 2A'}
-                    rows={3}
-                    value={formData.piecesRemplacees}
-                    disabled={isSaving}
-                  />
+                  <section
+                    aria-labelledby="intervention-parts-heading"
+                    className="rounded-lg border border-slate-200 bg-white p-4"
+                  >
+                    <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h4 className="text-sm font-medium text-slate-700" id="intervention-parts-heading">
+                          Pièces remplacées
+                        </h4>
+                        <p className="mt-1 text-xs text-slate-500">
+                          Indiquez la désignation et la quantité de chaque pièce.
+                        </p>
+                      </div>
+                      <button
+                        className="inline-flex h-9 items-center justify-center gap-2 self-start rounded-lg border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-800 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60 sm:self-auto"
+                        disabled={isSaving}
+                        onClick={addPart}
+                        type="button"
+                      >
+                        <Plus aria-hidden="true" className="h-4 w-4" />
+                        Ajouter une ligne
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      {formData.piecesRemplacees.map((part, index) => (
+                        <div
+                          className="grid gap-3 rounded-lg border border-slate-100 bg-slate-50/70 p-3 sm:grid-cols-[minmax(0,1fr)_140px_auto]"
+                          key={part.id}
+                        >
+                          <div>
+                            <label
+                              className="mb-1.5 block text-xs font-medium text-slate-600"
+                              htmlFor={`intervention-part-${part.id}-designation`}
+                            >
+                              Désignation
+                            </label>
+                            <input
+                              className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+                              disabled={isSaving}
+                              id={`intervention-part-${part.id}-designation`}
+                              maxLength={180}
+                              onChange={(event) =>
+                                handlePartChange(part.id, 'designation', event.target.value)
+                              }
+                              placeholder={`Pièce ${index + 1}`}
+                              value={part.designation}
+                            />
+                          </div>
+                          <div>
+                            <label
+                              className="mb-1.5 block text-xs font-medium text-slate-600"
+                              htmlFor={`intervention-part-${part.id}-quantity`}
+                            >
+                              Quantité
+                            </label>
+                            <input
+                              className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+                              disabled={isSaving}
+                              id={`intervention-part-${part.id}-quantity`}
+                              min="0.001"
+                              onChange={(event) =>
+                                handlePartChange(part.id, 'quantity', event.target.value)
+                              }
+                              step="0.001"
+                              type="number"
+                              value={part.quantity}
+                            />
+                          </div>
+                          <div className="flex items-end justify-end">
+                            <button
+                              aria-label={`Supprimer la pièce ${index + 1}`}
+                              className="grid h-10 w-10 place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                              disabled={isSaving}
+                              onClick={() => removePart(part.id)}
+                              title="Supprimer la pièce"
+                              type="button"
+                            >
+                              <Trash2 aria-hidden="true" className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {errors.piecesRemplacees && (
+                      <p className="mt-2 text-xs text-red-700" role="alert">
+                        {errors.piecesRemplacees}
+                      </p>
+                    )}
+                  </section>
                   {formData.type === 'Maintenance Préventive' && (
                     <fieldset className="rounded-lg border border-slate-200 bg-white p-4">
                       <legend className="px-1 text-sm font-medium text-slate-700">

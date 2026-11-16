@@ -26,7 +26,12 @@ import { db } from '../firebase.js'
 import { useAuth } from '../context/useAuth.js'
 
 const CONTRACT_TYPES = ['Maintenance', 'Modernisation']
-const CONTRACT_SERVICE_TYPES = ['Standard', 'Préventif', 'Pièces et Main d’œuvre (P&MO)']
+const CONTRACT_SERVICE_TYPES = [
+  'Standard',
+  'Préventif',
+  'Pièces et Main d’œuvre (P&MO)',
+  'Installation',
+]
 const SLA_RESPONSE_TIMES = ['Sous 4h', 'Sous 12h', 'Sous 24h']
 const CONTRACT_STATUSES = ['En négociation', 'Actif', 'Résilié']
 const BILLING_FREQUENCIES = ['Mensuelle', 'Trimestrielle', 'Annuelle']
