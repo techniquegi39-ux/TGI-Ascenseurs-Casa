@@ -441,14 +441,17 @@ export default function ContractPdfDocument({ contract = {} }) {
     'paymentFrequency',
   )
   const serviceType = getText(contract, 'typeContrat', 'contractType') || 'Non renseigné'
-  const contractNature = getText(contract, 'type') || '—'
-  const isInstallation = [serviceType, contractNature].some(
-    (type) =>
-      type
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLocaleLowerCase('fr-FR') === 'installation',
-  )
+  const contractNature = getText(
+    contract,
+    'type',
+    'natureContrat',
+    'objet',
+    'nature',
+  ) || '—'
+  const isInstallation = contractNature
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('fr-FR') === 'installation'
   const documentTitle = isInstallation ? 'CONTRAT D’INSTALLATION' : 'CONTRAT D’ENTRETIEN'
   const documentTitleSentence = isInstallation
     ? 'Contrat d’installation'

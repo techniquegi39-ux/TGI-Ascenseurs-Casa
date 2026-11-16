@@ -25,12 +25,11 @@ import {
 import { db } from '../firebase.js'
 import { useAuth } from '../context/useAuth.js'
 
-const CONTRACT_TYPES = ['Maintenance', 'Modernisation']
+const CONTRACT_TYPES = ['Maintenance', 'Modernisation', 'Installation']
 const CONTRACT_SERVICE_TYPES = [
   'Standard',
   'Préventif',
   'Pièces et Main d’œuvre (P&MO)',
-  'Installation',
 ]
 const SLA_RESPONSE_TIMES = ['Sous 4h', 'Sous 12h', 'Sous 24h']
 const CONTRACT_STATUSES = ['En négociation', 'Actif', 'Résilié']
@@ -96,20 +95,40 @@ function getNextDateInputValue(value) {
   ].join('-')
 }
 
+function isInstallationType(value) {
+  return String(value || '')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('fr-FR') === 'installation'
+}
+
 function getInitialFormData(contract) {
   const elevatorIds =
     contract?.elevatorIds || contract?.equipementIds || contract?.equipmentIds || []
+  const savedServiceType = String(contract?.typeContrat || contract?.contractType || '').trim()
+  const savedContractNature = String(
+    contract?.type ||
+      contract?.natureContrat ||
+      contract?.objet ||
+      contract?.nature ||
+      '',
+  )
 
   return {
     clientId: String(contract?.clientId || ''),
     clientName: String(contract?.clientName || ''),
     numero: String(contract?.numero || contract?.contractNumber || ''),
-    type: String(contract?.type || CONTRACT_TYPES[0]),
-    typeContrat: String(
-      contract?.typeContrat ||
-        contract?.contractType ||
-        (contract ? '' : CONTRACT_SERVICE_TYPES[0]),
-    ),
+    type: isInstallationType(savedContractNature) || isInstallationType(savedServiceType)
+      ? 'Installation'
+      : savedContractNature || CONTRACT_TYPES[0],
+    typeContrat: isInstallationType(savedServiceType)
+      ? ''
+      : CONTRACT_SERVICE_TYPES.includes(savedServiceType)
+        ? savedServiceType
+        : contract
+          ? ''
+          : CONTRACT_SERVICE_TYPES[0],
     slaIntervention: String(
       contract?.slaIntervention ||
         contract?.delaiInterventionGaranti ||
@@ -809,10 +828,6 @@ export default function ContractForm({ contract = null, onClose, onSaved }) {
                   name="typeContrat"
                   onChange={handleChange}
                   options={[
-                    ...(formData.typeContrat &&
-                    !CONTRACT_SERVICE_TYPES.includes(formData.typeContrat)
-                      ? [{ value: formData.typeContrat, label: formData.typeContrat }]
-                      : []),
                     { value: '', label: 'Non renseigné' },
                     ...CONTRACT_SERVICE_TYPES.map((type) => ({ value: type, label: type })),
                   ]}
