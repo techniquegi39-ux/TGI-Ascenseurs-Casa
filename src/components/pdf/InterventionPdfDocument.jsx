@@ -7,11 +7,20 @@ const PALE_BLUE = '#F8FAFC'
 const PALE_GRAY = '#F3F4F6'
 
 const styles = StyleSheet.create({
-  header: {
-    width: '100%',
-    paddingTop: 40,
-    paddingBottom: 40,
+  page: {
+    paddingTop: 130,
+    paddingBottom: 90,
     paddingHorizontal: 40,
+    backgroundColor: '#FFFFFF',
+  },
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 110,
+    paddingHorizontal: 40,
+    paddingTop: 35,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -61,12 +70,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     textAlign: 'right',
   },
-  content: {
-    paddingBottom: 120,
-  },
   infoGrid: {
-    paddingTop: 30,
-    paddingHorizontal: 40,
     flexDirection: 'row',
     alignItems: 'stretch',
     justifyContent: 'space-between',
@@ -99,7 +103,6 @@ const styles = StyleSheet.create({
   },
   details: {
     marginTop: 14,
-    paddingHorizontal: 40,
     paddingVertical: 12,
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -141,7 +144,6 @@ const styles = StyleSheet.create({
   },
   sectionWrap: {
     marginTop: 14,
-    paddingHorizontal: 40,
   },
   report: {
     padding: 15,
@@ -175,7 +177,6 @@ const styles = StyleSheet.create({
   },
   tableSection: {
     marginTop: 14,
-    paddingHorizontal: 40,
   },
   table: {
     width: '100%',
@@ -199,7 +200,7 @@ const styles = StyleSheet.create({
     borderBottomColor: BORDER,
   },
   alternateRow: {
-    backgroundColor: PALE_GRAY,
+    backgroundColor: PALE_BLUE,
   },
   cell: {
     color: '#334155',
@@ -207,7 +208,6 @@ const styles = StyleSheet.create({
   },
   signatures: {
     marginTop: 18,
-    paddingHorizontal: 40,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
@@ -241,15 +241,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingTop: 10,
-    paddingBottom: 16,
+    height: 70,
     paddingHorizontal: 40,
+    paddingTop: 15,
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 3,
-    borderTopColor: '#F97316',
+    borderTopWidth: 1,
+    borderTopColor: BORDER,
   },
   footerColumn: {
     width: '32%',
@@ -532,8 +532,8 @@ export default function InterventionPdfDocument({ intervention = {} }) {
       subject={`Fiche d’intervention ${getInterventionNumber(intervention)}`}
       title={`Fiche d’intervention ${getInterventionNumber(intervention)}`}
     >
-      <Page size="A4" style={{ padding: 0, backgroundColor: '#FFFFFF' }} wrap>
-        <View style={styles.header}>
+      <Page size="A4" style={styles.page} wrap>
+        <View fixed style={styles.header}>
           <View style={styles.headerIdentity}>
             <View style={styles.logoFrame}>
               <Image
@@ -553,7 +553,7 @@ export default function InterventionPdfDocument({ intervention = {} }) {
           </View>
         </View>
 
-        <View style={styles.content}>
+        <View>
           <View style={styles.infoGrid}>
             <View style={styles.infoCard} wrap={false}>
               <Text style={styles.sectionLabel}>Client</Text>

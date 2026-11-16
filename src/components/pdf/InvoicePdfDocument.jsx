@@ -3,14 +3,24 @@ import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/render
 const NAVY = '#1E3A8A'
 const BORDER = '#E2E8F0'
 const MUTED = '#475569'
+const PALE_BLUE = '#F8FAFC'
 const PALE_GRAY = '#F3F4F6'
 
 const styles = StyleSheet.create({
-  header: {
-    width: '100%',
-    paddingTop: 40,
-    paddingBottom: 40,
+  page: {
+    paddingTop: 130,
+    paddingBottom: 90,
     paddingHorizontal: 40,
+    backgroundColor: '#FFFFFF',
+  },
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 110,
+    paddingHorizontal: 40,
+    paddingTop: 35,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -59,13 +69,8 @@ const styles = StyleSheet.create({
     fontSize: 8,
     textAlign: 'right',
   },
-  content: {
-    paddingBottom: 120,
-  },
   clientDetails: {
-    paddingTop: 30,
     paddingBottom: 20,
-    paddingHorizontal: 40,
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
@@ -120,7 +125,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   tableWrap: {
-    paddingHorizontal: 40,
+    width: '100%',
   },
   table: {
     width: '100%',
@@ -142,6 +147,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
+  },
+  alternateRow: {
+    backgroundColor: PALE_BLUE,
   },
   cell: {
     color: '#1F2937',
@@ -271,15 +279,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingTop: 10,
-    paddingBottom: 16,
+    height: 70,
     paddingHorizontal: 40,
+    paddingTop: 15,
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 3,
-    borderTopColor: '#F97316',
+    borderTopWidth: 1,
+    borderTopColor: BORDER,
   },
   footerColumn: {
     width: '32%',
@@ -514,8 +522,8 @@ export default function InvoicePdfDocument({ invoice = {} }) {
       subject={`Facture ${getInvoiceNumber(invoice)}`}
       title={`Facture ${getInvoiceNumber(invoice)}`}
     >
-      <Page size="A4" style={{ padding: 0, backgroundColor: '#FFFFFF' }} wrap>
-        <View style={styles.header}>
+      <Page size="A4" style={styles.page} wrap>
+        <View fixed style={styles.header}>
           <View style={styles.headerIdentity}>
             <View style={styles.logoFrame}>
               <Image
@@ -535,7 +543,7 @@ export default function InvoicePdfDocument({ invoice = {} }) {
           </View>
         </View>
 
-        <View style={styles.content}>
+        <View>
           <View style={styles.clientDetails}>
             <View style={styles.clientBlock}>
               <Text style={styles.sectionLabel}>Facturé à :</Text>
@@ -584,7 +592,10 @@ export default function InvoicePdfDocument({ invoice = {} }) {
                 items.map((item, index) => (
                   <View
                     key={`${item.designation}-${index}`}
-                    style={styles.tableRow}
+                    style={[
+                      styles.tableRow,
+                      index % 2 === 1 ? styles.alternateRow : null,
+                    ]}
                     wrap={false}
                   >
                     <Text style={[styles.cell, { width: '43%' }]}>{item.designation}</Text>

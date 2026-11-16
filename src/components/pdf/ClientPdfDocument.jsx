@@ -7,14 +7,21 @@ const PALE = '#F8FAFC'
 
 const styles = StyleSheet.create({
   page: {
-    padding: 0,
+    paddingTop: 130,
+    paddingBottom: 90,
+    paddingHorizontal: 40,
     backgroundColor: '#FFFFFF',
     color: '#0F172A',
     fontFamily: 'Helvetica',
   },
   header: {
-    width: '100%',
-    padding: 40,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 110,
+    paddingHorizontal: 40,
+    paddingTop: 35,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -62,11 +69,6 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     fontSize: 8,
     textAlign: 'right',
-  },
-  content: {
-    paddingTop: 28,
-    paddingBottom: 120,
-    paddingHorizontal: 40,
   },
   documentMeta: {
     marginBottom: 4,
@@ -133,15 +135,15 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     left: 0,
-    paddingTop: 10,
-    paddingBottom: 16,
+    height: 70,
     paddingHorizontal: 40,
+    paddingTop: 15,
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 2,
-    borderTopColor: NAVY,
+    borderTopWidth: 1,
+    borderTopColor: BORDER,
   },
   footerColumn: {
     width: '32%',
@@ -325,7 +327,7 @@ export default function ClientPdfDocument({
       title={`Fiche client ${clientName}`}
     >
       <Page size="A4" style={styles.page} wrap>
-        <View style={styles.header}>
+        <View fixed style={styles.header}>
           <View style={styles.headerIdentity}>
             <View style={styles.logoFrame}>
               <Image
@@ -345,39 +347,37 @@ export default function ClientPdfDocument({
           </View>
         </View>
 
-        <View style={styles.content}>
-          <View style={styles.documentMeta}>
-            <View style={styles.metaItem}>
-              <Text style={styles.metaLabel}>Client</Text>
-              <Text style={styles.metaValue}>{clientName}</Text>
-            </View>
-            <View style={[styles.metaItem, { alignItems: 'flex-end' }]}>
-              <Text style={[styles.metaLabel, { textAlign: 'right' }]}>
-                Référence · Date d’édition
-              </Text>
-              <Text style={[styles.metaValue, { textAlign: 'right' }]}>
-                {clientReference} · {formatDate(generatedAt)}
-              </Text>
-            </View>
+        <View style={styles.documentMeta}>
+          <View style={styles.metaItem}>
+            <Text style={styles.metaLabel}>Client</Text>
+            <Text style={styles.metaValue}>{clientName}</Text>
           </View>
-
-          {sections.map((section) => (
-            <View key={section.title}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>{section.title}</Text>
-              </View>
-              {section.details.map(([label, value], index) => (
-                <View
-                  key={label}
-                  style={[styles.row, index % 2 === 1 && styles.alternateRow]}
-                >
-                  <Text style={styles.label}>{label}</Text>
-                  <Text style={styles.value}>{value}</Text>
-                </View>
-              ))}
-            </View>
-          ))}
+          <View style={[styles.metaItem, { alignItems: 'flex-end' }]}>
+            <Text style={[styles.metaLabel, { textAlign: 'right' }]}>
+              Référence · Date d’édition
+            </Text>
+            <Text style={[styles.metaValue, { textAlign: 'right' }]}>
+              {clientReference} · {formatDate(generatedAt)}
+            </Text>
+          </View>
         </View>
+
+        {sections.map((section) => (
+          <View key={section.title}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{section.title}</Text>
+            </View>
+            {section.details.map(([label, value], index) => (
+              <View
+                key={label}
+                style={[styles.row, index % 2 === 1 && styles.alternateRow]}
+              >
+                <Text style={styles.label}>{label}</Text>
+                <Text style={styles.value}>{value}</Text>
+              </View>
+            ))}
+          </View>
+        ))}
 
         <View fixed style={styles.footer}>
           <View style={styles.footerColumn}>
