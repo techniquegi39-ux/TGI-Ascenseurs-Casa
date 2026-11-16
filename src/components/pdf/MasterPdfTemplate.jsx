@@ -6,8 +6,8 @@ import {
 } from './PdfDocumentChrome.jsx'
 import { pdfPageStyles } from './PdfDocumentStyles.js'
 
-const TGI_NAVY = '#1E3A8A'
-const TGI_BLUE = '#1E3A8A'
+const TGI_NAVY = '#0A2540'
+const TGI_BLUE = '#0A2540'
 const BORDER = '#E2E8F0'
 const MUTED = '#64748B'
 

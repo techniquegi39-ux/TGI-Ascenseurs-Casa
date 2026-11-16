@@ -7,7 +7,7 @@ import {
 } from './PdfDocumentChrome.jsx'
 import { pdfPageStyles } from './PdfDocumentStyles.js'
 
-const NAVY = '#1E3A8A'
+const NAVY = '#0A2540'
 const BORDER = '#E2E8F0'
 const MUTED = '#64748B'
 const PALE_BLUE = '#F1F5F9'

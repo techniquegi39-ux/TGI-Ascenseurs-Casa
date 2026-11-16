@@ -3,29 +3,22 @@ import {
   PdfDocumentFooter,
   PdfDocumentHeader,
 } from './PdfDocumentChrome.jsx'
-import { pdfPageStyles } from './PdfDocumentStyles.js'
-
-const NAVY = '#1E3A8A'
-const BORDER = '#E2E8F0'
-const MUTED = '#64748B'
-const PALE = '#F1F5F9'
+import { pdfCardStyles, pdfPageStyles } from './PdfDocumentStyles.js'
 
 const styles = StyleSheet.create({
   clientInformation: {
-    marginBottom: 12,
-    paddingBottom: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+    marginBottom: 20,
   },
-  clientInformationTitle: {
-    color: NAVY,
-    fontSize: 10,
+  clientInformationHeader: {
+    justifyContent: 'space-between',
+  },
+  clientName: {
+    width: '100%',
+    padding: 12,
+    color: '#0A2540',
+    fontSize: 13,
     fontFamily: 'Helvetica-Bold',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
+    borderBottomWidth: 0,
   },
   statusBadge: {
     paddingHorizontal: 9,
@@ -44,45 +37,6 @@ const styles = StyleSheet.create({
   },
   inactiveStatusText: {
     color: '#991B1B',
-  },
-  sectionHeader: {
-    marginTop: 10,
-    marginBottom: 4,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    backgroundColor: NAVY,
-  },
-  sectionTitle: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    fontFamily: 'Helvetica-Bold',
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-  },
-  row: {
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    backgroundColor: '#FFFFFF',
-  },
-  alternateRow: {
-    backgroundColor: PALE,
-  },
-  label: {
-    width: '40%',
-    paddingRight: 10,
-    color: MUTED,
-    fontSize: 9,
-  },
-  value: {
-    width: '60%',
-    color: '#0F172A',
-    fontSize: 10,
-    fontFamily: 'Helvetica-Bold',
-    lineHeight: 1.35,
   },
 })
 
@@ -148,7 +102,6 @@ function getClientSections(client) {
     {
       title: 'Identité & Contact',
       details: [
-        ['Nom / Raison sociale', getText(client, 'nom', 'raisonSociale', 'name') || 'Client sans nom'],
         ['Type de client', getText(client, 'type') || '—'],
         ['ICE / Identifiant fiscal', getText(client, 'ice', 'identifiantFiscal') || '—'],
         ['Téléphone', getText(client, 'telephone', 'téléphone', 'phone') || '—'],
@@ -223,37 +176,49 @@ export default function ClientPdfDocument({
           companyName={companyName}
           documentTitle={`Fiche Client ${clientReference}`}
         />
-        <View style={styles.clientInformation} wrap={false}>
-          <Text style={styles.clientInformationTitle}>INFORMATIONS DU CLIENT</Text>
+        <View style={[pdfCardStyles.card, styles.clientInformation]} wrap={false}>
           <View
-            style={[
-              styles.statusBadge,
-              !isClientActive(client) && styles.inactiveStatusBadge,
-            ]}
+            style={[pdfCardStyles.cardHeader, styles.clientInformationHeader]}
           >
-            <Text
+            <Text style={pdfCardStyles.cardHeaderText}>INFORMATIONS DU CLIENT</Text>
+            <View
               style={[
-                styles.statusText,
-                !isClientActive(client) && styles.inactiveStatusText,
+                styles.statusBadge,
+                !isClientActive(client) && styles.inactiveStatusBadge,
               ]}
             >
-              {isClientActive(client) ? 'Actif' : 'Inactif'}
-            </Text>
+              <Text
+                style={[
+                  styles.statusText,
+                  !isClientActive(client) && styles.inactiveStatusText,
+                ]}
+              >
+                {isClientActive(client) ? 'Actif' : 'Inactif'}
+              </Text>
+            </View>
           </View>
+          <Text style={styles.clientName}>{clientName}</Text>
         </View>
 
         {sections.map((section) => (
-          <View key={section.title}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
+          <View key={section.title} style={pdfCardStyles.card}>
+            <View style={pdfCardStyles.cardHeader} wrap={false}>
+              <Text style={pdfCardStyles.cardHeaderText}>{section.title}</Text>
             </View>
             {section.details.map(([label, value], index) => (
               <View
                 key={label}
-                style={[styles.row, index % 2 === 1 && styles.alternateRow]}
+                style={[
+                  pdfCardStyles.cardRow,
+                  index % 2 === 1 ? pdfCardStyles.cardRowAlternate : null,
+                  index === section.details.length - 1
+                    ? pdfCardStyles.cardRowLast
+                    : null,
+                ]}
+                wrap={false}
               >
-                <Text style={styles.label}>{label}</Text>
-                <Text style={styles.value}>{value}</Text>
+                <Text style={pdfCardStyles.cardLabel}>{label}</Text>
+                <Text style={pdfCardStyles.cardValue}>{value}</Text>
               </View>
             ))}
           </View>

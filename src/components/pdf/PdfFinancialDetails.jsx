@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from '@react-pdf/renderer'
-import { pdfColors } from './PdfDocumentStyles.js'
+import { pdfCardStyles, pdfColors } from './PdfDocumentStyles.js'
 
 const {
   primary,
@@ -14,17 +14,6 @@ const {
 } = pdfColors
 
 const styles = StyleSheet.create({
-  section: {
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    marginBottom: 8,
-    color: primary,
-    fontSize: 10,
-    fontFamily: 'Helvetica-Bold',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
   table: {
     width: '100%',
   },
@@ -72,40 +61,29 @@ const styles = StyleSheet.create({
     fontSize: 8,
     textAlign: 'center',
   },
-  totalsHeading: {
-    marginBottom: 7,
-    color: secondary,
-    fontSize: 8,
-    fontFamily: 'Helvetica-Bold',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
   totalsWrap: {
-    marginTop: 16,
     alignItems: 'flex-end',
   },
-  totals: {
-    width: '45%',
-  },
-  totalRow: {
-    paddingVertical: 5,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  totalsCard: {
+    width: '62%',
+    marginBottom: 20,
   },
   totalLabel: {
+    width: '40%',
+    paddingRight: 10,
     color: secondary,
-    fontSize: 8,
+    fontSize: 9,
   },
   totalValue: {
+    width: '60%',
     color: primary,
-    fontSize: 8,
+    fontSize: 11,
     fontFamily: 'Helvetica-Bold',
     textAlign: 'right',
   },
   grandTotal: {
-    marginTop: 7,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 15,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -164,8 +142,12 @@ export default function PdfFinancialDetails({
 }) {
   return (
     <>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>DÉTAIL DES ARTICLES ET PRESTATIONS</Text>
+      <View style={pdfCardStyles.card}>
+        <View style={pdfCardStyles.cardHeader} wrap={false}>
+          <Text style={pdfCardStyles.cardHeaderText}>
+            DÉTAIL DES ARTICLES ET PRESTATIONS
+          </Text>
+        </View>
         <View style={styles.table}>
           <View fixed style={styles.tableHeader}>
             {COLUMNS.map((column) => (
@@ -215,21 +197,23 @@ export default function PdfFinancialDetails({
       </View>
 
       <View style={styles.totalsWrap}>
-        <Text style={styles.totalsHeading}>RÉCAPITULATIF FINANCIER</Text>
-        <View style={styles.totals} wrap={false}>
-          <View style={styles.totalRow}>
+        <View style={[pdfCardStyles.card, styles.totalsCard]} wrap={false}>
+          <View style={pdfCardStyles.cardHeader}>
+            <Text style={pdfCardStyles.cardHeaderText}>RÉCAPITULATIF FINANCIER</Text>
+          </View>
+          <View style={pdfCardStyles.cardRow}>
             <Text style={styles.totalLabel}>Total brut HT</Text>
             <Text style={styles.totalValue}>{formatCurrency(totals.grossHT)}</Text>
           </View>
-          <View style={styles.totalRow}>
+          <View style={pdfCardStyles.cardRow}>
             <Text style={styles.totalLabel}>Remise</Text>
             <Text style={styles.totalValue}>{formatCurrency(totals.discount)}</Text>
           </View>
-          <View style={styles.totalRow}>
+          <View style={pdfCardStyles.cardRow}>
             <Text style={styles.totalLabel}>Net HT</Text>
             <Text style={styles.totalValue}>{formatCurrency(totals.totalHT)}</Text>
           </View>
-          <View style={styles.totalRow}>
+          <View style={pdfCardStyles.cardRow}>
             <Text style={styles.totalLabel}>{vatLabel}</Text>
             <Text style={styles.totalValue}>{formatCurrency(totals.totalTVA)}</Text>
           </View>
@@ -239,11 +223,11 @@ export default function PdfFinancialDetails({
           </View>
           {includePaymentBalance && (
             <>
-              <View style={styles.totalRow}>
+              <View style={pdfCardStyles.cardRow}>
                 <Text style={styles.totalLabel}>Montant payé</Text>
                 <Text style={styles.totalValue}>{formatCurrency(totals.amountPaid)}</Text>
               </View>
-              <View style={styles.totalRow}>
+              <View style={pdfCardStyles.cardRow}>
                 <Text style={styles.totalLabel}>Reste à payer</Text>
                 <Text style={styles.totalValue}>{formatCurrency(totals.remaining)}</Text>
               </View>

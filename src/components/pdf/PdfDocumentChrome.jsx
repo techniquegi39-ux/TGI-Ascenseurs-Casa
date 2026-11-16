@@ -9,7 +9,9 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 130,
+    height: 150,
+    paddingTop: 40,
+    paddingBottom: 10,
     paddingHorizontal: 40,
     flexDirection: 'row',
     alignItems: 'center',
@@ -17,43 +19,50 @@ const styles = StyleSheet.create({
     backgroundColor: accent,
   },
   headerIdentity: {
-    width: '58%',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
+    width: '62%',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   logoFrame: {
-    width: 118,
-    height: 48,
-    padding: 5,
+    width: 160,
+    height: 70,
+    padding: 10,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 4,
+    borderRadius: 8,
   },
   logo: {
-    width: 108,
-    height: 38,
+    width: 140,
+    height: 50,
     objectFit: 'contain',
-    objectPosition: 'left',
+  },
+  documentIdentity: {
+    flexGrow: 1,
+    marginLeft: 14,
+    justifyContent: 'center',
   },
   documentTitle: {
     maxWidth: '100%',
-    marginTop: 5,
     color: '#FFFFFF',
-    fontSize: 24,
+    fontSize: 32,
     fontFamily: 'Helvetica-Bold',
     lineHeight: 1.05,
+    letterSpacing: 2,
     textTransform: 'uppercase',
+  },
+  documentTitleCompact: {
+    fontSize: 20,
+    letterSpacing: 0.8,
   },
   documentNumber: {
     marginTop: 2,
     color: '#CBD5E1',
-    fontSize: 9,
-    letterSpacing: 0.8,
+    fontSize: 10,
+    letterSpacing: 1,
   },
   companyBlock: {
-    width: '39%',
+    width: '36%',
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
@@ -254,8 +263,17 @@ export function PdfDocumentHeader({ companyInfo = {}, companyName, documentTitle
             style={styles.logo}
           />
         </View>
-        <Text style={styles.documentTitle}>{type}</Text>
-        {number ? <Text style={styles.documentNumber}>{number}</Text> : null}
+        <View style={styles.documentIdentity}>
+          <Text
+            style={[
+              styles.documentTitle,
+              type.length > 16 ? styles.documentTitleCompact : null,
+            ]}
+          >
+            {type}
+          </Text>
+          {number ? <Text style={styles.documentNumber}>{number}</Text> : null}
+        </View>
       </View>
       <View style={styles.companyBlock}>
         <Text style={styles.companyName}>{companyName}</Text>
