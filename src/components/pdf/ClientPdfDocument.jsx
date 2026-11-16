@@ -1,6 +1,5 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import {
-  PdfClientSummary,
   PdfDocumentFooter,
   PdfDocumentHeader,
 } from './PdfDocumentChrome.jsx'
@@ -12,95 +11,42 @@ const MUTED = '#475569'
 const PALE = '#F8FAFC'
 
 const styles = StyleSheet.create({
-  page: {
-    paddingTop: 130,
-    paddingBottom: 90,
-    paddingHorizontal: 40,
-    backgroundColor: '#FFFFFF',
-    color: '#0F172A',
-    fontFamily: 'Helvetica',
-  },
-  header: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 110,
-    paddingHorizontal: 40,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: NAVY,
-  },
-  headerIdentity: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  logoFrame: {
-    width: 82,
-    height: 70,
-    padding: 5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 4,
-  },
-  logo: {
-    width: 72,
-    height: 60,
-    objectFit: 'contain',
-  },
-  documentTitle: {
-    marginLeft: 16,
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontFamily: 'Helvetica-Bold',
-  },
-  companyBlock: {
-    width: '47%',
-    alignItems: 'flex-end',
-  },
-  companyName: {
-    marginBottom: 3,
-    color: '#FFFFFF',
-    opacity: 0.9,
-    fontSize: 12,
-    fontFamily: 'Helvetica-Bold',
-    textAlign: 'right',
-  },
-  companyDetail: {
-    marginTop: 2,
-    color: '#FFFFFF',
-    opacity: 0.9,
-    fontSize: 8,
-    textAlign: 'right',
-  },
-  documentMeta: {
-    marginBottom: 4,
-    padding: 12,
+  clientInformation: {
+    marginBottom: 12,
+    paddingBottom: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 4,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
   },
-  metaItem: {
-    width: '48%',
+  clientInformationTitle: {
+    color: NAVY,
+    fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
-  metaLabel: {
-    marginBottom: 4,
-    color: MUTED,
+  statusBadge: {
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 10,
+    backgroundColor: '#DCFCE7',
+  },
+  inactiveStatusBadge: {
+    backgroundColor: '#FEE2E2',
+  },
+  statusText: {
+    color: '#166534',
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
     textTransform: 'uppercase',
-    letterSpacing: 0.4,
   },
-  metaValue: {
-    color: '#111827',
-    fontSize: 10,
-    fontFamily: 'Helvetica-Bold',
+  inactiveStatusText: {
+    color: '#991B1B',
   },
   sectionHeader: {
-    marginTop: 14,
+    marginTop: 10,
     marginBottom: 4,
     paddingVertical: 6,
     borderBottomWidth: 1,
@@ -137,37 +83,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Helvetica-Bold',
     lineHeight: 1.35,
   },
-  footer: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    left: 0,
-    height: 70,
-    paddingHorizontal: 40,
-    paddingTop: 15,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
-  },
-  footerColumn: {
-    width: '32%',
-    paddingRight: 8,
-  },
-  legalText: {
-    marginTop: 2,
-    color: MUTED,
-    fontSize: 7,
-    lineHeight: 1.3,
-  },
-  footerPage: {
-    color: NAVY,
-    fontSize: 8,
-    fontFamily: 'Helvetica-Bold',
-    textAlign: 'right',
-  },
 })
 
 function getText(record, ...keys) {
@@ -178,25 +93,6 @@ function getText(record, ...keys) {
     }
   }
   return ''
-}
-
-function formatDate(value) {
-  let date = value
-  if (typeof date?.toDate === 'function') {
-    date = date.toDate()
-  } else if (!(date instanceof Date)) {
-    date = new Date(date)
-  }
-
-  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
-    return '—'
-  }
-
-  return new Intl.DateTimeFormat('fr-MA', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  }).format(date)
 }
 
 function isClientActive(client) {
@@ -247,8 +143,6 @@ function getLegalDetails(companyInfo) {
 }
 
 function getClientSections(client) {
-  const active = isClientActive(client)
-
   return [
     {
       title: 'Identité & Contact',
@@ -258,7 +152,6 @@ function getClientSections(client) {
         ['ICE / Identifiant fiscal', getText(client, 'ice', 'identifiantFiscal') || '—'],
         ['Téléphone', getText(client, 'telephone', 'téléphone', 'phone') || '—'],
         ['E-mail', getText(client, 'email') || '—'],
-        ['Statut', active ? 'Actif' : 'Inactif'],
       ],
     },
     {
@@ -308,7 +201,6 @@ function getClientSections(client) {
 export default function ClientPdfDocument({
   client = {},
   companyInfo = {},
-  generatedAt = new Date(),
 }) {
   const companyName = getText(companyInfo, 'name', 'nom') || 'TGI ASCENSEURS CASA'
   const legalDetails = getLegalDetails(companyInfo)
@@ -317,17 +209,6 @@ export default function ClientPdfDocument({
     getText(client, 'reference', 'ref') ||
     (client.id ? `CL-${String(client.id).slice(0, 7).toUpperCase()}` : 'Sans référence')
   const sections = getClientSections(client)
-  const clientDetails = [
-    getText(client, 'ice', 'identifiantFiscal')
-      ? `ICE : ${getText(client, 'ice', 'identifiantFiscal')}`
-      : '',
-    getText(client, 'telephone', 'téléphone', 'phone')
-      ? `Téléphone : ${getText(client, 'telephone', 'téléphone', 'phone')}`
-      : '',
-    getText(client, 'adresse', 'address')
-      ? `Adresse : ${getText(client, 'adresse', 'address')}`
-      : '',
-  ].filter(Boolean)
 
   return (
     <Document
@@ -339,17 +220,26 @@ export default function ClientPdfDocument({
         <PdfDocumentHeader
           companyInfo={companyInfo}
           companyName={companyName}
-          documentTitle={`Fiche client ${clientReference}`}
+          documentTitle={`Fiche Client ${clientReference}`}
         />
-        <PdfClientSummary
-          clientName={clientName}
-          clientDetails={clientDetails}
-          metaRows={[
-            { label: 'DATE', value: formatDate(generatedAt) },
-            { label: 'ÉCHÉANCE', value: '—' },
-            { label: 'STATUT', value: isClientActive(client) ? 'Actif' : 'Inactif' },
-          ]}
-        />
+        <View style={styles.clientInformation} wrap={false}>
+          <Text style={styles.clientInformationTitle}>INFORMATIONS DU CLIENT</Text>
+          <View
+            style={[
+              styles.statusBadge,
+              !isClientActive(client) && styles.inactiveStatusBadge,
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusText,
+                !isClientActive(client) && styles.inactiveStatusText,
+              ]}
+            >
+              {isClientActive(client) ? 'Actif' : 'Inactif'}
+            </Text>
+          </View>
+        </View>
 
         {sections.map((section) => (
           <View key={section.title}>

@@ -10,9 +10,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 30,
     right: 30,
-    height: 140,
-    paddingTop: 12,
-    paddingBottom: 10,
+    height: 120,
     flexDirection: 'row',
     justifyContent: 'space-between',
     borderBottomWidth: 1,
@@ -21,6 +19,8 @@ const styles = StyleSheet.create({
   },
   headerIdentity: {
     width: '58%',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
     justifyContent: 'center',
   },
   logo: {
@@ -31,8 +31,8 @@ const styles = StyleSheet.create({
   },
   documentTitle: {
     maxWidth: '100%',
-    marginTop: 7,
-    color: NAVY,
+    marginTop: 4,
+    color: '#0F172A',
     fontSize: 16,
     fontFamily: 'Helvetica-Bold',
   },
@@ -122,39 +122,31 @@ const styles = StyleSheet.create({
     right: 30,
     height: 70,
     paddingTop: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: BORDER,
     backgroundColor: '#FFFFFF',
-  },
-  footerColumn: {
-    width: '34%',
-    paddingRight: 8,
-  },
-  footerColumnLast: {
-    width: '30%',
-    paddingRight: 0,
-    alignItems: 'flex-end',
   },
   footerCompany: {
     marginBottom: 2,
     color: '#0F172A',
     fontSize: 7,
     fontFamily: 'Helvetica-Bold',
+    textAlign: 'center',
   },
   footerText: {
     marginTop: 1,
     color: MUTED,
     fontSize: 6.5,
     lineHeight: 1.15,
+    textAlign: 'center',
   },
   footerPage: {
-    marginTop: 4,
+    marginTop: 3,
     color: NAVY,
     fontSize: 7,
     fontFamily: 'Helvetica-Bold',
-    textAlign: 'right',
+    textAlign: 'center',
   },
   signatures: {
     marginTop: 30,
@@ -274,41 +266,26 @@ export function PdfDocumentFooter({
       : '',
     getText(companyInfo, 'email') ? `Email : ${getText(companyInfo, 'email')}` : '',
   ].filter(Boolean)
+  const legalLines = [
+    ...(legalDetails.banking || []),
+    ...(legalDetails.registrations || []),
+    ...(legalDetails.legal || []),
+  ]
 
   return (
     <View fixed style={styles.footer}>
-      <View style={styles.footerColumn}>
-        <Text style={styles.footerCompany}>{companyName}</Text>
-        {(legalDetails.banking || []).map((detail, index) => (
-          <Text key={`${detail}-${index}`} style={styles.footerText}>
-            {detail}
-          </Text>
-        ))}
-      </View>
-      <View style={styles.footerColumn}>
-        {contacts.map((detail) => (
-          <Text key={detail} style={styles.footerText}>
-            {detail}
-          </Text>
-        ))}
-        {(legalDetails.legal || []).map((detail, index) => (
-          <Text key={`${detail}-${index}`} style={styles.footerText}>
-            {detail}
-          </Text>
-        ))}
-      </View>
-      <View style={styles.footerColumnLast}>
-        {(legalDetails.registrations || []).map((detail, index) => (
-          <Text key={`${detail}-${index}`} style={styles.footerText}>
-            {detail}
-          </Text>
-        ))}
-        <Text
-          fixed
-          render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
-          style={styles.footerPage}
-        />
-      </View>
+      <Text style={styles.footerCompany}>{companyName}</Text>
+      {contacts.length > 0 && (
+        <Text style={styles.footerText}>{contacts.join(' · ')}</Text>
+      )}
+      {legalLines.length > 0 && (
+        <Text style={styles.footerText}>{legalLines.join(' · ')}</Text>
+      )}
+      <Text
+        fixed
+        render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
+        style={styles.footerPage}
+      />
     </View>
   )
 }
