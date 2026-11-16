@@ -7,14 +7,14 @@ const styles = StyleSheet.create({
   header: {
     position: 'absolute',
     top: 0,
-    left: 40,
-    right: 40,
+    left: 0,
+    right: 0,
     height: 130,
+    paddingHorizontal: 40,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: 2,
-    borderBottomColor: accent,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: accent,
   },
   headerIdentity: {
     width: '58%',
@@ -22,16 +22,25 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'center',
   },
+  logoFrame: {
+    width: 118,
+    height: 48,
+    padding: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
+  },
   logo: {
-    width: 128,
-    height: 44,
+    width: 108,
+    height: 38,
     objectFit: 'contain',
     objectPosition: 'left',
   },
   documentTitle: {
     maxWidth: '100%',
     marginTop: 5,
-    color: primary,
+    color: '#FFFFFF',
     fontSize: 24,
     fontFamily: 'Helvetica-Bold',
     lineHeight: 1.05,
@@ -39,7 +48,7 @@ const styles = StyleSheet.create({
   },
   documentNumber: {
     marginTop: 2,
-    color: secondary,
+    color: '#CBD5E1',
     fontSize: 9,
     letterSpacing: 0.8,
   },
@@ -50,7 +59,7 @@ const styles = StyleSheet.create({
   },
   companyName: {
     marginBottom: 3,
-    color: primary,
+    color: '#FFFFFF',
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
     textAlign: 'right',
@@ -58,7 +67,7 @@ const styles = StyleSheet.create({
   companyDetail: {
     maxWidth: '100%',
     marginTop: 1,
-    color: secondary,
+    color: '#E2E8F0',
     fontSize: 7.5,
     lineHeight: 1.4,
     textAlign: 'right',
@@ -71,7 +80,11 @@ const styles = StyleSheet.create({
   },
   clientBlock: {
     width: '68%',
-    paddingRight: 12,
+    padding: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: border,
+    borderRadius: 4,
   },
   sectionLabel: {
     marginBottom: 6,
@@ -95,10 +108,14 @@ const styles = StyleSheet.create({
   },
   metaTable: {
     width: '30%',
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderLeftWidth: 1,
-    borderLeftColor: border,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: border,
+    borderLeftWidth: 3,
+    borderLeftColor: accent,
+    borderRadius: 4,
   },
   metaRow: {
     paddingVertical: 4,
@@ -127,32 +144,31 @@ const styles = StyleSheet.create({
   footer: {
     position: 'absolute',
     bottom: 0,
-    left: 40,
-    right: 40,
+    left: 0,
+    right: 0,
     height: 70,
+    paddingHorizontal: 40,
     paddingTop: 8,
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: border,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: accent,
   },
   footerCompany: {
     marginBottom: 2,
-    color: primary,
+    color: '#FFFFFF',
     fontSize: 7,
     fontFamily: 'Helvetica-Bold',
     textAlign: 'center',
   },
   footerText: {
     marginTop: 1,
-    color: secondary,
+    color: '#FFFFFF',
     fontSize: 6.5,
     lineHeight: 1.15,
     textAlign: 'center',
   },
   footerPage: {
     marginTop: 3,
-    color: accent,
+    color: '#FFFFFF',
     fontSize: 7,
     fontFamily: 'Helvetica-Bold',
     textAlign: 'center',
@@ -232,10 +248,12 @@ export function PdfDocumentHeader({ companyInfo = {}, companyName, documentTitle
   return (
     <View fixed style={styles.header}>
       <View style={styles.headerIdentity}>
-        <Image
-          src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
-          style={styles.logo}
-        />
+        <View style={styles.logoFrame}>
+          <Image
+            src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
+            style={styles.logo}
+          />
+        </View>
         <Text style={styles.documentTitle}>{type}</Text>
         {number ? <Text style={styles.documentNumber}>{number}</Text> : null}
       </View>

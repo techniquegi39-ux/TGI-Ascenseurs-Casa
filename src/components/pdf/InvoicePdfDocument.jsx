@@ -8,11 +8,10 @@ import {
 import PdfFinancialDetails from './PdfFinancialDetails.jsx'
 import { pdfPageStyles } from './PdfDocumentStyles.js'
 
-const NAVY = '#0284C7'
+const NAVY = '#1E3A8A'
 const BORDER = '#E2E8F0'
 const MUTED = '#64748B'
 const PALE_BLUE = '#F8FAFC'
-const PALE_GRAY = '#F8FAFC'
 
 const styles = StyleSheet.create({
   page: {
@@ -141,14 +140,14 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 8,
     flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: NAVY,
     borderTopWidth: 1,
-    borderTopColor: '#CBD5E1',
+    borderTopColor: NAVY,
     borderBottomWidth: 1,
-    borderBottomColor: '#CBD5E1',
+    borderBottomColor: NAVY,
   },
   headerCell: {
-    color: '#475569',
+    color: '#FFFFFF',
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
     letterSpacing: 0.5,
@@ -184,7 +183,9 @@ const styles = StyleSheet.create({
     width: '45%',
     minHeight: 135,
     padding: 14,
-    backgroundColor: PALE_GRAY,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: BORDER,
     borderRadius: 4,
   },
   signatureTitle: {
@@ -252,7 +253,9 @@ const styles = StyleSheet.create({
   documentConditions: {
     marginTop: 16,
     padding: 12,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: BORDER,
     borderRadius: 4,
   },
   conditionsHeading: {

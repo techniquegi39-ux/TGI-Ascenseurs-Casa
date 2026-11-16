@@ -7,11 +7,10 @@ import {
 } from './PdfDocumentChrome.jsx'
 import { pdfPageStyles } from './PdfDocumentStyles.js'
 
-const NAVY = '#0284C7'
+const NAVY = '#1E3A8A'
 const BORDER = '#E2E8F0'
 const MUTED = '#64748B'
-const PALE_BLUE = '#F8FAFC'
-const PALE_GRAY = '#F8FAFC'
+const PALE_GRAY = '#FFFFFF'
 
 const styles = StyleSheet.create({
   page: {
@@ -82,7 +81,9 @@ const styles = StyleSheet.create({
     padding: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: BORDER,
     borderRadius: 4,
   },
   contractMetaItem: {
@@ -132,11 +133,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingVertical: 10,
     paddingHorizontal: 10,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
   equipmentRowAlternate: {
-    backgroundColor: PALE_BLUE,
+    backgroundColor: '#F1F5F9',
   },
   equipmentIndex: {
     width: '8%',
@@ -162,14 +164,14 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 10,
     flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: NAVY,
     borderTopWidth: 1,
-    borderTopColor: '#CBD5E1',
+    borderTopColor: NAVY,
     borderBottomWidth: 1,
-    borderBottomColor: '#CBD5E1',
+    borderBottomColor: NAVY,
   },
   equipmentHeaderCell: {
-    color: '#475569',
+    color: '#FFFFFF',
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
     letterSpacing: 0.5,
@@ -188,7 +190,9 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexBasis: 0,
     padding: 10,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: BORDER,
     borderRadius: 4,
   },
   financialCardSpaced: {
@@ -212,7 +216,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginLeft: 'auto',
     padding: 10,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: BORDER,
   },
   financialSummaryRow: {
     paddingVertical: 4,
@@ -229,23 +235,25 @@ const styles = StyleSheet.create({
     fontFamily: 'Helvetica-Bold',
   },
   financialSummaryGrand: {
-    marginTop: 5,
-    paddingVertical: 9,
-    paddingHorizontal: 10,
+    marginTop: 7,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#F8FAFC',
-    borderLeftWidth: 3,
-    borderLeftColor: NAVY,
+    backgroundColor: NAVY,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    borderLeftWidth: 4,
   },
   grandTotal: {
     padding: 6,
-    color: NAVY,
+    color: '#FFFFFF',
     fontSize: 12,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: NAVY,
     borderRadius: 3,
-    borderLeftWidth: 3,
-    borderLeftColor: NAVY,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    borderLeftWidth: 4,
   },
   clauseBox: {
     padding: 16,
@@ -269,7 +277,9 @@ const styles = StyleSheet.create({
     width: '48%',
     minHeight: 120,
     padding: 14,
-    backgroundColor: PALE_GRAY,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: BORDER,
     borderRadius: 4,
   },
   signatureTitle: {
@@ -628,10 +638,20 @@ export default function ContractPdfDocument({ contract = {} }) {
                 </Text>
               </View>
               <View style={styles.financialSummaryGrand}>
-                <Text style={[styles.financialSummaryLabel, { fontFamily: 'Helvetica-Bold' }]}>
+                <Text
+                  style={[
+                    styles.financialSummaryLabel,
+                    { color: '#FFFFFF', fontFamily: 'Helvetica-Bold' },
+                  ]}
+                >
                   TOTAL TTC
                 </Text>
-                <Text style={[styles.financialSummaryValue, { color: NAVY, fontSize: 10 }]}>
+                <Text
+                  style={[
+                    styles.financialSummaryValue,
+                    { color: '#F59E0B', fontSize: 16, fontFamily: 'Helvetica-Bold' },
+                  ]}
+                >
                   {formatCurrency(totalTTC)}
                 </Text>
               </View>

@@ -5,10 +5,10 @@ import {
 } from './PdfDocumentChrome.jsx'
 import { pdfPageStyles } from './PdfDocumentStyles.js'
 
-const NAVY = '#0284C7'
+const NAVY = '#1E3A8A'
 const BORDER = '#E2E8F0'
 const MUTED = '#64748B'
-const PALE = '#F8FAFC'
+const PALE = '#F1F5F9'
 
 const styles = StyleSheet.create({
   clientInformation: {
@@ -48,12 +48,12 @@ const styles = StyleSheet.create({
   sectionHeader: {
     marginTop: 10,
     marginBottom: 4,
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    backgroundColor: NAVY,
   },
   sectionTitle: {
-    color: NAVY,
+    color: '#FFFFFF',
     fontSize: 9,
     fontFamily: 'Helvetica-Bold',
     textTransform: 'uppercase',

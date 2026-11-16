@@ -1,8 +1,17 @@
 import { StyleSheet, Text, View } from '@react-pdf/renderer'
 import { pdfColors } from './PdfDocumentStyles.js'
 
-const { primary, secondary, accent, tableRule, tableHeader, tableHeaderBorder } =
-  pdfColors
+const {
+  primary,
+  secondary,
+  accent,
+  highlight,
+  tableRule,
+  tableRowAlternate,
+  tableHeader,
+  tableHeaderText,
+  tableHeaderBorder,
+} = pdfColors
 
 const styles = StyleSheet.create({
   section: {
@@ -30,7 +39,7 @@ const styles = StyleSheet.create({
     borderBottomColor: tableHeaderBorder,
   },
   headerCell: {
-    color: '#475569',
+    color: tableHeaderText,
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
     letterSpacing: 0.5,
@@ -40,8 +49,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 8,
     flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: tableRule,
+  },
+  alternateRow: {
+    backgroundColor: tableRowAlternate,
   },
   tableCell: {
     paddingRight: 4,
@@ -50,6 +63,7 @@ const styles = StyleSheet.create({
   },
   emptyRow: {
     padding: 12,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: tableRule,
   },
@@ -95,19 +109,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: tableHeader,
-    borderLeftWidth: 3,
-    borderLeftColor: accent,
+    backgroundColor: accent,
+    borderWidth: 1,
+    borderColor: highlight,
+    borderLeftWidth: 4,
   },
   grandTotalLabel: {
-    color: primary,
+    color: '#FFFFFF',
     fontSize: 10,
     fontFamily: 'Helvetica-Bold',
     letterSpacing: 0.7,
   },
   grandTotalValue: {
-    color: accent,
-    fontSize: 12,
+    color: highlight,
+    fontSize: 16,
     fontFamily: 'Helvetica-Bold',
     textAlign: 'right',
   },
@@ -173,7 +188,10 @@ export default function PdfFinancialDetails({
             items.map((item, index) => (
               <View
                 key={`${item.designation}-${index}`}
-                style={styles.tableRow}
+                style={[
+                  styles.tableRow,
+                  index % 2 === 1 ? styles.alternateRow : null,
+                ]}
                 wrap={false}
               >
                 <Text style={[styles.tableCell, { width: '4%' }]}>{index + 1}</Text>

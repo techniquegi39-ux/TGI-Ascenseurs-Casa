@@ -6,11 +6,10 @@ import {
 } from './PdfDocumentChrome.jsx'
 import { pdfPageStyles } from './PdfDocumentStyles.js'
 
-const TGI_NAVY = '#0F172A'
-const TGI_BLUE = '#0284C7'
+const TGI_NAVY = '#1E3A8A'
+const TGI_BLUE = '#1E3A8A'
 const BORDER = '#E2E8F0'
 const MUTED = '#64748B'
-const PALE_BLUE = '#F8FAFC'
 
 const styles = StyleSheet.create({
   page: {
@@ -84,7 +83,9 @@ const styles = StyleSheet.create({
   clientInfo: {
     marginBottom: 12,
     padding: 9,
-    backgroundColor: PALE_BLUE,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: BORDER,
     borderRadius: 3,
   },
   clientName: {
@@ -103,16 +104,16 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: TGI_NAVY,
     borderTopWidth: 1,
-    borderTopColor: '#CBD5E1',
+    borderTopColor: TGI_NAVY,
     borderBottomWidth: 1,
-    borderBottomColor: '#CBD5E1',
+    borderBottomColor: TGI_NAVY,
   },
   headerCell: {
     paddingVertical: 9,
     paddingHorizontal: 8,
-    color: '#475569',
+    color: '#FFFFFF',
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
     letterSpacing: 0.5,
@@ -120,11 +121,12 @@ const styles = StyleSheet.create({
   },
   tableRow: {
     flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
   alternateRow: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F1F5F9',
   },
   cell: {
     paddingVertical: 10,
@@ -169,19 +171,22 @@ const styles = StyleSheet.create({
     fontFamily: 'Helvetica-Bold',
   },
   grandTotal: {
-    marginTop: 4,
-    paddingTop: 7,
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
+    marginTop: 5,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
+    backgroundColor: TGI_NAVY,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    borderLeftWidth: 4,
   },
   grandTotalLabel: {
-    color: TGI_NAVY,
+    color: '#FFFFFF',
     fontSize: 10,
     fontFamily: 'Helvetica-Bold',
   },
   grandTotalValue: {
-    color: TGI_NAVY,
-    fontSize: 11,
+    color: '#F59E0B',
+    fontSize: 15,
     fontFamily: 'Helvetica-Bold',
   },
   notes: {

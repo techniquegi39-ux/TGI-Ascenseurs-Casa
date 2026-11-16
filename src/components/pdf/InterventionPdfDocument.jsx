@@ -7,11 +7,11 @@ import {
 } from './PdfDocumentChrome.jsx'
 import { pdfPageStyles } from './PdfDocumentStyles.js'
 
-const NAVY = '#0284C7'
+const NAVY = '#1E3A8A'
 const BORDER = '#E2E8F0'
 const MUTED = '#64748B'
-const PALE_BLUE = '#F8FAFC'
-const PALE_GRAY = '#F8FAFC'
+const PALE_BLUE = '#F1F5F9'
+const PALE_GRAY = '#FFFFFF'
 
 const styles = StyleSheet.create({
   page: {
@@ -84,7 +84,9 @@ const styles = StyleSheet.create({
   infoCard: {
     width: '48%',
     padding: 12,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: BORDER,
     borderRadius: 4,
   },
   infoCardTitle: {
@@ -117,7 +119,9 @@ const styles = StyleSheet.create({
   detailItem: {
     width: '33.33%',
     padding: 8,
-    backgroundColor: PALE_GRAY,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: BORDER,
   },
   detailLabel: {
     marginBottom: 4,
@@ -191,14 +195,14 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 8,
     flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: NAVY,
     borderTopWidth: 1,
-    borderTopColor: '#CBD5E1',
+    borderTopColor: NAVY,
     borderBottomWidth: 1,
-    borderBottomColor: '#CBD5E1',
+    borderBottomColor: NAVY,
   },
   headerCell: {
-    color: '#475569',
+    color: '#FFFFFF',
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
     letterSpacing: 0.5,
@@ -208,11 +212,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 8,
     flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
   alternateRow: {
-    backgroundColor: PALE_BLUE,
+    backgroundColor: '#F1F5F9',
   },
   cell: {
     color: '#0F172A',
