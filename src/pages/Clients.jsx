@@ -416,7 +416,12 @@ export default function Clients() {
 
     try {
       const settingsSnapshot = await getDoc(doc(db, 'settings', 'company'))
-      const { PDF_COMPANY_INFO, generatePremiumPDF } = await import('../utils/pdfEngine.js')
+      const [{ pdf }, { PDF_COMPANY_INFO }, { default: ClientPdfDocument }] =
+        await Promise.all([
+          import('@react-pdf/renderer'),
+          import('../utils/pdfEngine.js'),
+          import('../components/pdf/ClientPdfDocument.jsx'),
+        ])
       const savedCompanyInfo = settingsSnapshot.exists() ? settingsSnapshot.data() : {}
       const companyInfo = {
         ...PDF_COMPANY_INFO,
@@ -425,53 +430,21 @@ export default function Clients() {
         ),
       }
 
-      const clientName = getClientName(client)
-      const address = String(client.adresse || client.address || '')
-      const city = getClientCity(client)
-      const details = [
-        ['Nom / Raison sociale', clientName],
-        ['Type de client', getClientType(client)],
-        ['ICE / Identifiant fiscal', String(client.ice || client.identifiantFiscal || '—')],
-        ['Téléphone', getClientPhone(client)],
-        ['E-mail', String(client.email || '—')],
-        ['Adresse complète', address || '—'],
-        ['Ville', city],
-        ['Syndic', String(client.syndicNom || client.nomSyndic || '—')],
-        [
-          'Téléphone du syndic',
-          String(client.syndicTelephone || client.telephoneSyndic || '—'),
-        ],
-        ['Concierge', String(client.conciergeNom || client.nomConcierge || '—')],
-        [
-          'Téléphone du concierge',
-          String(client.conciergeTelephone || client.telephoneConcierge || '—'),
-        ],
-        ['Google Maps', String(client.googleMapsLink || client.localisationGoogleMaps || '—')],
-        ['Coordonnées GPS', String(client.coordonneesGPS || client.gpsCoordinates || '—')],
-        [
-          'Mode de paiement préféré',
-          String(client.modePaiementPrefere || client.preferredPaymentMethod || '—'),
-        ],
-        [
-          'Conditions particulières',
-          String(client.conditionsParticulieres || client.specialConditions || '—'),
-        ],
-        ['Statut', isClientActive(client) ? 'Actif' : 'Inactif'],
-      ].map(([designation, value]) => ({ designation, value }))
-
-      await generatePremiumPDF({
-        typeDocument: 'Fiche Client',
-        numero: getClientReference(client),
-        date: new Date(),
-        clientInfo: {
-          nom: clientName,
-          adresse: [address, city !== '—' ? city : ''].filter(Boolean).join(', '),
-          ice: String(client.ice || client.identifiantFiscal || '—'),
-        },
-        items: details,
-        companyInfo,
-        layout: 'details',
-      })
+      const blob = await pdf(
+        <ClientPdfDocument client={client} companyInfo={companyInfo} />,
+      ).toBlob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `Fiche_Client_${getClientReference(client)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[<>:"/\\|?*]/g, '-')
+        .replace(/\s+/g, '_')}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 
       showToast('success', 'La fiche PDF du client a été générée.')
     } catch (error) {
