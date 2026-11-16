@@ -103,6 +103,29 @@ const styles = StyleSheet.create({
     color: '#475569',
     fontSize: 8,
   },
+  deliveryInfo: {
+    marginBottom: 14,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 3,
+    backgroundColor: '#F8FAFC',
+  },
+  deliveryInfoRow: {
+    flexDirection: 'row',
+    marginTop: 3,
+  },
+  deliveryInfoLabel: {
+    width: 140,
+    color: MUTED,
+    fontSize: 8,
+    fontFamily: 'Helvetica-Bold',
+  },
+  deliveryInfoValue: {
+    flexGrow: 1,
+    color: '#334155',
+    fontSize: 8,
+  },
   table: {
     width: '100%',
     borderWidth: 1,
@@ -268,7 +291,21 @@ function getCompanyDetails(companyInfo) {
 
 function getLegalDetails(companyInfo) {
   const details = [
-    getText(companyInfo, 'capital') ? `Capital : ${getText(companyInfo, 'capital')}` : '',
+    getText(companyInfo, 'banque', 'bank')
+      ? `Banque : ${getText(companyInfo, 'banque', 'bank')}`
+      : '',
+    getText(companyInfo, 'rib') ? `RIB : ${getText(companyInfo, 'rib')}` : '',
+    getText(companyInfo, 'capitalSocial', 'capital')
+      ? `Capital social : ${getText(companyInfo, 'capitalSocial', 'capital')}`
+      : '',
+    getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')
+      ? `IF : ${getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')}`
+      : '',
+    getText(companyInfo, 'cnss', 'numeroCNSS')
+      ? `CNSS : ${getText(companyInfo, 'cnss', 'numeroCNSS')}`
+      : '',
+    getText(companyInfo, 'rc') ? `RC : ${getText(companyInfo, 'rc')}` : '',
+    getText(companyInfo, 'ice') ? `ICE : ${getText(companyInfo, 'ice')}` : '',
     getText(companyInfo, 'patente') ? `Patente : ${getText(companyInfo, 'patente')}` : '',
     getText(companyInfo, 'mentionsLegales', 'legalMentions'),
   ].filter(Boolean)
@@ -317,6 +354,13 @@ export default function DeliveryNotePdfDocument({ deliveryNote = {} }) {
     'bonCommandeNumero',
     'numeroBC',
   )
+  const deliveryLocation = getText(deliveryNote, 'lieuLivraison', 'deliveryLocation')
+  const carrierReceiver = getText(
+    deliveryNote,
+    'transporteurReceptionnaire',
+    'carrierReceiver',
+    'receptionnaire',
+  )
 
   return (
     <Document
@@ -326,7 +370,10 @@ export default function DeliveryNotePdfDocument({ deliveryNote = {} }) {
     >
       <Page size="A4" style={styles.page} wrap>
         <View fixed style={styles.header}>
-          <Image src="/logo.png.jpeg" style={styles.logo} />
+          <Image
+            src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
+            style={styles.logo}
+          />
           <View style={styles.companyBlock}>
             <Text style={styles.companyName}>{companyName}</Text>
             {companyDetails.map((detail) => (
@@ -357,6 +404,18 @@ export default function DeliveryNotePdfDocument({ deliveryNote = {} }) {
               {detail}
             </Text>
           ))}
+        </View>
+
+        <View style={styles.deliveryInfo}>
+          <Text style={styles.sectionLabel}>Détails de livraison</Text>
+          <View style={styles.deliveryInfoRow}>
+            <Text style={styles.deliveryInfoLabel}>Lieu de livraison</Text>
+            <Text style={styles.deliveryInfoValue}>{deliveryLocation || 'Non renseigné'}</Text>
+          </View>
+          <View style={styles.deliveryInfoRow}>
+            <Text style={styles.deliveryInfoLabel}>Transporteur / Réceptionnaire</Text>
+            <Text style={styles.deliveryInfoValue}>{carrierReceiver || 'Non renseigné'}</Text>
+          </View>
         </View>
 
         <View style={styles.table}>

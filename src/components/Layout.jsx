@@ -87,7 +87,7 @@ function getUserInitials(name) {
     .toLocaleUpperCase('fr-FR')
 }
 
-function Sidebar({ isOpen, onNavigate }) {
+function Sidebar({ isOpen, onNavigate, companySettings }) {
   return (
     <aside
       className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-800 bg-slate-900 text-slate-300 transition-transform duration-200 md:translate-x-0 ${
@@ -99,7 +99,7 @@ function Sidebar({ isOpen, onNavigate }) {
           <img
             alt="TGI Ascenseurs"
             className="h-11 w-11 shrink-0 rounded-xl border border-white/15 bg-white p-0.5 object-contain shadow-lg shadow-blue-950/30 transition-transform duration-300 hover:scale-105"
-            src="/logo.png.jpeg"
+            src={companySettings.companyLogoBase64 || '/logo.png.jpeg'}
           />
           <span className="min-w-0">
             <span className="block truncate text-sm font-bold tracking-tight text-white">
@@ -227,6 +227,10 @@ export default function Layout() {
         if (isMounted) {
           const settingsData = settingsSnapshot.exists() ? settingsSnapshot.data() : {}
           setCompanySettings({
+            companyLogoBase64:
+              typeof settingsData.companyLogoBase64 === 'string'
+                ? settingsData.companyLogoBase64
+                : '',
             directeurPhoto:
               typeof settingsData.directeurPhoto === 'string'
                 ? settingsData.directeurPhoto
@@ -238,7 +242,7 @@ export default function Layout() {
           })
         }
       } catch (error) {
-        console.error('Erreur lors du chargement des photos de profil :', error)
+        console.error('Erreur lors du chargement des paramètres d’affichage de l’entreprise :', error)
       }
     }
 
@@ -308,6 +312,7 @@ export default function Layout() {
       )}
 
       <Sidebar
+        companySettings={companySettings}
         isOpen={isMobileSidebarOpen}
         onNavigate={() => setIsMobileSidebarOpen(false)}
       />

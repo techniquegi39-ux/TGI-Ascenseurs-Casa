@@ -13,6 +13,12 @@ export const PDF_COMPANY_INFO = {
   ice: '',
   rc: '',
   patente: '',
+  capitalSocial: '',
+  banque: '',
+  rib: '',
+  identifiantFiscal: '',
+  cnss: '',
+  companyLogoBase64: '',
 }
 
 const COLORS = {
@@ -28,7 +34,7 @@ const PAGE_WIDTH = 210
 const PAGE_HEIGHT = 297
 const MARGIN_LEFT = 14
 const MARGIN_RIGHT = 14
-const FOOTER_TOP = 278
+const FOOTER_TOP = 272
 const FOOTER_SPACE = PAGE_HEIGHT - FOOTER_TOP + 4
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT
 
@@ -46,6 +52,13 @@ function normalizeCompanyInfo(settings = {}) {
     ice: getText('ice'),
     rc: getText('rc'),
     patente: getText('patente'),
+    capitalSocial: getText('capitalSocial'),
+    banque: getText('banque'),
+    rib: getText('rib'),
+    identifiantFiscal: getText('identifiantFiscal'),
+    cnss: getText('cnss'),
+    companyLogoBase64:
+      typeof settings.companyLogoBase64 === 'string' ? settings.companyLogoBase64 : '',
   }
 }
 
@@ -245,12 +258,18 @@ function getDocumentTotals(totaux, normalizedItems) {
 function drawCompanyHeader(doc, typeDocument, numero, date, clientInfo, companyInfo) {
   const leftX = MARGIN_LEFT
   const rightX = PAGE_WIDTH - MARGIN_RIGHT
+  const logo = companyInfo.logoData
+  const companyX = logo ? leftX + 22 : leftX
   let companyY = 16
+
+  if (logo) {
+    doc.addImage(logo.data, logo.format, leftX, 8, 18, 18)
+  }
 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(12)
   doc.setTextColor(...COLORS.ink)
-  doc.text(companyInfo.name, leftX, companyY)
+  doc.text(companyInfo.name, companyX, companyY)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8.5)
@@ -264,7 +283,7 @@ function drawCompanyHeader(doc, typeDocument, numero, date, clientInfo, companyI
 
   for (const [label, value] of companyLines) {
     companyY += 5
-    doc.text(`${label} : ${value || 'À renseigner'}`, leftX, companyY)
+    doc.text(`${label} : ${value || 'À renseigner'}`, companyX, companyY)
   }
 
   const title = `${typeDocument.toLocaleUpperCase('fr-FR')} N° ${numero}`
@@ -433,23 +452,72 @@ function drawSignature(doc, typeDocument, y, signatureLabelOverride) {
 
 function drawFooter(doc, pageNumber, pageCount, companyInfo) {
   const legalInfo = [
+    companyInfo.banque ? `Banque : ${companyInfo.banque}` : '',
+    companyInfo.rib ? `RIB : ${companyInfo.rib}` : '',
+    companyInfo.capitalSocial ? `Capital social : ${companyInfo.capitalSocial}` : '',
+    companyInfo.identifiantFiscal ? `IF : ${companyInfo.identifiantFiscal}` : '',
+    companyInfo.cnss ? `CNSS : ${companyInfo.cnss}` : '',
     `ICE : ${companyInfo.ice || 'À renseigner'}`,
     `RC : ${companyInfo.rc || 'À renseigner'}`,
     `Patente : ${companyInfo.patente || 'À renseigner'}`,
-  ].join('  |  ')
-  const legalLines = doc.splitTextToSize(legalInfo, CONTENT_WIDTH - 12).slice(0, 2)
+  ]
+    .filter(Boolean)
+    .join('  |  ')
+  const legalLines = doc.splitTextToSize(legalInfo, CONTENT_WIDTH - 12)
 
   doc.setDrawColor(...COLORS.border)
   doc.setLineWidth(0.35)
   doc.line(MARGIN_LEFT, FOOTER_TOP, PAGE_WIDTH - MARGIN_RIGHT, FOOTER_TOP)
 
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(8)
+  doc.setFontSize(6.5)
   doc.setTextColor(...COLORS.muted)
   doc.text(legalLines, PAGE_WIDTH / 2, FOOTER_TOP + 5, { align: 'center' })
   doc.text(`Page ${pageNumber}/${pageCount}`, PAGE_WIDTH / 2, PAGE_HEIGHT - 5, {
     align: 'center',
   })
+}
+
+async function loadCompanyLogo(companyInfo) {
+  let source = companyInfo.companyLogoBase64
+  let contentType
+
+  if (source) {
+    const dataUrlMatch = source.match(/^data:image\/(png|jpeg);base64,/i)
+    if (!dataUrlMatch) {
+      throw new TypeError('Le logo enregistré doit être une image PNG ou JPEG en Base64.')
+    }
+    contentType = `image/${dataUrlMatch[1].toLowerCase()}`
+  } else {
+    const response = await fetch('/logo.png.jpeg')
+    if (!response.ok) {
+      throw new Error('Le logo par défaut de l’entreprise n’a pas pu être chargé.')
+    }
+
+    const imageBlob = await response.blob()
+    contentType = imageBlob.type
+    source = await new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result)
+        } else {
+          reject(new Error('Le logo par défaut n’a pas pu être converti en Base64.'))
+        }
+      }
+      reader.onerror = () => reject(new Error('La lecture du logo par défaut a échoué.'))
+      reader.readAsDataURL(imageBlob)
+    })
+  }
+
+  if (!['image/png', 'image/jpeg'].includes(contentType)) {
+    throw new TypeError('Le logo doit être au format PNG ou JPEG.')
+  }
+
+  return {
+    data: source,
+    format: contentType === 'image/png' ? 'PNG' : 'JPEG',
+  }
 }
 
 function makeFilename(typeDocument, numero) {
@@ -500,6 +568,7 @@ export async function generatePremiumPDF({
   const companyInfo = companyInfoOverride
     ? normalizeCompanyInfo(companyInfoOverride)
     : await loadCompanyInfo()
+  const logoData = await loadCompanyLogo(companyInfo)
   const normalizedItems = normalizeItems(items)
   const totals = getDocumentTotals(totaux, normalizedItems)
   const doc = new jsPDF({
@@ -517,7 +586,10 @@ export async function generatePremiumPDF({
     creator: 'TGI Manager Pro',
   })
 
-  drawCompanyHeader(doc, documentType, documentNumber, date, clientInfo, companyInfo)
+  drawCompanyHeader(doc, documentType, documentNumber, date, clientInfo, {
+    ...companyInfo,
+    logoData,
+  })
 
   const tableHead =
     layout === 'details'

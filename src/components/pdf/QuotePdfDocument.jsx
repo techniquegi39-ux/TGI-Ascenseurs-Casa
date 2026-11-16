@@ -163,6 +163,42 @@ const styles = StyleSheet.create({
     fontSize: 8,
     lineHeight: 1.4,
   },
+  documentConditions: {
+    marginTop: 14,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderLeftWidth: 3,
+    borderLeftColor: STEEL_BLUE,
+    borderRadius: 3,
+    backgroundColor: '#F8FAFC',
+  },
+  conditionsHeading: {
+    marginBottom: 5,
+    color: NAVY,
+    fontSize: 8,
+    fontFamily: 'Helvetica-Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  conditionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 3,
+  },
+  conditionLabel: {
+    width: '29%',
+    paddingRight: 8,
+    color: MUTED,
+    fontSize: 8,
+    fontFamily: 'Helvetica-Bold',
+  },
+  conditionValue: {
+    flexGrow: 1,
+    color: '#334155',
+    fontSize: 8,
+    lineHeight: 1.35,
+  },
   totals: {
     width: 220,
     padding: 10,
@@ -387,8 +423,21 @@ function getCompanyDetails(companyInfo) {
 
 function getLegalDetails(companyInfo) {
   const details = [
+    getText(companyInfo, 'banque', 'bank')
+      ? `Banque : ${getText(companyInfo, 'banque', 'bank')}`
+      : '',
     getText(companyInfo, 'rib') ? `RIB : ${getText(companyInfo, 'rib')}` : '',
-    getText(companyInfo, 'capital') ? `Capital : ${getText(companyInfo, 'capital')}` : '',
+    getText(companyInfo, 'capitalSocial', 'capital')
+      ? `Capital social : ${getText(companyInfo, 'capitalSocial', 'capital')}`
+      : '',
+    getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')
+      ? `IF : ${getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')}`
+      : '',
+    getText(companyInfo, 'cnss', 'numeroCNSS')
+      ? `CNSS : ${getText(companyInfo, 'cnss', 'numeroCNSS')}`
+      : '',
+    getText(companyInfo, 'rc') ? `RC : ${getText(companyInfo, 'rc')}` : '',
+    getText(companyInfo, 'ice') ? `ICE : ${getText(companyInfo, 'ice')}` : '',
     getText(companyInfo, 'patente') ? `Patente : ${getText(companyInfo, 'patente')}` : '',
     getText(companyInfo, 'mentionsLegales', 'legalMentions'),
   ].filter(Boolean)
@@ -425,6 +474,9 @@ export default function QuotePdfDocument({ quote = {} }) {
   const issueDate = quote.dateEmission || quote.date
   const validityDate = quote.dateValidite || quote.validUntil || quote.validityDate
   const vatLabel = getVatLabel(quote, items, totals.totalHT, totals.totalTVA)
+  const paymentTerms = getText(quote, 'conditionsPaiement', 'conditionsReglement', 'paymentTerms')
+  const paymentMethod = getText(quote, 'paymentMethod', 'modeReglement')
+  const specialConditions = getText(quote, 'conditionsParticulieres', 'specialConditions')
 
   return (
     <Document
@@ -434,7 +486,10 @@ export default function QuotePdfDocument({ quote = {} }) {
     >
       <Page size="A4" style={styles.page} wrap>
         <View fixed style={styles.header}>
-          <Image src="/logo.png.jpeg" style={styles.logo} />
+          <Image
+            src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
+            style={styles.logo}
+          />
           <View style={styles.companyBlock}>
             <Text style={styles.companyName}>{companyName}</Text>
             {companyDetails.map((detail) => (
@@ -518,11 +573,6 @@ export default function QuotePdfDocument({ quote = {} }) {
             {quote.reference && (
               <Text style={styles.note}>Référence : {String(quote.reference)}</Text>
             )}
-            {(quote.conditionsPaiement || quote.paymentTerms) && (
-              <Text style={styles.note}>
-                Conditions de paiement : {String(quote.conditionsPaiement || quote.paymentTerms)}
-              </Text>
-            )}
             {quote.notes && <Text style={styles.note}>{String(quote.notes)}</Text>}
           </View>
 
@@ -548,6 +598,22 @@ export default function QuotePdfDocument({ quote = {} }) {
             <Text style={styles.signatureHint}>
               Nom, date, signature et cachet du client
             </Text>
+          </View>
+        </View>
+
+        <View style={styles.documentConditions}>
+          <Text style={styles.conditionsHeading}>Conditions commerciales</Text>
+          <View style={styles.conditionRow}>
+            <Text style={styles.conditionLabel}>Conditions de règlement</Text>
+            <Text style={styles.conditionValue}>{paymentTerms || 'Non renseignées'}</Text>
+          </View>
+          <View style={styles.conditionRow}>
+            <Text style={styles.conditionLabel}>Mode de paiement</Text>
+            <Text style={styles.conditionValue}>{paymentMethod || 'Non renseigné'}</Text>
+          </View>
+          <View style={styles.conditionRow}>
+            <Text style={styles.conditionLabel}>Conditions particulières</Text>
+            <Text style={styles.conditionValue}>{specialConditions || 'Aucune'}</Text>
           </View>
         </View>
 

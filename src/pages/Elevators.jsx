@@ -4,6 +4,7 @@ import {
   ArrowUpDown,
   Building2,
   Download,
+  Eye,
   Gauge,
   LoaderCircle,
   Pencil,
@@ -82,6 +83,26 @@ function getElevatorCapacity(elevator) {
   return capacity === '—' ? `${people} personnes` : `${capacity} / ${people} pers.`
 }
 
+function getElevatorSpeed(elevator) {
+  const speed = elevator.vitesseMs ?? elevator.vitesse ?? elevator.speedMs
+  return speed === undefined || speed === null || speed === '' ? '—' : `${speed} m/s`
+}
+
+function getElevatorDate(elevator, aliases) {
+  const value = aliases.map((key) => elevator[key]).find((date) => date !== undefined && date !== null && date !== '')
+  if (!value) {
+    return '—'
+  }
+
+  const date = typeof value?.toDate === 'function'
+    ? value.toDate()
+    : new Date(typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00` : value)
+
+  return Number.isNaN(date.getTime())
+    ? String(value)
+    : new Intl.DateTimeFormat('fr-FR').format(date)
+}
+
 function getClientDisplayName(client) {
   return String(client.nom || client.raisonSociale || client.name || 'Client sans nom')
 }
@@ -158,6 +179,136 @@ function Toast({ toast, onClose }) {
   )
 }
 
+function ElevatorDetailItem({ label, value }) {
+  return (
+    <div className="min-w-0 rounded-lg border border-slate-100 bg-slate-50/70 p-3">
+      <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</dt>
+      <dd className="mt-1 break-words text-sm font-medium text-slate-800">{value || '—'}</dd>
+    </div>
+  )
+}
+
+function ElevatorDetailsModal({ elevator, clientName, onClose }) {
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-sm sm:p-6"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose()
+        }
+      }}
+    >
+      <section
+        aria-labelledby="elevator-details-title"
+        aria-modal="true"
+        className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/60 bg-white shadow-2xl"
+        role="dialog"
+      >
+        <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-5 sm:px-7">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">
+              Fiche technique
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-slate-900" id="elevator-details-title">
+              {getElevatorReference(elevator)}
+            </h2>
+          </div>
+          <button
+            aria-label="Fermer les détails de l’équipement"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+            onClick={onClose}
+            type="button"
+          >
+            <X aria-hidden="true" className="h-5 w-5" />
+          </button>
+        </header>
+        <div className="overflow-y-auto px-5 py-5 sm:px-7">
+          <div className="space-y-6">
+            <section aria-labelledby="elevator-details-general">
+              <h3 className="mb-3 font-semibold text-slate-900" id="elevator-details-general">
+                Informations générales
+              </h3>
+              <dl className="grid gap-3 sm:grid-cols-2">
+                <ElevatorDetailItem label="Client propriétaire" value={clientName} />
+                <ElevatorDetailItem label="Type d’équipement" value={getElevatorType(elevator)} />
+                <ElevatorDetailItem label="Marque" value={elevator.marque} />
+                <ElevatorDetailItem label="Modèle / moteur" value={elevator.moteur} />
+                <ElevatorDetailItem
+                  label="Adresse d’installation"
+                  value={elevator.adresseInstallation || elevator.adresse}
+                />
+                <div className="min-w-0 rounded-lg border border-slate-100 bg-slate-50/70 p-3">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Statut actuel
+                  </dt>
+                  <dd className="mt-1">
+                    <StatusBadge status={getElevatorStatus(elevator)} />
+                  </dd>
+                </div>
+              </dl>
+            </section>
+            <section aria-labelledby="elevator-details-technical">
+              <h3
+                className="mb-3 font-semibold text-slate-900"
+                id="elevator-details-technical"
+              >
+                Caractéristiques techniques
+              </h3>
+              <dl className="grid gap-3 sm:grid-cols-2">
+                <ElevatorDetailItem label="Niveaux / arrêts" value={getElevatorLevels(elevator)} />
+                <ElevatorDetailItem label="Charge utile" value={getElevatorCapacity(elevator)} />
+                <ElevatorDetailItem label="Vitesse" value={getElevatorSpeed(elevator)} />
+                <ElevatorDetailItem
+                  label="Type de traction"
+                  value={elevator.typeTraction || elevator.tractionType}
+                />
+                <ElevatorDetailItem
+                  label="Type de manœuvre"
+                  value={
+                    elevator.typeManoeuvre ||
+                    elevator.typeManœuvre ||
+                    elevator.manoeuvreType
+                  }
+                />
+              </dl>
+            </section>
+            <section aria-labelledby="elevator-details-maintenance">
+              <h3
+                className="mb-3 font-semibold text-slate-900"
+                id="elevator-details-maintenance"
+              >
+                Maintenance &amp; mise en service
+              </h3>
+              <dl className="grid gap-3 sm:grid-cols-2">
+                <ElevatorDetailItem
+                  label="N° de série de l’armoire de commande"
+                  value={
+                    elevator.numeroSerieArmoire ||
+                    elevator.numeroSerieArmoireCommande ||
+                    elevator.armoireSerialNumber
+                  }
+                />
+                <ElevatorDetailItem
+                  label="Dernière visite réglementaire"
+                  value={getElevatorDate(elevator, [
+                    'dateDerniereVisiteReglementaire',
+                    'derniereVisiteReglementaire',
+                    'lastRegulatoryVisitDate',
+                  ])}
+                />
+                <ElevatorDetailItem
+                  label="Date de mise en service"
+                  value={getElevatorDate(elevator, ['dateMiseEnService', 'commissioningDate'])}
+                />
+              </dl>
+            </section>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
 export default function Elevators() {
   const [elevators, setElevators] = useState([])
   const [clients, setClients] = useState([])
@@ -170,6 +321,7 @@ export default function Elevators() {
   const [elevatorError, setElevatorError] = useState('')
   const [clientError, setClientError] = useState('')
   const [modalElevator, setModalElevator] = useState(undefined)
+  const [detailsElevator, setDetailsElevator] = useState(undefined)
   const [exportingId, setExportingId] = useState('')
   const [toast, setToast] = useState(null)
 
@@ -266,6 +418,10 @@ export default function Elevators() {
           elevator.marque,
           elevator.moteur,
           elevator.adresseInstallation,
+          elevator.vitesseMs,
+          elevator.typeTraction,
+          elevator.typeManoeuvre,
+          elevator.numeroSerieArmoire,
         ]
         return searchableValues.some((value) => normalizeSearch(value || '').includes(normalizedQuery))
       })
@@ -366,6 +522,33 @@ export default function Elevators() {
         ['Moteur / Modèle', String(elevator.moteur || '—')],
         ['Niveaux / Arrêts', getElevatorLevels(elevator)],
         ['Charge utile', getElevatorCapacity(elevator)],
+        ['Vitesse', getElevatorSpeed(elevator)],
+        ['Type de traction', String(elevator.typeTraction || elevator.tractionType || '—')],
+        [
+          'Type de manœuvre',
+          String(elevator.typeManoeuvre || elevator.typeManœuvre || elevator.manoeuvreType || '—'),
+        ],
+        [
+          'N° de série de l’armoire de commande',
+          String(
+            elevator.numeroSerieArmoire ||
+              elevator.numeroSerieArmoireCommande ||
+              elevator.armoireSerialNumber ||
+              '—',
+          ),
+        ],
+        [
+          'Dernière visite réglementaire',
+          getElevatorDate(elevator, [
+            'dateDerniereVisiteReglementaire',
+            'derniereVisiteReglementaire',
+            'lastRegulatoryVisitDate',
+          ]),
+        ],
+        [
+          'Date de mise en service',
+          getElevatorDate(elevator, ['dateMiseEnService', 'commissioningDate']),
+        ],
         ['Adresse d’installation', installationAddress],
         ['Statut actuel', getElevatorStatus(elevator)],
       ].map(([designation, value]) => ({ designation, value }))
@@ -677,6 +860,15 @@ export default function Elevators() {
                       <td className="whitespace-nowrap px-5 py-4">
                         <div className="flex items-center justify-end gap-1">
                           <button
+                            aria-label={`Afficher les détails de ${reference}`}
+                            className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                            onClick={() => setDetailsElevator(elevator)}
+                            title="Afficher la fiche technique détaillée"
+                            type="button"
+                          >
+                            <Eye aria-hidden="true" className="h-4 w-4" />
+                          </button>
+                          <button
                             aria-label={`Exporter la fiche technique de ${reference}`}
                             className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600/20 disabled:cursor-wait disabled:opacity-50"
                             disabled={Boolean(exportingId)}
@@ -724,6 +916,13 @@ export default function Elevators() {
           elevator={modalElevator}
           onClose={() => setModalElevator(undefined)}
           onSaved={handleSaved}
+        />
+      )}
+      {detailsElevator !== undefined && (
+        <ElevatorDetailsModal
+          clientName={getElevatorClientName(detailsElevator, clientsById)}
+          elevator={detailsElevator}
+          onClose={() => setDetailsElevator(undefined)}
         />
       )}
     </div>

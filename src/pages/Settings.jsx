@@ -28,12 +28,20 @@ const DEFAULT_FORM_DATA = {
   ice: '',
   rc: '',
   patente: '',
+  capitalSocial: '',
+  banque: '',
+  rib: '',
+  identifiantFiscal: '',
+  cnss: '',
+  companyLogoBase64: '',
   directeurPhoto: '',
   commercialPhoto: '',
 }
 
 const MAX_PROFILE_IMAGE_SIZE_BYTES = 600 * 1024
 const MAX_PROFILE_PHOTOS_DATA_LENGTH = 850 * 1024
+const MAX_COMPANY_LOGO_SIZE_BYTES = 200 * 1024
+const MAX_COMPANY_IMAGES_DATA_LENGTH = 900 * 1024
 
 function getFormDataFromSettings(settings = {}) {
   return {
@@ -47,6 +55,15 @@ function getFormDataFromSettings(settings = {}) {
     ice: typeof settings.ice === 'string' ? settings.ice : '',
     rc: typeof settings.rc === 'string' ? settings.rc : '',
     patente: typeof settings.patente === 'string' ? settings.patente : '',
+    capitalSocial:
+      typeof settings.capitalSocial === 'string' ? settings.capitalSocial : '',
+    banque: typeof settings.banque === 'string' ? settings.banque : '',
+    rib: typeof settings.rib === 'string' ? settings.rib : '',
+    identifiantFiscal:
+      typeof settings.identifiantFiscal === 'string' ? settings.identifiantFiscal : '',
+    cnss: typeof settings.cnss === 'string' ? settings.cnss : '',
+    companyLogoBase64:
+      typeof settings.companyLogoBase64 === 'string' ? settings.companyLogoBase64 : '',
     directeurPhoto: typeof settings.directeurPhoto === 'string' ? settings.directeurPhoto : '',
     commercialPhoto: typeof settings.commercialPhoto === 'string' ? settings.commercialPhoto : '',
   }
@@ -129,6 +146,38 @@ function ProfilePhotoField({ field, label, value, disabled, onChange }) {
           type="file"
         />
         <p className="mt-1.5 text-xs text-slate-500">Image jusqu’à 600 Ko.</p>
+      </div>
+    </div>
+  )
+}
+
+function CompanyLogoField({ value, disabled, onChange }) {
+  return (
+    <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:flex-row sm:items-center">
+      <img
+        alt="Aperçu du logo de l’entreprise"
+        className="h-20 w-32 shrink-0 rounded-lg border border-slate-200 bg-white p-2 object-contain shadow-sm"
+        src={value || '/logo.png.jpeg'}
+      />
+      <div className="min-w-0 flex-1">
+        <label
+          className="mb-2 block text-sm font-medium text-slate-700"
+          htmlFor="settings-company-logo"
+        >
+          Logo de l’entreprise
+        </label>
+        <input
+          accept="image/png,image/jpeg"
+          className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-blue-800 hover:file:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={disabled}
+          id="settings-company-logo"
+          onChange={onChange}
+          type="file"
+        />
+        <p className="mt-1.5 text-xs text-slate-500">
+          PNG ou JPEG, jusqu’à 200 Ko. Le logo par défaut est conservé si aucun logo n’est
+          enregistré.
+        </p>
       </div>
     </div>
   )
@@ -322,6 +371,76 @@ export default function Settings() {
     }
   }
 
+  function handleCompanyLogoUpload(event) {
+    const file = event.currentTarget.files?.[0]
+    event.currentTarget.value = ''
+
+    if (!file) {
+      return
+    }
+
+    if (!['image/png', 'image/jpeg'].includes(file.type)) {
+      setFeedback({
+        type: 'error',
+        message: 'Le logo doit être un fichier PNG ou JPEG.',
+      })
+      return
+    }
+    if (file.size > MAX_COMPANY_LOGO_SIZE_BYTES) {
+      setFeedback({
+        type: 'error',
+        message: 'Le logo dépasse 200 Ko. Choisissez une image plus légère.',
+      })
+      return
+    }
+
+    const reader = new FileReader()
+    setPendingImageReads((count) => count + 1)
+    function finishReading() {
+      setPendingImageReads((count) => Math.max(0, count - 1))
+    }
+
+    reader.onload = () => {
+      finishReading()
+      if (typeof reader.result !== 'string' || !reader.result.startsWith('data:image/')) {
+        setFeedback({
+          type: 'error',
+          message: 'Le logo n’a pas pu être converti. Sélectionnez une autre image.',
+        })
+        return
+      }
+
+      setFormData((previous) => ({
+        ...previous,
+        companyLogoBase64: reader.result,
+      }))
+      setFeedback(null)
+    }
+    reader.onerror = () => {
+      finishReading()
+      console.error('Erreur lors de la lecture du logo de l’entreprise.')
+      setFeedback({
+        type: 'error',
+        message: 'La lecture du logo a échoué. Réessayez avec une autre image.',
+      })
+    }
+    reader.onabort = () => {
+      finishReading()
+      setFeedback({ type: 'error', message: 'La lecture du logo a été interrompue.' })
+    }
+
+    try {
+      reader.readAsDataURL(file)
+    } catch (error) {
+      finishReading()
+      console.error('Erreur lors de la conversion du logo de l’entreprise :', error)
+      setFeedback({
+        type: 'error',
+        message: 'Le logo n’a pas pu être lu. Réessayez avec une autre image.',
+      })
+    }
+  }
+
   function handleRetry() {
     setLoadError('')
     setFeedback(null)
@@ -357,6 +476,12 @@ export default function Settings() {
       ice: formData.ice.trim(),
       rc: formData.rc.trim(),
       patente: formData.patente.trim(),
+      capitalSocial: formData.capitalSocial.trim(),
+      banque: formData.banque.trim(),
+      rib: formData.rib.trim(),
+      identifiantFiscal: formData.identifiantFiscal.trim(),
+      cnss: formData.cnss.trim(),
+      companyLogoBase64: formData.companyLogoBase64,
       directeurPhoto: formData.directeurPhoto,
       commercialPhoto: formData.commercialPhoto,
     }
@@ -367,6 +492,19 @@ export default function Settings() {
       setFeedback({
         type: 'error',
         message: 'La taille totale des photos dépasse la limite de stockage des paramètres.',
+      })
+      return
+    }
+    if (
+      valuesToSave.companyLogoBase64.length +
+        valuesToSave.directeurPhoto.length +
+        valuesToSave.commercialPhoto.length >
+      MAX_COMPANY_IMAGES_DATA_LENGTH
+    ) {
+      setFeedback({
+        type: 'error',
+        message:
+          'La taille cumulée du logo et des photos dépasse la limite de stockage des paramètres. Réduisez la taille des images.',
       })
       return
     }
@@ -473,6 +611,11 @@ export default function Settings() {
             </div>
 
             <div className="space-y-5">
+              <CompanyLogoField
+                disabled={saving || pendingImageReads > 0}
+                onChange={handleCompanyLogoUpload}
+                value={formData.companyLogoBase64}
+              />
               <TextField
                 autoComplete="organization"
                 icon={Building2}
@@ -574,6 +717,51 @@ export default function Settings() {
                 onChange={handleChange}
                 placeholder="Numéro de patente"
                 value={formData.patente}
+                disabled={saving}
+              />
+              <TextField
+                icon={Building2}
+                id="capitalSocial"
+                label="Capital social"
+                onChange={handleChange}
+                placeholder="Capital social déclaré"
+                value={formData.capitalSocial}
+                disabled={saving}
+              />
+              <TextField
+                icon={Landmark}
+                id="banque"
+                label="Banque"
+                onChange={handleChange}
+                placeholder="Nom de la banque"
+                value={formData.banque}
+                disabled={saving}
+              />
+              <TextField
+                icon={Landmark}
+                id="rib"
+                label="RIB"
+                onChange={handleChange}
+                placeholder="Relevé d’identité bancaire"
+                value={formData.rib}
+                disabled={saving}
+              />
+              <TextField
+                icon={Fingerprint}
+                id="identifiantFiscal"
+                label="Identifiant Fiscal (IF)"
+                onChange={handleChange}
+                placeholder="Identifiant fiscal"
+                value={formData.identifiantFiscal}
+                disabled={saving}
+              />
+              <TextField
+                icon={Fingerprint}
+                id="cnss"
+                label="N° CNSS"
+                onChange={handleChange}
+                placeholder="Numéro d’affiliation CNSS"
+                value={formData.cnss}
                 disabled={saving}
               />
             </div>

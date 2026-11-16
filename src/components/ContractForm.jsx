@@ -26,6 +26,8 @@ import { db } from '../firebase.js'
 import { useAuth } from '../context/useAuth.js'
 
 const CONTRACT_TYPES = ['Maintenance', 'Modernisation']
+const CONTRACT_SERVICE_TYPES = ['Standard', 'Préventif', 'Pièces et Main d’œuvre (P&MO)']
+const SLA_RESPONSE_TIMES = ['Sous 4h', 'Sous 12h', 'Sous 24h']
 const CONTRACT_STATUSES = ['En négociation', 'Actif', 'Résilié']
 const BILLING_FREQUENCIES = ['Mensuelle', 'Trimestrielle', 'Annuelle']
 const VAT_RATES = [0, 7, 10, 14, 20]
@@ -98,6 +100,20 @@ function getInitialFormData(contract) {
     clientName: String(contract?.clientName || ''),
     numero: String(contract?.numero || contract?.contractNumber || ''),
     type: String(contract?.type || CONTRACT_TYPES[0]),
+    typeContrat: String(
+      contract?.typeContrat ||
+        contract?.contractType ||
+        (contract ? '' : CONTRACT_SERVICE_TYPES[0]),
+    ),
+    slaIntervention: String(
+      contract?.slaIntervention ||
+        contract?.delaiInterventionGaranti ||
+        contract?.responseTimeSla ||
+        '',
+    ),
+    taciteReconduction: Boolean(
+      contract?.taciteReconduction ?? contract?.automaticRenewal ?? false,
+    ),
     dateDebut: getDateInputValue(contract?.dateDebut || contract?.startDate),
     dateFin: getDateInputValue(contract?.dateFin || contract?.endDate),
     status: String(contract?.status || contract?.statut || 'En négociation'),
@@ -431,6 +447,14 @@ export default function ContractForm({ contract = null, onClose, onSaved }) {
     setFormError('')
   }
 
+  function handleRenewalChange(event) {
+    setFormData((previous) => ({
+      ...previous,
+      taciteReconduction: event.target.checked,
+    }))
+    setFormError('')
+  }
+
   function appendStandardClause(event) {
     const clause = STANDARD_CONTRACT_CLAUSES.find((item) => item.label === event.target.value)
     if (!clause) {
@@ -582,6 +606,9 @@ export default function ContractForm({ contract = null, onClose, onSaved }) {
       clientName: getClientName(selectedClient),
       numero,
       type: formData.type,
+      typeContrat: formData.typeContrat,
+      slaIntervention: formData.slaIntervention,
+      taciteReconduction: formData.taciteReconduction,
       dateDebut: formData.dateDebut,
       dateFin: formData.dateFin,
       status: formData.status,
@@ -764,13 +791,61 @@ export default function ContractForm({ contract = null, onClose, onSaved }) {
                 <SelectField
                   error={errors.type}
                   id="contract-type"
-                  label="Type de contrat"
+                  label="Objet / nature du contrat"
                   name="type"
                   onChange={handleChange}
                   options={CONTRACT_TYPES.map((type) => ({ value: type, label: type }))}
                   value={formData.type}
                   disabled={isSaving}
                 />
+                <SelectField
+                  id="contract-service-type"
+                  label="Type de contrat"
+                  name="typeContrat"
+                  onChange={handleChange}
+                  options={[
+                    ...(formData.typeContrat &&
+                    !CONTRACT_SERVICE_TYPES.includes(formData.typeContrat)
+                      ? [{ value: formData.typeContrat, label: formData.typeContrat }]
+                      : []),
+                    { value: '', label: 'Non renseigné' },
+                    ...CONTRACT_SERVICE_TYPES.map((type) => ({ value: type, label: type })),
+                  ]}
+                  value={formData.typeContrat}
+                  disabled={isSaving}
+                />
+                <SelectField
+                  id="contract-response-sla"
+                  label="Délai d’intervention garanti (SLA)"
+                  name="slaIntervention"
+                  onChange={handleChange}
+                  options={[
+                    ...(formData.slaIntervention &&
+                    !SLA_RESPONSE_TIMES.includes(formData.slaIntervention)
+                      ? [{ value: formData.slaIntervention, label: formData.slaIntervention }]
+                      : []),
+                    { value: '', label: 'Non défini' },
+                    ...SLA_RESPONSE_TIMES.map((sla) => ({ value: sla, label: sla })),
+                  ]}
+                  value={formData.slaIntervention}
+                  disabled={isSaving}
+                />
+                <label className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2 text-sm text-slate-700 sm:col-span-2">
+                  <input
+                    checked={formData.taciteReconduction}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-700 focus:ring-blue-600"
+                    disabled={isSaving}
+                    id="contract-automatic-renewal"
+                    onChange={handleRenewalChange}
+                    type="checkbox"
+                  />
+                  <span>
+                    <span className="block font-medium text-slate-800">Tacite reconduction</span>
+                    <span className="mt-0.5 block text-xs text-slate-500">
+                      Renouvellement automatique du contrat à son échéance.
+                    </span>
+                  </span>
+                </label>
                 <SelectField
                   error={errors.status}
                   id="contract-status"

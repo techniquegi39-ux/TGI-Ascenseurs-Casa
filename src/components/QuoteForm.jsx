@@ -24,6 +24,12 @@ import { db } from '../firebase.js'
 import { useAuth } from '../context/useAuth.js'
 
 const QUOTE_STATUSES = ['Brouillon', 'Envoyé', 'Accepté', 'Refusé']
+const PAYMENT_TERMS = [
+  'À réception',
+  '30 jours fin de mois',
+  '50% à la commande, 50% à la livraison',
+]
+const PAYMENT_METHODS = ['Virement bancaire', 'Chèque', 'Traite', 'Espèces']
 const VAT_RATES = [0, 14, 20]
 
 function createLineId() {
@@ -93,7 +99,15 @@ function getInitialFormData(quote) {
           taxRate: String(item.taxRate ?? item.tauxTVA ?? item.tva ?? 20).replace('%', ''),
         }))
       : [createEmptyLine()],
-    conditionsPaiement: String(quote?.conditionsPaiement || quote?.paymentTerms || ''),
+    conditionsPaiement: String(
+      quote?.conditionsPaiement || quote?.paymentTerms || (quote ? '' : PAYMENT_TERMS[0]),
+    ),
+    paymentMethod: String(
+      quote?.paymentMethod || quote?.modePaiement || (quote ? '' : PAYMENT_METHODS[0]),
+    ),
+    conditionsParticulieres: String(
+      quote?.conditionsParticulieres || quote?.specialConditions || '',
+    ),
     notes: String(quote?.notes || ''),
   }
 }
@@ -461,6 +475,13 @@ export default function QuoteForm({ quote = null, onClose, onSaved }) {
     if (formData.conditionsPaiement.trim().length > 3000) {
       nextErrors.conditionsPaiement = 'Les conditions ne doivent pas dépasser 3 000 caractères.'
     }
+    if (formData.paymentMethod.trim().length > 80) {
+      nextErrors.paymentMethod = 'Le mode de paiement ne doit pas dépasser 80 caractères.'
+    }
+    if (formData.conditionsParticulieres.trim().length > 5000) {
+      nextErrors.conditionsParticulieres =
+        'Les conditions particulières ne doivent pas dépasser 5 000 caractères.'
+    }
     if (formData.notes.trim().length > 5000) {
       nextErrors.notes = 'Les notes ne doivent pas dépasser 5 000 caractères.'
     }
@@ -476,7 +497,12 @@ export default function QuoteForm({ quote = null, onClose, onSaved }) {
       setActiveTab('general')
     } else if (nextErrors.items) {
       setActiveTab('items')
-    } else if (nextErrors.conditionsPaiement || nextErrors.notes) {
+    } else if (
+      nextErrors.conditionsPaiement ||
+      nextErrors.paymentMethod ||
+      nextErrors.conditionsParticulieres ||
+      nextErrors.notes
+    ) {
       setActiveTab('conditions')
     }
     return Object.keys(nextErrors).length === 0
@@ -535,6 +561,8 @@ export default function QuoteForm({ quote = null, onClose, onSaved }) {
       totalTVA: totals.totalTVA,
       totalTTC: totals.totalTTC,
       conditionsPaiement: formData.conditionsPaiement.trim(),
+      paymentMethod: formData.paymentMethod.trim(),
+      conditionsParticulieres: formData.conditionsParticulieres.trim(),
       notes: formData.notes.trim(),
       updatedAt: serverTimestamp(),
       updatedBy: currentUser?.uid || null,
@@ -979,14 +1007,14 @@ export default function QuoteForm({ quote = null, onClose, onSaved }) {
                       className="mb-2 block text-sm font-medium text-slate-700"
                       htmlFor="quote-payment-terms"
                     >
-                      Conditions de paiement
+                      Conditions de règlement
                     </label>
-                    <textarea
+                    <select
                       aria-describedby={
                         errors.conditionsPaiement ? 'quote-payment-terms-error' : undefined
                       }
                       aria-invalid={Boolean(errors.conditionsPaiement)}
-                      className={`min-h-28 w-full resize-y rounded-lg border bg-white px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 ${
+                      className={`h-11 w-full rounded-lg border bg-white px-3 text-sm text-slate-900 outline-none transition focus:ring-4 ${
                         errors.conditionsPaiement
                           ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
                           : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
@@ -995,13 +1023,103 @@ export default function QuoteForm({ quote = null, onClose, onSaved }) {
                       id="quote-payment-terms"
                       name="conditionsPaiement"
                       onChange={handleChange}
-                      placeholder="Ex. Avance de 50 % à la commande, solde à la livraison."
-                      rows={4}
                       value={formData.conditionsPaiement}
-                    />
+                    >
+                      <option value="">Non renseignées</option>
+                      {formData.conditionsPaiement &&
+                        !PAYMENT_TERMS.includes(formData.conditionsPaiement) && (
+                          <option value={formData.conditionsPaiement}>
+                            {formData.conditionsPaiement}
+                          </option>
+                        )}
+                      {PAYMENT_TERMS.map((term) => (
+                        <option key={term} value={term}>
+                          {term}
+                        </option>
+                      ))}
+                    </select>
                     {errors.conditionsPaiement && (
                       <p className="mt-1.5 text-xs text-red-700" id="quote-payment-terms-error">
                         {errors.conditionsPaiement}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium text-slate-700"
+                      htmlFor="quote-payment-method"
+                    >
+                      Mode de paiement
+                    </label>
+                    <select
+                      aria-describedby={
+                        errors.paymentMethod ? 'quote-payment-method-error' : undefined
+                      }
+                      aria-invalid={Boolean(errors.paymentMethod)}
+                      className={`h-11 w-full rounded-lg border bg-white px-3 text-sm text-slate-900 outline-none transition focus:ring-4 ${
+                        errors.paymentMethod
+                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+                          : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
+                      }`}
+                      disabled={isSaving}
+                      id="quote-payment-method"
+                      name="paymentMethod"
+                      onChange={handleChange}
+                      value={formData.paymentMethod}
+                    >
+                      <option value="">Non renseigné</option>
+                      {formData.paymentMethod &&
+                        !PAYMENT_METHODS.includes(formData.paymentMethod) && (
+                          <option value={formData.paymentMethod}>
+                            {formData.paymentMethod}
+                          </option>
+                        )}
+                      {PAYMENT_METHODS.map((method) => (
+                        <option key={method} value={method}>
+                          {method}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.paymentMethod && (
+                      <p className="mt-1.5 text-xs text-red-700" id="quote-payment-method-error">
+                        {errors.paymentMethod}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium text-slate-700"
+                      htmlFor="quote-special-conditions"
+                    >
+                      Conditions particulières
+                    </label>
+                    <textarea
+                      aria-describedby={
+                        errors.conditionsParticulieres
+                          ? 'quote-special-conditions-error'
+                          : undefined
+                      }
+                      aria-invalid={Boolean(errors.conditionsParticulieres)}
+                      className={`min-h-28 w-full resize-y rounded-lg border bg-white px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 ${
+                        errors.conditionsParticulieres
+                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+                          : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
+                      }`}
+                      disabled={isSaving}
+                      id="quote-special-conditions"
+                      maxLength={5000}
+                      name="conditionsParticulieres"
+                      onChange={handleChange}
+                      placeholder="Ex. TVA exonérée selon l’article..."
+                      rows={4}
+                      value={formData.conditionsParticulieres}
+                    />
+                    {errors.conditionsParticulieres && (
+                      <p
+                        className="mt-1.5 text-xs text-red-700"
+                        id="quote-special-conditions-error"
+                      >
+                        {errors.conditionsParticulieres}
                       </p>
                     )}
                   </div>

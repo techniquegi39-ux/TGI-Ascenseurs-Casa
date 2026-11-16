@@ -3,6 +3,7 @@ import {
   AlertCircle,
   ArrowUpDown,
   Download,
+  Eye,
   FileText,
   LoaderCircle,
   Pencil,
@@ -176,6 +177,147 @@ function StatusBadge({ status }) {
   )
 }
 
+function ContractDetailItem({ label, value }) {
+  return (
+    <div className="min-w-0 rounded-lg border border-slate-100 bg-slate-50/70 p-3">
+      <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</dt>
+      <dd className="mt-1 whitespace-pre-wrap break-words text-sm font-medium text-slate-800">
+        {value || '—'}
+      </dd>
+    </div>
+  )
+}
+
+function ContractDetailsModal({ contract, clientName, onClose }) {
+  const elevators = getStoredElevatorDetails(contract)
+  const elevatorIds = getElevatorIds(contract)
+  const equipment = elevators.length
+    ? elevators.map((elevator) =>
+        [
+          elevator.reference || elevator.numeroSerie || elevator.serialNumber,
+          elevator.type,
+          elevator.marque || elevator.brand,
+        ]
+          .filter(Boolean)
+          .join(' · ') || elevator.id,
+      )
+    : elevatorIds
+  const clauses = String(contract.clauses || contract.conditions || '').trim()
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-sm sm:p-6"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose()
+        }
+      }}
+    >
+      <section
+        aria-labelledby="contract-details-title"
+        aria-modal="true"
+        className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/60 bg-white shadow-2xl"
+        role="dialog"
+      >
+        <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-5 sm:px-7">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">
+              Fiche contractuelle
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-slate-900" id="contract-details-title">
+              {getContractNumber(contract)}
+            </h2>
+          </div>
+          <button
+            aria-label="Fermer les détails du contrat"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+            onClick={onClose}
+            type="button"
+          >
+            <X aria-hidden="true" className="h-5 w-5" />
+          </button>
+        </header>
+        <div className="overflow-y-auto px-5 py-5 sm:px-7">
+          <div className="space-y-5">
+            <dl className="grid gap-3 sm:grid-cols-2">
+              <ContractDetailItem label="Client" value={clientName} />
+              <ContractDetailItem
+                label="Type de contrat"
+                value={contract.typeContrat || contract.contractType}
+              />
+              <ContractDetailItem
+                label="Objet / nature du contrat"
+                value={contract.type}
+              />
+              <ContractDetailItem
+                label="Délai d’intervention garanti (SLA)"
+                value={
+                  contract.slaIntervention ||
+                  contract.delaiInterventionGaranti ||
+                  contract.responseTimeSla
+                }
+              />
+              <ContractDetailItem
+                label="Tacite reconduction"
+                value={
+                  contract.taciteReconduction ?? contract.automaticRenewal
+                    ? 'Oui — renouvellement automatique'
+                    : 'Non'
+                }
+              />
+              <ContractDetailItem label="Date de début" value={formatDate(contract.dateDebut || contract.startDate)} />
+              <ContractDetailItem label="Date de fin" value={formatDate(contract.dateFin || contract.endDate)} />
+              <ContractDetailItem label="Montant TTC" value={formatCurrency(getContractAmount(contract))} />
+              <ContractDetailItem
+                label="Fréquence de facturation"
+                value={contract.frequenceFacturation || contract.billingFrequency}
+              />
+              <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-3">
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Statut
+                </dt>
+                <dd className="mt-1">
+                  <StatusBadge status={getContractStatus(contract)} />
+                </dd>
+              </div>
+            </dl>
+            <section aria-labelledby="contract-details-equipment">
+              <h3 className="font-semibold text-slate-900" id="contract-details-equipment">
+                Équipements couverts
+              </h3>
+              {equipment.length ? (
+                <ul className="mt-2 space-y-2">
+                  {equipment.map((item, index) => (
+                    <li
+                      className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2 text-sm text-slate-700"
+                      key={`${item}-${index}`}
+                    >
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-sm text-slate-500">Aucun équipement renseigné.</p>
+              )}
+            </section>
+            <section
+              aria-labelledby="contract-details-clauses"
+              className="rounded-lg border border-slate-200 p-4"
+            >
+              <h3 className="text-sm font-semibold text-slate-800" id="contract-details-clauses">
+                Clauses
+              </h3>
+              <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-600">
+                {clauses || 'Aucune clause particulière.'}
+              </p>
+            </section>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
 function Toast({ toast, onClose }) {
   if (!toast) {
     return null
@@ -248,6 +390,7 @@ export default function Contracts() {
   const [contractError, setContractError] = useState('')
   const [clientError, setClientError] = useState('')
   const [modalContract, setModalContract] = useState(undefined)
+  const [detailsContract, setDetailsContract] = useState(undefined)
   const [exportingId, setExportingId] = useState('')
   const [toast, setToast] = useState(null)
 
@@ -727,6 +870,15 @@ export default function Contracts() {
                       <td className="whitespace-nowrap px-5 py-4">
                         <div className="flex items-center justify-end gap-1">
                           <button
+                            aria-label={`Afficher les détails du contrat ${number}`}
+                            className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                            onClick={() => setDetailsContract(contract)}
+                            title="Afficher les détails du contrat"
+                            type="button"
+                          >
+                            <Eye aria-hidden="true" className="h-4 w-4" />
+                          </button>
+                          <button
                             aria-label={`Exporter le contrat ${number} en PDF`}
                             className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600/20 disabled:cursor-wait disabled:opacity-50"
                             disabled={Boolean(exportingId)}
@@ -774,6 +926,13 @@ export default function Contracts() {
           contract={modalContract}
           onClose={() => setModalContract(undefined)}
           onSaved={handleSaved}
+        />
+      )}
+      {detailsContract !== undefined && (
+        <ContractDetailsModal
+          clientName={getContractClientName(detailsContract, clientsById)}
+          contract={detailsContract}
+          onClose={() => setDetailsContract(undefined)}
         />
       )}
     </div>

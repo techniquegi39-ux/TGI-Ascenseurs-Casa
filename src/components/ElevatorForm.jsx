@@ -30,6 +30,8 @@ const ELEVATOR_TYPES = [
 ]
 
 const ELEVATOR_STATUSES = ['En marche', 'En panne', 'En maintenance']
+const TRACTION_TYPES = ['Électrique à câble', 'Hydraulique', 'Gearless']
+const MANOEUVRE_TYPES = ['Universelle', 'Blocage', 'Collective']
 
 function getClientName(client) {
   return String(client.nom || client.raisonSociale || client.name || 'Client sans nom')
@@ -44,6 +46,20 @@ function getElevatorValue(elevator, aliases, fallback = '') {
   }
 
   return fallback
+}
+
+function getDateInputValue(value) {
+  if (!value) {
+    return ''
+  }
+
+  const date = typeof value?.toDate === 'function'
+    ? value.toDate()
+    : value instanceof Date
+      ? value
+      : new Date(value)
+
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString().slice(0, 10)
 }
 
 function getInitialFormData(elevator) {
@@ -65,6 +81,28 @@ function getInitialFormData(elevator) {
     niveaux: String(getElevatorValue(elevator, ['niveaux', 'nombreNiveaux', 'floors'])),
     chargeKg: String(getElevatorValue(elevator, ['chargeKg', 'charge', 'capacityKg'])),
     personnes: String(getElevatorValue(elevator, ['personnes', 'passagers', 'capacityPeople'])),
+    vitesseMs: String(getElevatorValue(elevator, ['vitesseMs', 'vitesse', 'speedMs'])),
+    typeTraction: String(getElevatorValue(elevator, ['typeTraction', 'tractionType'])),
+    typeManoeuvre: String(
+      getElevatorValue(elevator, ['typeManoeuvre', 'typeManœuvre', 'manoeuvreType']),
+    ),
+    numeroSerieArmoire: String(
+      getElevatorValue(elevator, [
+        'numeroSerieArmoire',
+        'numeroSerieArmoireCommande',
+        'armoireSerialNumber',
+      ]),
+    ),
+    dateDerniereVisiteReglementaire: getDateInputValue(
+      getElevatorValue(elevator, [
+        'dateDerniereVisiteReglementaire',
+        'derniereVisiteReglementaire',
+        'lastRegulatoryVisitDate',
+      ]),
+    ),
+    dateMiseEnService: getDateInputValue(
+      getElevatorValue(elevator, ['dateMiseEnService', 'commissioningDate']),
+    ),
     adresseInstallation: String(
       getElevatorValue(elevator, ['adresseInstallation', 'adresse', 'installationAddress']),
     ),
@@ -222,6 +260,7 @@ export default function ElevatorForm({ elevator = null, onClose, onSaved }) {
     const levels = Number(formData.niveaux)
     const capacity = Number(formData.chargeKg)
     const people = formData.personnes === '' ? undefined : Number(formData.personnes)
+    const speed = formData.vitesseMs === '' ? undefined : Number(formData.vitesseMs)
 
     if (!selectedClientId || !clients.some((client) => client.id === selectedClientId)) {
       nextErrors.clientId = 'Sélectionnez un client propriétaire valide.'
@@ -261,6 +300,15 @@ export default function ElevatorForm({ elevator = null, onClose, onSaved }) {
 
     if (people !== undefined && (!Number.isInteger(people) || people < 1 || people > 1000)) {
       nextErrors.personnes = 'Le nombre de personnes doit être un entier entre 1 et 1000.'
+    }
+
+    if (speed !== undefined && (!Number.isFinite(speed) || speed <= 0 || speed > 20)) {
+      nextErrors.vitesseMs = 'La vitesse doit être supérieure à 0 et ne pas dépasser 20 m/s.'
+    }
+
+    if (formData.numeroSerieArmoire.trim().length > 100) {
+      nextErrors.numeroSerieArmoire =
+        'Le numéro de série de l’armoire ne doit pas dépasser 100 caractères.'
     }
 
     if (!formData.adresseInstallation.trim()) {
@@ -303,6 +351,12 @@ export default function ElevatorForm({ elevator = null, onClose, onSaved }) {
       niveaux: Number(formData.niveaux),
       chargeKg: Number(formData.chargeKg),
       personnes: formData.personnes === '' ? null : Number(formData.personnes),
+      vitesseMs: formData.vitesseMs === '' ? null : Number(formData.vitesseMs),
+      typeTraction: formData.typeTraction,
+      typeManoeuvre: formData.typeManoeuvre,
+      numeroSerieArmoire: formData.numeroSerieArmoire.trim(),
+      dateDerniereVisiteReglementaire: formData.dateDerniereVisiteReglementaire,
+      dateMiseEnService: formData.dateMiseEnService,
       adresseInstallation: formData.adresseInstallation.trim(),
       status: formData.status,
       updatedAt: serverTimestamp(),
@@ -647,6 +701,100 @@ export default function ElevatorForm({ elevator = null, onClose, onSaved }) {
                       disabled={isSaving}
                     />
                   </div>
+                  <Field
+                    error={errors.vitesseMs}
+                    icon={Gauge}
+                    id="elevator-speed"
+                    label="Vitesse (m/s)"
+                    max={20}
+                    min="0.01"
+                    name="vitesseMs"
+                    onChange={handleChange}
+                    placeholder="1.0"
+                    step="any"
+                    type="number"
+                    value={formData.vitesseMs}
+                    disabled={isSaving}
+                  />
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium text-slate-700"
+                      htmlFor="elevator-traction-type"
+                    >
+                      Type de traction
+                    </label>
+                    <select
+                      aria-describedby={
+                        errors.typeTraction ? 'elevator-traction-type-error' : undefined
+                      }
+                      aria-invalid={Boolean(errors.typeTraction)}
+                      className={`h-11 w-full rounded-lg border bg-white px-3 text-sm text-slate-900 outline-none transition focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-50 ${
+                        errors.typeTraction
+                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+                          : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
+                      }`}
+                      disabled={isSaving}
+                      id="elevator-traction-type"
+                      name="typeTraction"
+                      onChange={handleChange}
+                      value={formData.typeTraction}
+                    >
+                      <option value="">Non renseigné</option>
+                      {formData.typeTraction && !TRACTION_TYPES.includes(formData.typeTraction) && (
+                        <option value={formData.typeTraction}>{formData.typeTraction}</option>
+                      )}
+                      {TRACTION_TYPES.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.typeTraction && (
+                      <p className="mt-1.5 text-xs text-red-700" id="elevator-traction-type-error">
+                        {errors.typeTraction}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium text-slate-700"
+                      htmlFor="elevator-manoeuvre-type"
+                    >
+                      Type de manœuvre
+                    </label>
+                    <select
+                      aria-describedby={
+                        errors.typeManoeuvre ? 'elevator-manoeuvre-type-error' : undefined
+                      }
+                      aria-invalid={Boolean(errors.typeManoeuvre)}
+                      className={`h-11 w-full rounded-lg border bg-white px-3 text-sm text-slate-900 outline-none transition focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-50 ${
+                        errors.typeManoeuvre
+                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+                          : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
+                      }`}
+                      disabled={isSaving}
+                      id="elevator-manoeuvre-type"
+                      name="typeManoeuvre"
+                      onChange={handleChange}
+                      value={formData.typeManoeuvre}
+                    >
+                      <option value="">Non renseigné</option>
+                      {formData.typeManoeuvre &&
+                        !MANOEUVRE_TYPES.includes(formData.typeManoeuvre) && (
+                          <option value={formData.typeManoeuvre}>{formData.typeManoeuvre}</option>
+                        )}
+                      {MANOEUVRE_TYPES.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.typeManoeuvre && (
+                      <p className="mt-1.5 text-xs text-red-700" id="elevator-manoeuvre-type-error">
+                        {errors.typeManoeuvre}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </section>
 
@@ -662,7 +810,7 @@ export default function ElevatorForm({ elevator = null, onClose, onSaved }) {
                     Identification &amp; état
                   </h3>
                   <p className="mt-1 text-xs text-slate-500">
-                    Identifiant unique de l’équipement et état opérationnel.
+                    Identifiant unique, état opérationnel et repères de maintenance.
                   </p>
                 </div>
                 <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2">
@@ -679,7 +827,55 @@ export default function ElevatorForm({ elevator = null, onClose, onSaved }) {
                     value={formData.reference}
                     disabled={isSaving}
                   />
+                </div>
+              </section>
 
+              <section
+                aria-labelledby="elevator-maintenance-heading"
+                className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5"
+              >
+                <div className="mb-4">
+                  <h3 className="font-semibold text-slate-900" id="elevator-maintenance-heading">
+                    Maintenance &amp; mise en service
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Identifiez l’armoire de commande et suivez les échéances réglementaires.
+                  </p>
+                </div>
+                <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2">
+                  <Field
+                    error={errors.numeroSerieArmoire}
+                    icon={Server}
+                    id="elevator-controller-serial"
+                    label="N° de série de l’armoire de commande"
+                    name="numeroSerieArmoire"
+                    onChange={handleChange}
+                    placeholder="Numéro de série"
+                    value={formData.numeroSerieArmoire}
+                    disabled={isSaving}
+                  />
+                  <Field
+                    error={errors.dateDerniereVisiteReglementaire}
+                    icon={Fingerprint}
+                    id="elevator-last-regulatory-visit"
+                    label="Dernière visite réglementaire"
+                    name="dateDerniereVisiteReglementaire"
+                    onChange={handleChange}
+                    type="date"
+                    value={formData.dateDerniereVisiteReglementaire}
+                    disabled={isSaving}
+                  />
+                  <Field
+                    error={errors.dateMiseEnService}
+                    icon={Fingerprint}
+                    id="elevator-commissioning-date"
+                    label="Date de mise en service"
+                    name="dateMiseEnService"
+                    onChange={handleChange}
+                    type="date"
+                    value={formData.dateMiseEnService}
+                    disabled={isSaving}
+                  />
                   <div>
                     <label
                       htmlFor="elevator-status"

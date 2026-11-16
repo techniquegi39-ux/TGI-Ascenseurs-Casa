@@ -3,7 +3,9 @@ import {
   AlertCircle,
   ArrowUpDown,
   CalendarClock,
+  ClipboardCheck,
   Download,
+  Eye,
   FileText,
   LoaderCircle,
   Pencil,
@@ -178,6 +180,186 @@ function getParts(intervention) {
     .filter((part) => part?.designation)
 }
 
+function getMaintenanceChecklist(intervention) {
+  const checklist =
+    intervention.checklistMaintenance || intervention.maintenanceChecklist || []
+  return Array.isArray(checklist)
+    ? checklist.map(String).filter(Boolean)
+    : String(checklist)
+        .split(/\r?\n|;/)
+        .map((item) => item.trim())
+        .filter(Boolean)
+}
+
+function getElapsedTimeLabel(intervention) {
+  const storedMinutes = Number(intervention.tempsPasseMinutes)
+  let minutes =
+    intervention.tempsPasseMinutes !== null &&
+    intervention.tempsPasseMinutes !== undefined &&
+    intervention.tempsPasseMinutes !== '' &&
+    Number.isFinite(storedMinutes) &&
+    storedMinutes >= 0
+      ? storedMinutes
+      : null
+
+  if (minutes === null && intervention.heureArrivee && intervention.heureDepart) {
+    const parseTime = (time) => {
+      const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(String(time))
+      return match ? Number(match[1]) * 60 + Number(match[2]) : null
+    }
+    const arrival = parseTime(intervention.heureArrivee)
+    const departure = parseTime(intervention.heureDepart)
+    if (arrival !== null && departure !== null) {
+      minutes = departure >= arrival ? departure - arrival : 24 * 60 - arrival + departure
+    }
+  }
+
+  if (minutes === null) {
+    return '—'
+  }
+
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = minutes % 60
+  return [hours ? `${hours} h` : '', remainingMinutes ? `${remainingMinutes} min` : '']
+    .filter(Boolean)
+    .join(' ') || '0 min'
+}
+
+function InterventionDetailItem({ label, value }) {
+  return (
+    <div className="min-w-0 rounded-lg border border-slate-100 bg-slate-50/70 p-3">
+      <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</dt>
+      <dd className="mt-1 whitespace-pre-wrap break-words text-sm font-medium text-slate-800">
+        {value || '—'}
+      </dd>
+    </div>
+  )
+}
+
+function InterventionDetailsModal({ intervention, clientName, elevatorName, onClose }) {
+  const checklist = getMaintenanceChecklist(intervention)
+  const parts = getParts(intervention)
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-sm sm:p-6"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose()
+        }
+      }}
+    >
+      <section
+        aria-labelledby="intervention-details-title"
+        aria-modal="true"
+        className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/60 bg-white shadow-2xl"
+        role="dialog"
+      >
+        <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-5 sm:px-7">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">
+              Fiche d’intervention
+            </p>
+            <h2
+              className="mt-1 text-lg font-semibold text-slate-900"
+              id="intervention-details-title"
+            >
+              {getInterventionNumber(intervention)}
+            </h2>
+          </div>
+          <button
+            aria-label="Fermer les détails de l’intervention"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+            onClick={onClose}
+            type="button"
+          >
+            <X aria-hidden="true" className="h-5 w-5" />
+          </button>
+        </header>
+        <div className="overflow-y-auto px-5 py-5 sm:px-7">
+          <div className="space-y-5">
+            <dl className="grid gap-3 sm:grid-cols-2">
+              <InterventionDetailItem label="Client" value={clientName} />
+              <InterventionDetailItem label="Équipement" value={elevatorName} />
+              <InterventionDetailItem
+                label="Date d’intervention"
+                value={formatDateTime(
+                  intervention.dateIntervention || intervention.dateHeure || intervention.date,
+                )}
+              />
+              <InterventionDetailItem label="Type" value={intervention.type} />
+              <InterventionDetailItem
+                label="Technicien"
+                value={getInterventionTechnician(intervention)}
+              />
+              <InterventionDetailItem label="Statut" value={getStatus(intervention)} />
+              <InterventionDetailItem
+                label="Heure d’arrivée"
+                value={intervention.heureArrivee || intervention.arrivalTime}
+              />
+              <InterventionDetailItem
+                label="Heure de départ"
+                value={intervention.heureDepart || intervention.departureTime}
+              />
+              <InterventionDetailItem label="Temps passé" value={getElapsedTimeLabel(intervention)} />
+              <InterventionDetailItem
+                label="Problème signalé"
+                value={
+                  intervention.descriptionProbleme ||
+                  intervention.probleme ||
+                  intervention.description
+                }
+              />
+              <InterventionDetailItem
+                label="Travaux effectués"
+                value={
+                  intervention.travauxEffectues ||
+                  intervention.rapport ||
+                  intervention.report
+                }
+              />
+              <InterventionDetailItem
+                label="Pièces remplacées"
+                value={parts.map((part) => `${part.designation} (Qté : ${part.quantity})`).join('\n')}
+              />
+              <InterventionDetailItem
+                label="Observations internes"
+                value={
+                  intervention.observationsInternes ||
+                  intervention.internalNotes
+                }
+              />
+            </dl>
+            <section
+              aria-labelledby="intervention-details-checklist"
+              className="rounded-lg border border-slate-200 p-4"
+            >
+              <h3
+                className="text-sm font-semibold text-slate-800"
+                id="intervention-details-checklist"
+              >
+                Checklist de maintenance
+              </h3>
+              {checklist.length ? (
+                <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+                  {checklist.map((task) => (
+                    <li className="inline-flex items-center gap-2 text-sm text-slate-700" key={task}>
+                      <ClipboardCheck aria-hidden="true" className="h-4 w-4 text-emerald-600" />
+                      {task}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-sm text-slate-500">Aucune tâche cochée.</p>
+              )}
+            </section>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
 function StatusBadge({ status }) {
   const styles = {
     Planifiée: {
@@ -280,6 +462,7 @@ export default function Interventions() {
   const [clientError, setClientError] = useState('')
   const [elevatorError, setElevatorError] = useState('')
   const [modalIntervention, setModalIntervention] = useState(undefined)
+  const [detailsIntervention, setDetailsIntervention] = useState(undefined)
   const [exportingId, setExportingId] = useState('')
   const [toast, setToast] = useState(null)
 
@@ -827,6 +1010,15 @@ export default function Interventions() {
                       <td className="whitespace-nowrap px-5 py-4">
                         <div className="flex items-center justify-end gap-1">
                           <button
+                            aria-label={`Afficher les détails de la fiche ${number}`}
+                            className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                            onClick={() => setDetailsIntervention(intervention)}
+                            title="Afficher les détails de l’intervention"
+                            type="button"
+                          >
+                            <Eye aria-hidden="true" className="h-4 w-4" />
+                          </button>
+                          <button
                             aria-label={`Exporter la fiche ${number} en PDF`}
                             className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600/20 disabled:cursor-wait disabled:opacity-50"
                             disabled={Boolean(exportingId)}
@@ -874,6 +1066,14 @@ export default function Interventions() {
           intervention={modalIntervention}
           onClose={() => setModalIntervention(undefined)}
           onSaved={handleSaved}
+        />
+      )}
+      {detailsIntervention !== undefined && (
+        <InterventionDetailsModal
+          clientName={getInterventionClientName(detailsIntervention, clientsById)}
+          elevatorName={getInterventionElevatorName(detailsIntervention, elevatorsById)}
+          intervention={detailsIntervention}
+          onClose={() => setDetailsIntervention(undefined)}
         />
       )}
     </div>

@@ -295,7 +295,21 @@ function getCompanyDetails(companyInfo) {
 
 function getLegalDetails(companyInfo) {
   const details = [
-    getText(companyInfo, 'capital') ? `Capital : ${getText(companyInfo, 'capital')}` : '',
+    getText(companyInfo, 'banque', 'bank')
+      ? `Banque : ${getText(companyInfo, 'banque', 'bank')}`
+      : '',
+    getText(companyInfo, 'rib') ? `RIB : ${getText(companyInfo, 'rib')}` : '',
+    getText(companyInfo, 'capitalSocial', 'capital')
+      ? `Capital social : ${getText(companyInfo, 'capitalSocial', 'capital')}`
+      : '',
+    getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')
+      ? `IF : ${getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')}`
+      : '',
+    getText(companyInfo, 'cnss', 'numeroCNSS')
+      ? `CNSS : ${getText(companyInfo, 'cnss', 'numeroCNSS')}`
+      : '',
+    getText(companyInfo, 'rc') ? `RC : ${getText(companyInfo, 'rc')}` : '',
+    getText(companyInfo, 'ice') ? `ICE : ${getText(companyInfo, 'ice')}` : '',
     getText(companyInfo, 'patente') ? `Patente : ${getText(companyInfo, 'patente')}` : '',
     getText(companyInfo, 'mentionsLegales', 'legalMentions'),
   ].filter(Boolean)
@@ -386,6 +400,17 @@ export default function ContractPdfDocument({ contract = {} }) {
     'billingFrequency',
     'paymentFrequency',
   )
+  const serviceType = getText(contract, 'typeContrat', 'contractType') || 'Non renseigné'
+  const contractNature = getText(contract, 'type') || '—'
+  const responseSla = getText(
+    contract,
+    'slaIntervention',
+    'delaiInterventionGaranti',
+    'responseTimeSla',
+  ) || 'Non défini'
+  const automaticRenewal = Boolean(
+    contract.taciteReconduction ?? contract.automaticRenewal ?? false,
+  )
   const clauses = getText(contract, 'clauses', 'conditions') || 'Aucune clause particulière.'
 
   return (
@@ -396,7 +421,10 @@ export default function ContractPdfDocument({ contract = {} }) {
     >
       <Page size="A4" style={styles.page} wrap>
         <View fixed style={styles.header}>
-          <Image src="/logo.png.jpeg" style={styles.logo} />
+          <Image
+            src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
+            style={styles.logo}
+          />
           <View style={styles.companyBlock}>
             <Text style={styles.companyName}>{companyName}</Text>
             {companyDetails.map((detail) => (
@@ -483,7 +511,31 @@ export default function ContractPdfDocument({ contract = {} }) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>3. Clauses du contrat</Text>
+          <Text style={styles.sectionTitle}>3. Spécifications et engagements de service</Text>
+          <View style={styles.financialGrid}>
+            <View style={[styles.financialCard, styles.financialCardSpaced]}>
+              <Text style={styles.financialLabel}>Type de contrat</Text>
+              <Text style={styles.financialValue}>{serviceType}</Text>
+            </View>
+            <View style={[styles.financialCard, styles.financialCardSpaced]}>
+              <Text style={styles.financialLabel}>Objet / nature</Text>
+              <Text style={styles.financialValue}>{contractNature}</Text>
+            </View>
+            <View style={[styles.financialCard, styles.financialCardSpaced]}>
+              <Text style={styles.financialLabel}>Délai d’intervention garanti (SLA)</Text>
+              <Text style={styles.financialValue}>{responseSla}</Text>
+            </View>
+            <View style={styles.financialCard}>
+              <Text style={styles.financialLabel}>Tacite reconduction</Text>
+              <Text style={styles.financialValue}>
+                {automaticRenewal ? 'Oui — renouvellement automatique' : 'Non'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>4. Clauses du contrat</Text>
           <View style={styles.clauseBox}>
             <Text style={styles.clauseText}>{clauses}</Text>
           </View>

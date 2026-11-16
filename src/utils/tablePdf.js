@@ -166,6 +166,29 @@ function createReportElement({ title, columns, rows, company }) {
   table.append(tableBody)
   report.append(table)
 
+  const legalDetails = [
+    company.rc ? `RC : ${company.rc}` : '',
+    company.ice ? `ICE : ${company.ice}` : '',
+    company.capitalSocial ? `Capital social : ${company.capitalSocial}` : '',
+    company.banque ? `Banque : ${company.banque}` : '',
+    company.rib ? `RIB : ${company.rib}` : '',
+    company.identifiantFiscal ? `IF : ${company.identifiantFiscal}` : '',
+    company.cnss ? `CNSS : ${company.cnss}` : '',
+    company.patente ? `Patente : ${company.patente}` : '',
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  if (legalDetails) {
+    report.append(
+      createTextElement('p', legalDetails, {
+        margin: '14px 0 0',
+        color: '#64748b',
+        fontSize: '7pt',
+        textAlign: 'center',
+      }),
+    )
+  }
+
   report.append(
     createTextElement('p', 'TGI Manager Pro · Document généré automatiquement', {
       margin: '18px 0 0',
@@ -209,7 +232,7 @@ export async function generateTablePDF({ title, filename, columns, rows }) {
     const logoLoaded = new Promise((resolve, reject) => {
       logo.onload = resolve
       logo.onerror = () => reject(new Error('Le logo de l’entreprise n’a pas pu être chargé.'))
-      logo.src = '/logo.png.jpeg'
+      logo.src = company.companyLogoBase64 || '/logo.png.jpeg'
       if (logo.complete) {
         if (logo.naturalWidth > 0) {
           resolve()

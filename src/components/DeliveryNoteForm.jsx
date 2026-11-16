@@ -24,6 +24,7 @@ import { db } from '../firebase.js'
 import { useAuth } from '../context/useAuth.js'
 
 const DELIVERY_NOTE_STATUSES = ['Brouillon', 'Validé & Livré', 'Annulé']
+const DELIVERY_LOCATIONS = ['Chantier', 'Dépôt', 'Autre']
 
 function createLineId() {
   return `line-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -127,6 +128,15 @@ function getInitialFormData(deliveryNote) {
     referenceDocument: String(
       deliveryNote?.referenceDocument || deliveryNote?.referenceLiee || deliveryNote?.reference || '',
     ),
+    lieuLivraison: String(
+      deliveryNote?.lieuLivraison || deliveryNote?.deliveryLocation || '',
+    ),
+    transporteurReceptionnaire: String(
+      deliveryNote?.transporteurReceptionnaire ||
+        deliveryNote?.carrierReceiver ||
+        deliveryNote?.receptionnaire ||
+        '',
+    ),
     status: String(deliveryNote?.status || deliveryNote?.statut || DELIVERY_NOTE_STATUSES[0]),
     items: sourceItems.length
       ? sourceItems.map((item) => ({
@@ -162,6 +172,10 @@ function getDeliveryNoteValidationErrors(
   }
   if (formData.referenceDocument.trim().length > 120) {
     nextErrors.referenceDocument = 'La référence ne doit pas dépasser 120 caractères.'
+  }
+  if (formData.transporteurReceptionnaire.trim().length > 120) {
+    nextErrors.transporteurReceptionnaire =
+      'Le transporteur ou réceptionnaire ne doit pas dépasser 120 caractères.'
   }
 
   const lineErrors = formData.items.map((line, index) => {
@@ -501,7 +515,12 @@ export default function DeliveryNoteForm({ deliveryNote = null, onClose, onSaved
       setActiveTab('general')
     } else if (errors.items) {
       setActiveTab('items')
-    } else if (errors.livreur || errors.adresseLivraison || errors.notes) {
+    } else if (
+      errors.livreur ||
+      errors.adresseLivraison ||
+      errors.transporteurReceptionnaire ||
+      errors.notes
+    ) {
       setActiveTab('signature')
     }
     return Object.keys(errors).length === 0
@@ -546,6 +565,8 @@ export default function DeliveryNoteForm({ deliveryNote = null, onClose, onSaved
       numero: formData.numero.trim().toLocaleUpperCase('fr-FR'),
       dateLivraison: formData.dateLivraison,
       referenceDocument: formData.referenceDocument.trim(),
+      lieuLivraison: formData.lieuLivraison,
+      transporteurReceptionnaire: formData.transporteurReceptionnaire.trim(),
       status: formData.status,
       items: savedItems,
       livreur: formData.livreur.trim(),
@@ -690,6 +711,7 @@ export default function DeliveryNoteForm({ deliveryNote = null, onClose, onSaved
     firstItemError?.quantity ||
     errors.livreur ||
     errors.adresseLivraison ||
+    errors.transporteurReceptionnaire ||
     errors.notes
   const validationTab = errors.clientId || errors.dateLivraison || errors.status
     ? 'general'
@@ -874,6 +896,33 @@ export default function DeliveryNoteForm({ deliveryNote = null, onClose, onSaved
                     value={formData.referenceDocument}
                     disabled={isSaving}
                   />
+                </div>
+                <div>
+                  <label
+                    className="mb-2 block text-sm font-medium text-slate-700"
+                    htmlFor="delivery-note-location"
+                  >
+                    Lieu de livraison
+                  </label>
+                  <select
+                    className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    disabled={isSaving}
+                    id="delivery-note-location"
+                    name="lieuLivraison"
+                    onChange={handleChange}
+                    value={formData.lieuLivraison}
+                  >
+                    <option value="">Non renseigné</option>
+                    {formData.lieuLivraison &&
+                      !DELIVERY_LOCATIONS.includes(formData.lieuLivraison) && (
+                        <option value={formData.lieuLivraison}>{formData.lieuLivraison}</option>
+                      )}
+                    {DELIVERY_LOCATIONS.map((location) => (
+                      <option key={location} value={location}>
+                        {location}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label
@@ -1123,6 +1172,16 @@ export default function DeliveryNoteForm({ deliveryNote = null, onClose, onSaved
                   placeholder="Nom et prénom"
                   required
                   value={formData.livreur}
+                  disabled={isSaving}
+                />
+                <TextField
+                  error={errors.transporteurReceptionnaire}
+                  id="delivery-note-carrier-receiver"
+                  label="Transporteur / Réceptionnaire"
+                  name="transporteurReceptionnaire"
+                  onChange={handleChange}
+                  placeholder="Nom du transporteur ou de la personne réceptionnaire"
+                  value={formData.transporteurReceptionnaire}
                   disabled={isSaving}
                 />
                 <div>

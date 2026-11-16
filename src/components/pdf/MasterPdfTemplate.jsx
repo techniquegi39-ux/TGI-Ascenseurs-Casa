@@ -325,8 +325,12 @@ function getLegalDetails(companyInfo = {}) {
     ['RC', getCompanyValue(companyInfo, 'rc')],
     ['ICE', getCompanyValue(companyInfo, 'ice')],
     ['Tél.', getCompanyValue(companyInfo, 'phone', 'telephone', 'téléphone')],
+    ['Banque', getCompanyValue(companyInfo, 'banque', 'bank')],
     ['RIB', getCompanyValue(companyInfo, 'rib')],
-    ['Capital', getCompanyValue(companyInfo, 'capital')],
+    ['Capital social', getCompanyValue(companyInfo, 'capitalSocial', 'capital')],
+    ['IF', getCompanyValue(companyInfo, 'identifiantFiscal', 'if', 'taxId')],
+    ['CNSS', getCompanyValue(companyInfo, 'cnss', 'numeroCNSS')],
+    ['Patente', getCompanyValue(companyInfo, 'patente')],
   ]
     .filter(([, value]) => value)
     .map(([label, value]) => `${label} : ${value}`)
@@ -409,7 +413,10 @@ export default function MasterPdfTemplate({
     >
       <Page size="A4" orientation="landscape" style={styles.page} wrap>
         <View fixed style={styles.header}>
-          <Image src="/logo.png.jpeg" style={styles.logo} />
+          <Image
+            src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
+            style={styles.logo}
+          />
           <View style={styles.companyBlock}>
             <Text style={styles.companyName}>{companyName}</Text>
             {companyDetails.map((detail) => (

@@ -25,7 +25,12 @@ import { db } from '../firebase.js'
 import { useAuth } from '../context/useAuth.js'
 
 const INVOICE_WORKFLOW_STATUSES = ['Brouillon', 'Validée', 'Annulée']
-const PAYMENT_METHODS = ['Virement', 'Chèque', 'Espèces']
+const PAYMENT_TERMS = [
+  'À réception',
+  '30 jours fin de mois',
+  '50% à la commande, 50% à la livraison',
+]
+const PAYMENT_METHODS = ['Virement bancaire', 'Chèque', 'Traite', 'Espèces']
 const VAT_RATES = [0, 14, 20]
 
 function createLineId() {
@@ -133,7 +138,11 @@ function getInitialFormData(invoice) {
     dateEcheance,
     workflowStatus: getWorkflowStatus(invoice),
     montantPaye: String(storedAmountPaid),
-    paymentMethod: String(invoice?.paymentMethod || invoice?.modeReglement || PAYMENT_METHODS[0]),
+    paymentMethod: String(
+      invoice?.paymentMethod ||
+        invoice?.modeReglement ||
+        (invoice ? '' : PAYMENT_METHODS[0]),
+    ),
     rib: String(invoice?.rib || ''),
     items: sourceItems.length
       ? sourceItems.map((item) => ({
@@ -145,7 +154,12 @@ function getInitialFormData(invoice) {
         }))
       : [createEmptyLine()],
     conditionsReglement: String(
-      invoice?.conditionsReglement || invoice?.paymentTerms || '',
+      invoice?.conditionsReglement ||
+        invoice?.paymentTerms ||
+        (invoice ? '' : PAYMENT_TERMS[0]),
+    ),
+    conditionsParticulieres: String(
+      invoice?.conditionsParticulieres || invoice?.specialConditions || '',
     ),
     notes: String(invoice?.notes || ''),
   }
@@ -527,8 +541,16 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
     if (!INVOICE_WORKFLOW_STATUSES.includes(formData.workflowStatus)) {
       nextErrors.workflowStatus = 'Sélectionnez un état de facture valide.'
     }
-    if (!PAYMENT_METHODS.includes(formData.paymentMethod)) {
-      nextErrors.paymentMethod = 'Sélectionnez un mode de règlement valide.'
+    if (formData.paymentMethod.trim().length > 80) {
+      nextErrors.paymentMethod = 'Le mode de paiement ne doit pas dépasser 80 caractères.'
+    }
+    if (formData.conditionsReglement.trim().length > 3000) {
+      nextErrors.conditionsReglement =
+        'Les conditions de règlement ne doivent pas dépasser 3 000 caractères.'
+    }
+    if (formData.conditionsParticulieres.trim().length > 5000) {
+      nextErrors.conditionsParticulieres =
+        'Les conditions particulières ne doivent pas dépasser 5 000 caractères.'
     }
 
     const itemErrors = formData.items.map(getInvoiceLineErrors)
@@ -571,6 +593,8 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
       nextErrors.montantPaye ||
       nextErrors.workflowStatus ||
       nextErrors.paymentMethod ||
+      nextErrors.conditionsReglement ||
+      nextErrors.conditionsParticulieres ||
       nextErrors.rib ||
       nextErrors.notes
     ) {
@@ -629,6 +653,7 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
       totalTVA: totals.totalTVA,
       totalTTC: totals.totalTTC,
       conditionsReglement: formData.conditionsReglement.trim(),
+      conditionsParticulieres: formData.conditionsParticulieres.trim(),
       notes: formData.notes.trim(),
       updatedAt: serverTimestamp(),
       updatedBy: currentUser?.uid || null,
@@ -1137,7 +1162,7 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
                         className="mb-2 block text-sm font-medium text-slate-700"
                         htmlFor="invoice-payment-method"
                       >
-                        Conditions de règlement
+                        Mode de paiement
                       </label>
                       <select
                         aria-describedby={
@@ -1155,6 +1180,13 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
                         onChange={handleChange}
                         value={formData.paymentMethod}
                       >
+                        <option value="">Non renseigné</option>
+                        {formData.paymentMethod &&
+                          !PAYMENT_METHODS.includes(formData.paymentMethod) && (
+                            <option value={formData.paymentMethod}>
+                              {formData.paymentMethod}
+                            </option>
+                          )}
                         {PAYMENT_METHODS.map((method) => (
                           <option key={method} value={method}>
                             {method}
@@ -1164,6 +1196,53 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
                       {errors.paymentMethod && (
                         <p className="mt-1.5 text-xs text-red-700" id="invoice-payment-method-error">
                           {errors.paymentMethod}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label
+                        className="mb-2 block text-sm font-medium text-slate-700"
+                        htmlFor="invoice-payment-terms"
+                      >
+                        Conditions de règlement
+                      </label>
+                      <select
+                        aria-describedby={
+                          errors.conditionsReglement
+                            ? 'invoice-payment-terms-error'
+                            : undefined
+                        }
+                        aria-invalid={Boolean(errors.conditionsReglement)}
+                        className={`h-11 w-full rounded-lg border bg-white px-3 text-sm text-slate-900 outline-none transition focus:ring-4 ${
+                          errors.conditionsReglement
+                            ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+                            : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
+                        }`}
+                        disabled={isSaving}
+                        id="invoice-payment-terms"
+                        name="conditionsReglement"
+                        onChange={handleChange}
+                        value={formData.conditionsReglement}
+                      >
+                        <option value="">Non renseignées</option>
+                        {formData.conditionsReglement &&
+                          !PAYMENT_TERMS.includes(formData.conditionsReglement) && (
+                            <option value={formData.conditionsReglement}>
+                              {formData.conditionsReglement}
+                            </option>
+                          )}
+                        {PAYMENT_TERMS.map((term) => (
+                          <option key={term} value={term}>
+                            {term}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.conditionsReglement && (
+                        <p
+                          className="mt-1.5 text-xs text-red-700"
+                          id="invoice-payment-terms-error"
+                        >
+                          {errors.conditionsReglement}
                         </p>
                       )}
                     </div>
@@ -1189,6 +1268,43 @@ export default function InvoiceForm({ invoice = null, onClose, onSaved }) {
                       value={formData.rib}
                       disabled={isSaving}
                     />
+                  </div>
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium text-slate-700"
+                      htmlFor="invoice-special-conditions"
+                    >
+                      Conditions particulières
+                    </label>
+                    <textarea
+                      aria-describedby={
+                        errors.conditionsParticulieres
+                          ? 'invoice-special-conditions-error'
+                          : undefined
+                      }
+                      aria-invalid={Boolean(errors.conditionsParticulieres)}
+                      className={`min-h-28 w-full resize-y rounded-lg border bg-white px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 ${
+                        errors.conditionsParticulieres
+                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+                          : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
+                      }`}
+                      disabled={isSaving}
+                      id="invoice-special-conditions"
+                      maxLength={5000}
+                      name="conditionsParticulieres"
+                      onChange={handleChange}
+                      placeholder="Ex. TVA exonérée selon l’article..."
+                      rows={4}
+                      value={formData.conditionsParticulieres}
+                    />
+                    {errors.conditionsParticulieres && (
+                      <p
+                        className="mt-1.5 text-xs text-red-700"
+                        id="invoice-special-conditions-error"
+                      >
+                        {errors.conditionsParticulieres}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="mb-2 block text-sm font-medium text-slate-700" htmlFor="invoice-notes">

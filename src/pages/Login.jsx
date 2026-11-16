@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowRight, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
+import { doc, getDoc } from 'firebase/firestore'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
+import { db } from '../firebase.js'
 
 function getLoginErrorMessage(error) {
   if (error?.message === 'Compte désactivé' || error?.code === 'auth/user-disabled') {
@@ -38,6 +40,41 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [companyLogoBase64, setCompanyLogoBase64] = useState('')
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadCompanyLogo() {
+      try {
+        const settingsSnapshot = await getDoc(doc(db, 'settings', 'company'))
+        if (!isMounted) {
+          return
+        }
+
+        const settings = settingsSnapshot.exists() ? settingsSnapshot.data() : {}
+        setCompanyLogoBase64(
+          typeof settings.companyLogoBase64 === 'string'
+            ? settings.companyLogoBase64
+            : '',
+        )
+      } catch (error) {
+        console.error('Erreur lors du chargement du logo de l’entreprise sur la connexion :', error)
+      }
+    }
+
+    function handleCompanySettingsUpdated() {
+      void loadCompanyLogo()
+    }
+
+    void loadCompanyLogo()
+    window.addEventListener('company-settings-updated', handleCompanySettingsUpdated)
+
+    return () => {
+      isMounted = false
+      window.removeEventListener('company-settings-updated', handleCompanySettingsUpdated)
+    }
+  }, [])
 
   if (currentUser) {
     return <Navigate to="/" replace />
@@ -78,7 +115,7 @@ export default function Login() {
           <img
             alt="TGI Ascenseurs"
             className="h-12 w-12 rounded-xl border border-white/20 bg-white p-0.5 object-contain shadow-lg shadow-blue-950/30 transition-transform duration-300 hover:scale-105"
-            src="/logo.png.jpeg"
+            src={companyLogoBase64 || '/logo.png.jpeg'}
           />
           <span>
             <span className="block text-lg font-bold tracking-tight">TGI Manager Pro</span>
@@ -113,7 +150,7 @@ export default function Login() {
             <img
               alt="TGI Ascenseurs"
               className="h-24 w-24 rounded-2xl border border-slate-200 bg-white p-1 object-contain shadow-md transition-transform duration-300 hover:scale-105"
-              src="/logo.png.jpeg"
+              src={companyLogoBase64 || '/logo.png.jpeg'}
             />
           </div>
 

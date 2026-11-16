@@ -16,6 +16,7 @@ import { db } from '../firebase.js'
 import { useAuth } from '../context/useAuth.js'
 
 const CLIENT_TYPES = ['Syndic', 'Promoteur Immobilier', 'Entreprise', 'Particulier']
+const PAYMENT_METHODS = ['Virement', 'Chèque', 'Espèces']
 
 function getClientField(client, aliases, fallback = '') {
   for (const key of aliases) {
@@ -47,6 +48,34 @@ function getInitialFormData(client) {
     email: String(getClientField(client, ['email'])),
     adresse: String(getClientField(client, ['adresse', 'address'])),
     ville: String(getClientField(client, ['ville', 'city'])),
+    syndicNom: String(
+      getClientField(client, ['syndicNom', 'nomSyndic', 'syndicName']),
+    ),
+    syndicTelephone: String(
+      getClientField(client, ['syndicTelephone', 'telephoneSyndic', 'syndicPhone']),
+    ),
+    conciergeNom: String(
+      getClientField(client, ['conciergeNom', 'nomConcierge', 'conciergeName']),
+    ),
+    conciergeTelephone: String(
+      getClientField(client, [
+        'conciergeTelephone',
+        'telephoneConcierge',
+        'conciergePhone',
+      ]),
+    ),
+    googleMapsLink: String(
+      getClientField(client, ['googleMapsLink', 'localisationGoogleMaps', 'mapsUrl']),
+    ),
+    coordonneesGPS: String(
+      getClientField(client, ['coordonneesGPS', 'gpsCoordinates', 'coordinates']),
+    ),
+    modePaiementPrefere: String(
+      getClientField(client, ['modePaiementPrefere', 'preferredPaymentMethod', 'modePaiement']),
+    ),
+    conditionsParticulieres: String(
+      getClientField(client, ['conditionsParticulieres', 'specialConditions']),
+    ),
     active: isActive,
   }
 }
@@ -166,6 +195,48 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
       nextErrors.ice = "L'ICE doit contenir exactement 15 chiffres."
     }
 
+    for (const [field, label] of [
+      ['syndicNom', 'Le nom du syndic'],
+      ['syndicTelephone', 'Le téléphone du syndic'],
+      ['conciergeNom', 'Le nom du concierge'],
+      ['conciergeTelephone', 'Le téléphone du concierge'],
+    ]) {
+      if (formData[field].trim().length > 120) {
+        nextErrors[field] = `${label} ne doit pas dépasser 120 caractères.`
+      }
+    }
+
+    if (
+      formData.googleMapsLink.trim() &&
+      !/^https?:\/\/\S+$/i.test(formData.googleMapsLink.trim())
+    ) {
+      nextErrors.googleMapsLink = 'Saisissez un lien Google Maps valide commençant par http(s).'
+    }
+
+    if (formData.coordonneesGPS.trim()) {
+      const coordinates = formData.coordonneesGPS
+        .trim()
+        .split(/[,\s]+/)
+        .filter(Boolean)
+        .map(Number)
+      if (
+        coordinates.length !== 2 ||
+        !coordinates.every(Number.isFinite) ||
+        coordinates[0] < -90 ||
+        coordinates[0] > 90 ||
+        coordinates[1] < -180 ||
+        coordinates[1] > 180
+      ) {
+        nextErrors.coordonneesGPS =
+          'Saisissez une latitude et une longitude valides (ex. 33.5731, -7.5898).'
+      }
+    }
+
+    if (formData.conditionsParticulieres.trim().length > 1000) {
+      nextErrors.conditionsParticulieres =
+        'Les conditions particulières ne doivent pas dépasser 1 000 caractères.'
+    }
+
     setErrors(nextErrors)
     return Object.keys(nextErrors).length === 0
   }
@@ -188,6 +259,14 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
       email: formData.email.trim(),
       adresse: formData.adresse.trim(),
       ville: formData.ville.trim(),
+      syndicNom: formData.syndicNom.trim(),
+      syndicTelephone: formData.syndicTelephone.trim(),
+      conciergeNom: formData.conciergeNom.trim(),
+      conciergeTelephone: formData.conciergeTelephone.trim(),
+      googleMapsLink: formData.googleMapsLink.trim(),
+      coordonneesGPS: formData.coordonneesGPS.trim(),
+      modePaiementPrefere: formData.modePaiementPrefere,
+      conditionsParticulieres: formData.conditionsParticulieres.trim(),
       active: formData.active,
       updatedAt: serverTimestamp(),
       updatedBy: currentUser?.uid || null,
@@ -466,6 +545,195 @@ export default function ClientForm({ client = null, onClose, onSaved }) {
                         <option value="false">Inactif</option>
                       </select>
                     </div>
+                  </div>
+                </div>
+              </section>
+
+              <section
+                aria-labelledby="client-building-contacts-heading"
+                className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5"
+              >
+                <div className="mb-4">
+                  <h3
+                    className="font-semibold text-slate-900"
+                    id="client-building-contacts-heading"
+                  >
+                    Contacts de l’immeuble
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Coordonnées du syndic et du concierge pour faciliter les interventions.
+                  </p>
+                </div>
+                <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2">
+                  <Field
+                    error={errors.syndicNom}
+                    icon={UserRound}
+                    id="client-syndic-name"
+                    label="Nom du syndic"
+                    name="syndicNom"
+                    onChange={handleChange}
+                    placeholder="Nom et prénom"
+                    value={formData.syndicNom}
+                    disabled={isSaving}
+                  />
+                  <Field
+                    error={errors.syndicTelephone}
+                    icon={Phone}
+                    id="client-syndic-phone"
+                    label="Téléphone du syndic"
+                    name="syndicTelephone"
+                    onChange={handleChange}
+                    placeholder="Téléphone direct"
+                    type="tel"
+                    value={formData.syndicTelephone}
+                    disabled={isSaving}
+                  />
+                  <Field
+                    error={errors.conciergeNom}
+                    icon={UserRound}
+                    id="client-concierge-name"
+                    label="Nom du concierge"
+                    name="conciergeNom"
+                    onChange={handleChange}
+                    placeholder="Nom et prénom"
+                    value={formData.conciergeNom}
+                    disabled={isSaving}
+                  />
+                  <Field
+                    error={errors.conciergeTelephone}
+                    icon={Phone}
+                    id="client-concierge-phone"
+                    label="Téléphone du concierge"
+                    name="conciergeTelephone"
+                    onChange={handleChange}
+                    placeholder="Téléphone direct"
+                    type="tel"
+                    value={formData.conciergeTelephone}
+                    disabled={isSaving}
+                  />
+                </div>
+              </section>
+
+              <section
+                aria-labelledby="client-location-payment-heading"
+                className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5"
+              >
+                <div className="mb-4">
+                  <h3
+                    className="font-semibold text-slate-900"
+                    id="client-location-payment-heading"
+                  >
+                    Localisation &amp; conditions financières
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Repérez l’immeuble et renseignez les préférences de règlement.
+                  </p>
+                </div>
+                <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2">
+                  <Field
+                    error={errors.googleMapsLink}
+                    icon={MapPin}
+                    id="client-google-maps-link"
+                    label="Lien Google Maps"
+                    name="googleMapsLink"
+                    onChange={handleChange}
+                    placeholder="https://maps.google.com/..."
+                    type="url"
+                    value={formData.googleMapsLink}
+                    disabled={isSaving}
+                  />
+                  <Field
+                    error={errors.coordonneesGPS}
+                    icon={MapPin}
+                    id="client-gps-coordinates"
+                    label="Coordonnées GPS"
+                    name="coordonneesGPS"
+                    onChange={handleChange}
+                    placeholder="33.5731, -7.5898"
+                    value={formData.coordonneesGPS}
+                    disabled={isSaving}
+                  />
+                  <div>
+                    <label
+                      className="mb-2 block text-sm font-medium text-slate-700"
+                      htmlFor="client-payment-method"
+                    >
+                      Mode de paiement préféré
+                    </label>
+                    <select
+                      aria-describedby={
+                        errors.modePaiementPrefere ? 'client-payment-method-error' : undefined
+                      }
+                      aria-invalid={Boolean(errors.modePaiementPrefere)}
+                      className={`h-11 w-full rounded-lg border bg-white px-3 text-sm text-slate-900 outline-none transition focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-50 ${
+                        errors.modePaiementPrefere
+                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+                          : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
+                      }`}
+                      disabled={isSaving}
+                      id="client-payment-method"
+                      name="modePaiementPrefere"
+                      onChange={handleChange}
+                      value={formData.modePaiementPrefere}
+                    >
+                      <option value="">Non renseigné</option>
+                      {formData.modePaiementPrefere &&
+                        !PAYMENT_METHODS.includes(formData.modePaiementPrefere) && (
+                          <option value={formData.modePaiementPrefere}>
+                            {formData.modePaiementPrefere}
+                          </option>
+                        )}
+                      {PAYMENT_METHODS.map((method) => (
+                        <option key={method} value={method}>
+                          {method}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.modePaiementPrefere && (
+                      <p
+                        className="mt-1.5 text-xs text-red-700"
+                        id="client-payment-method-error"
+                      >
+                        {errors.modePaiementPrefere}
+                      </p>
+                    )}
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label
+                      className="mb-2 block text-sm font-medium text-slate-700"
+                      htmlFor="client-special-conditions"
+                    >
+                      Conditions particulières
+                    </label>
+                    <textarea
+                      aria-describedby={
+                        errors.conditionsParticulieres
+                          ? 'client-special-conditions-error'
+                          : undefined
+                      }
+                      aria-invalid={Boolean(errors.conditionsParticulieres)}
+                      className={`min-h-24 w-full resize-y rounded-lg border bg-white px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 disabled:cursor-not-allowed disabled:bg-slate-50 ${
+                        errors.conditionsParticulieres
+                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+                          : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
+                      }`}
+                      disabled={isSaving}
+                      id="client-special-conditions"
+                      maxLength={1000}
+                      name="conditionsParticulieres"
+                      onChange={handleChange}
+                      placeholder="Ex. Paiement en fin de mois"
+                      rows={3}
+                      value={formData.conditionsParticulieres}
+                    />
+                    {errors.conditionsParticulieres && (
+                      <p
+                        className="mt-1.5 text-xs text-red-700"
+                        id="client-special-conditions-error"
+                      >
+                        {errors.conditionsParticulieres}
+                      </p>
+                    )}
                   </div>
                 </div>
               </section>

@@ -325,6 +325,8 @@ export default function DeliveryNotes() {
           getClientName(client, deliveryNote),
           deliveryNote.referenceDocument,
           deliveryNote.referenceLiee,
+          deliveryNote.lieuLivraison,
+          deliveryNote.transporteurReceptionnaire,
         ].some((value) => normalizeSearch(value).includes(queryText))
       })
       .sort((first, second) => {
@@ -523,6 +525,8 @@ export default function DeliveryNotes() {
               { label: 'N° BL', value: getDeliveryNoteNumber },
               { label: 'Date', value: (deliveryNote) => formatDate(deliveryNote.dateLivraison || deliveryNote.deliveryDate || deliveryNote.date) },
               { label: 'Client', value: (deliveryNote) => getClientName(clientsById.get(deliveryNote.clientId), deliveryNote) },
+              { label: 'Lieu de livraison', value: (deliveryNote) => deliveryNote.lieuLivraison || '—' },
+              { label: 'Transporteur / Réceptionnaire', value: (deliveryNote) => deliveryNote.transporteurReceptionnaire || '—' },
               { label: 'Réf. Document', value: (deliveryNote) => deliveryNote.referenceDocument || deliveryNote.referenceLiee || '—' },
               { label: 'Statut', value: getDeliveryNoteStatus },
             ]}
@@ -656,7 +660,7 @@ export default function DeliveryNotes() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] border-collapse text-left">
+            <table className="w-full min-w-[1320px] border-collapse text-left">
               <thead className="bg-slate-50/80">
                 <tr className="border-b border-slate-200">
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -665,6 +669,12 @@ export default function DeliveryNotes() {
                   <SortableDateHeader onSort={handleSortDate} sortDirection={sortDirection} />
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Client
+                  </th>
+                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Lieu de livraison
+                  </th>
+                  <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Transporteur / Réceptionnaire
                   </th>
                   <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Réf. Document
@@ -701,6 +711,16 @@ export default function DeliveryNotes() {
                       <td className="px-5 py-4">
                         <span className="block max-w-xs truncate text-sm font-semibold text-slate-900">
                           {getClientName(client, deliveryNote)}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="block max-w-xs truncate text-sm text-slate-600">
+                          {deliveryNote.lieuLivraison || '—'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="block max-w-xs truncate text-sm text-slate-600">
+                          {deliveryNote.transporteurReceptionnaire || '—'}
                         </span>
                       </td>
                       <td className="px-5 py-4">

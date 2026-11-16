@@ -131,6 +131,25 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     fontSize: 8,
   },
+  maintenanceChecklist: {
+    marginBottom: 14,
+    padding: 10,
+    backgroundColor: PALE_BLUE,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 3,
+  },
+  checklistTitle: {
+    marginBottom: 5,
+    color: NAVY,
+    fontSize: 8,
+    fontFamily: 'Helvetica-Bold',
+  },
+  checklistItem: {
+    marginTop: 3,
+    color: '#334155',
+    fontSize: 8,
+  },
   report: {
     marginBottom: 14,
     padding: 12,
@@ -328,7 +347,21 @@ function getCompanyDetails(companyInfo) {
 
 function getLegalDetails(companyInfo) {
   const details = [
-    getText(companyInfo, 'capital') ? `Capital : ${getText(companyInfo, 'capital')}` : '',
+    getText(companyInfo, 'banque', 'bank')
+      ? `Banque : ${getText(companyInfo, 'banque', 'bank')}`
+      : '',
+    getText(companyInfo, 'rib') ? `RIB : ${getText(companyInfo, 'rib')}` : '',
+    getText(companyInfo, 'capitalSocial', 'capital')
+      ? `Capital social : ${getText(companyInfo, 'capitalSocial', 'capital')}`
+      : '',
+    getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')
+      ? `IF : ${getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')}`
+      : '',
+    getText(companyInfo, 'cnss', 'numeroCNSS')
+      ? `CNSS : ${getText(companyInfo, 'cnss', 'numeroCNSS')}`
+      : '',
+    getText(companyInfo, 'rc') ? `RC : ${getText(companyInfo, 'rc')}` : '',
+    getText(companyInfo, 'ice') ? `ICE : ${getText(companyInfo, 'ice')}` : '',
     getText(companyInfo, 'patente') ? `Patente : ${getText(companyInfo, 'patente')}` : '',
     getText(companyInfo, 'mentionsLegales', 'legalMentions'),
   ].filter(Boolean)
@@ -377,6 +410,65 @@ function formatQuantity(value) {
   return new Intl.NumberFormat('fr-MA', {
     maximumFractionDigits: 3,
   }).format(Number.isFinite(quantity) ? quantity : 0)
+}
+
+function getElapsedMinutes(intervention) {
+  const savedMinutes = Number(intervention.tempsPasseMinutes)
+  if (
+    intervention.tempsPasseMinutes !== null &&
+    intervention.tempsPasseMinutes !== undefined &&
+    intervention.tempsPasseMinutes !== '' &&
+    Number.isFinite(savedMinutes) &&
+    savedMinutes >= 0
+  ) {
+    return savedMinutes
+  }
+
+  const arrival = getText(intervention, 'heureArrivee', 'arrivalTime')
+  const departure = getText(intervention, 'heureDepart', 'departureTime')
+  const parseTime = (time) => {
+    const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time)
+    return match ? Number(match[1]) * 60 + Number(match[2]) : null
+  }
+  const arrivalMinutes = parseTime(arrival)
+  const departureMinutes = parseTime(departure)
+  if (arrivalMinutes === null || departureMinutes === null) {
+    return null
+  }
+
+  return departureMinutes >= arrivalMinutes
+    ? departureMinutes - arrivalMinutes
+    : 24 * 60 - arrivalMinutes + departureMinutes
+}
+
+function formatElapsedTime(minutes) {
+  if (minutes === null) {
+    return '—'
+  }
+
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = minutes % 60
+  return [hours ? `${hours} h` : '', remainingMinutes ? `${remainingMinutes} min` : '']
+    .filter(Boolean)
+    .join(' ') || '0 min'
+}
+
+function getMaintenanceChecklist(intervention) {
+  const source =
+    intervention.checklistMaintenance || intervention.maintenanceChecklist || []
+  const items = Array.isArray(source) ? source : String(source).split(/\r?\n|;/)
+
+  return items
+    .map((item) => {
+      if (typeof item === 'string') {
+        return item.trim()
+      }
+      if (!item || typeof item !== 'object' || item.checked === false) {
+        return ''
+      }
+      return getText(item, 'label', 'name', 'designation')
+    })
+    .filter(Boolean)
 }
 
 export default function InterventionPdfDocument({ intervention = {} }) {
@@ -439,6 +531,7 @@ export default function InterventionPdfDocument({ intervention = {} }) {
     'problemDescription',
   )
   const parts = getParts(intervention)
+  const maintenanceChecklist = getMaintenanceChecklist(intervention)
   const companyDetails = getCompanyDetails(companyInfo)
 
   return (
@@ -449,7 +542,10 @@ export default function InterventionPdfDocument({ intervention = {} }) {
     >
       <Page size="A4" style={styles.page} wrap>
         <View fixed style={styles.header}>
-          <Image src="/logo.png.jpeg" style={styles.logo} />
+          <Image
+            src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
+            style={styles.logo}
+          />
           <View style={styles.companyBlock}>
             <Text style={styles.companyName}>{companyName}</Text>
             {companyDetails.map((detail) => (
@@ -498,6 +594,24 @@ export default function InterventionPdfDocument({ intervention = {} }) {
             <Text style={styles.detailLabel}>Technicien</Text>
             <Text style={styles.detailValue}>{technician || '—'}</Text>
           </View>
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Heure d’arrivée</Text>
+            <Text style={styles.detailValue}>
+              {getText(intervention, 'heureArrivee', 'arrivalTime') || '—'}
+            </Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Heure de départ</Text>
+            <Text style={styles.detailValue}>
+              {getText(intervention, 'heureDepart', 'departureTime') || '—'}
+            </Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Temps passé</Text>
+            <Text style={styles.detailValue}>
+              {formatElapsedTime(getElapsedMinutes(intervention))}
+            </Text>
+          </View>
         </View>
 
         {problemDescription && (
@@ -513,6 +627,17 @@ export default function InterventionPdfDocument({ intervention = {} }) {
             {workReport || 'Aucun rapport de travaux renseigné.'}
           </Text>
         </View>
+
+        {maintenanceChecklist.length > 0 && (
+          <View style={styles.maintenanceChecklist}>
+            <Text style={styles.checklistTitle}>Checklist de maintenance réalisée</Text>
+            {maintenanceChecklist.map((item, index) => (
+              <Text key={`${item}-${index}`} style={styles.checklistItem}>
+                [x] {item}
+              </Text>
+            ))}
+          </View>
+        )}
 
         {parts.length > 0 && (
           <View style={styles.tableSection}>

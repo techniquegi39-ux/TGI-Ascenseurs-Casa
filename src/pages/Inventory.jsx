@@ -97,8 +97,8 @@ function StatusBadge({ status }) {
       dot: 'bg-red-500',
     },
     'Stock Faible': {
-      badge: 'bg-amber-50 text-amber-800 ring-amber-600/20',
-      dot: 'bg-amber-500',
+      badge: 'bg-red-100 text-red-800 ring-red-600/20',
+      dot: 'bg-red-500',
     },
     'En Stock': {
       badge: 'bg-emerald-50 text-emerald-800 ring-emerald-600/20',
@@ -810,7 +810,7 @@ export default function Inventory() {
                     quantity === 0
                       ? 'text-red-600'
                       : quantity !== null && threshold !== null && quantity <= threshold
-                        ? 'text-amber-600'
+                        ? 'text-red-600'
                         : quantity !== null
                           ? 'text-emerald-700'
                           : 'text-slate-400'

@@ -163,6 +163,42 @@ const styles = StyleSheet.create({
     fontSize: 8,
     lineHeight: 1.4,
   },
+  documentConditions: {
+    marginTop: 14,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderLeftWidth: 3,
+    borderLeftColor: STEEL_BLUE,
+    borderRadius: 3,
+    backgroundColor: '#F8FAFC',
+  },
+  conditionsHeading: {
+    marginBottom: 5,
+    color: NAVY,
+    fontSize: 8,
+    fontFamily: 'Helvetica-Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  conditionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 3,
+  },
+  conditionLabel: {
+    width: '29%',
+    paddingRight: 8,
+    color: MUTED,
+    fontSize: 8,
+    fontFamily: 'Helvetica-Bold',
+  },
+  conditionValue: {
+    flexGrow: 1,
+    color: '#334155',
+    fontSize: 8,
+    lineHeight: 1.35,
+  },
   totals: {
     width: 220,
     padding: 10,
@@ -387,10 +423,23 @@ function getCompanyDetails(companyInfo) {
 
 function getLegalDetails(companyInfo, invoice) {
   const details = [
+    getText(companyInfo, 'banque', 'bank')
+      ? `Banque : ${getText(companyInfo, 'banque', 'bank')}`
+      : '',
     getText(invoice, 'rib') || getText(companyInfo, 'rib')
       ? `RIB : ${getText(invoice, 'rib') || getText(companyInfo, 'rib')}`
       : '',
-    getText(companyInfo, 'capital') ? `Capital : ${getText(companyInfo, 'capital')}` : '',
+    getText(companyInfo, 'capitalSocial', 'capital')
+      ? `Capital social : ${getText(companyInfo, 'capitalSocial', 'capital')}`
+      : '',
+    getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')
+      ? `IF : ${getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')}`
+      : '',
+    getText(companyInfo, 'cnss', 'numeroCNSS')
+      ? `CNSS : ${getText(companyInfo, 'cnss', 'numeroCNSS')}`
+      : '',
+    getText(companyInfo, 'rc') ? `RC : ${getText(companyInfo, 'rc')}` : '',
+    getText(companyInfo, 'ice') ? `ICE : ${getText(companyInfo, 'ice')}` : '',
     getText(companyInfo, 'patente') ? `Patente : ${getText(companyInfo, 'patente')}` : '',
     getText(companyInfo, 'mentionsLegales', 'legalMentions'),
   ].filter(Boolean)
@@ -427,6 +476,14 @@ export default function InvoicePdfDocument({ invoice = {} }) {
   const invoiceDate = invoice.dateFacture || invoice.dateEmission || invoice.date
   const dueDate = invoice.dateEcheance || invoice.dueDate
   const vatLabel = getVatLabel(invoice, items, totals.totalHT, totals.totalTVA)
+  const paymentTerms = getText(
+    invoice,
+    'conditionsReglement',
+    'conditionsPaiement',
+    'paymentTerms',
+  )
+  const paymentMethod = getText(invoice, 'paymentMethod', 'modeReglement')
+  const specialConditions = getText(invoice, 'conditionsParticulieres', 'specialConditions')
 
   return (
     <Document
@@ -436,7 +493,10 @@ export default function InvoicePdfDocument({ invoice = {} }) {
     >
       <Page size="A4" style={styles.page} wrap>
         <View fixed style={styles.header}>
-          <Image src="/logo.png.jpeg" style={styles.logo} />
+          <Image
+            src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
+            style={styles.logo}
+          />
           <View style={styles.companyBlock}>
             <Text style={styles.companyName}>{companyName}</Text>
             {companyDetails.map((detail) => (
@@ -524,12 +584,6 @@ export default function InvoicePdfDocument({ invoice = {} }) {
                 Référence du devis : {String(invoice.referenceDevis)}
               </Text>
             )}
-            {(invoice.conditionsReglement || invoice.paymentTerms) && (
-              <Text style={styles.note}>
-                Conditions de règlement :{' '}
-                {String(invoice.conditionsReglement || invoice.paymentTerms)}
-              </Text>
-            )}
             {invoice.notes && <Text style={styles.note}>{String(invoice.notes)}</Text>}
           </View>
 
@@ -560,6 +614,22 @@ export default function InvoicePdfDocument({ invoice = {} }) {
         <View style={styles.signatureArea} wrap={false}>
           <View style={styles.stampBox}>
             <Text style={styles.stampLabel}>Cachet et signature</Text>
+          </View>
+        </View>
+
+        <View style={styles.documentConditions}>
+          <Text style={styles.conditionsHeading}>Conditions commerciales</Text>
+          <View style={styles.conditionRow}>
+            <Text style={styles.conditionLabel}>Conditions de règlement</Text>
+            <Text style={styles.conditionValue}>{paymentTerms || 'Non renseignées'}</Text>
+          </View>
+          <View style={styles.conditionRow}>
+            <Text style={styles.conditionLabel}>Mode de paiement</Text>
+            <Text style={styles.conditionValue}>{paymentMethod || 'Non renseigné'}</Text>
+          </View>
+          <View style={styles.conditionRow}>
+            <Text style={styles.conditionLabel}>Conditions particulières</Text>
+            <Text style={styles.conditionValue}>{specialConditions || 'Aucune'}</Text>
           </View>
         </View>
 

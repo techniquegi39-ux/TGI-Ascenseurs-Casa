@@ -4,6 +4,7 @@ import {
   ArrowUpDown,
   Building2,
   Download,
+  Eye,
   LoaderCircle,
   Pencil,
   Plus,
@@ -123,6 +124,167 @@ function ClientStatus({ active }) {
   )
 }
 
+function ClientDetailItem({ label, value }) {
+  return (
+    <div className="min-w-0 rounded-lg border border-slate-100 bg-slate-50/70 p-3">
+      <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</dt>
+      <dd className="mt-1 break-words text-sm font-medium text-slate-800">{value || '—'}</dd>
+    </div>
+  )
+}
+
+function ClientDetailsModal({ client, onClose }) {
+  const mapsLink = String(
+    client.googleMapsLink || client.localisationGoogleMaps || client.mapsUrl || '',
+  )
+  const mapsLinkIsSafe = /^https?:\/\//i.test(mapsLink)
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-sm sm:p-6"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose()
+        }
+      }}
+    >
+      <section
+        aria-labelledby="client-details-title"
+        aria-modal="true"
+        className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/60 bg-white shadow-2xl"
+        role="dialog"
+      >
+        <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-5 sm:px-7">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">
+              Fiche client
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-slate-900" id="client-details-title">
+              {getClientName(client)}
+            </h2>
+          </div>
+          <button
+            aria-label="Fermer les détails du client"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+            onClick={onClose}
+            type="button"
+          >
+            <X aria-hidden="true" className="h-5 w-5" />
+          </button>
+        </header>
+        <div className="overflow-y-auto px-5 py-5 sm:px-7">
+          <div className="space-y-6">
+            <section aria-labelledby="client-details-general">
+              <h3 className="mb-3 font-semibold text-slate-900" id="client-details-general">
+                Informations générales
+              </h3>
+              <dl className="grid gap-3 sm:grid-cols-2">
+                <ClientDetailItem label="Type de client" value={getClientType(client)} />
+                <ClientDetailItem label="ICE / Identifiant fiscal" value={getClientIce(client)} />
+                <ClientDetailItem label="Téléphone" value={getClientPhone(client)} />
+                <ClientDetailItem label="E-mail" value={client.email} />
+                <ClientDetailItem label="Adresse" value={client.adresse || client.address} />
+                <ClientDetailItem label="Ville" value={getClientCity(client)} />
+                <ClientDetailItem
+                  label="Statut"
+                  value={isClientActive(client) ? 'Actif' : 'Inactif'}
+                />
+              </dl>
+            </section>
+
+            <section aria-labelledby="client-details-building-contacts">
+              <h3
+                className="mb-3 font-semibold text-slate-900"
+                id="client-details-building-contacts"
+              >
+                Contacts de l’immeuble
+              </h3>
+              <dl className="grid gap-3 sm:grid-cols-2">
+                <ClientDetailItem
+                  label="Syndic"
+                  value={client.syndicNom || client.nomSyndic || client.syndicName}
+                />
+                <ClientDetailItem
+                  label="Téléphone du syndic"
+                  value={
+                    client.syndicTelephone || client.telephoneSyndic || client.syndicPhone
+                  }
+                />
+                <ClientDetailItem
+                  label="Concierge"
+                  value={client.conciergeNom || client.nomConcierge || client.conciergeName}
+                />
+                <ClientDetailItem
+                  label="Téléphone du concierge"
+                  value={
+                    client.conciergeTelephone ||
+                    client.telephoneConcierge ||
+                    client.conciergePhone
+                  }
+                />
+              </dl>
+            </section>
+
+            <section aria-labelledby="client-details-location-payment">
+              <h3
+                className="mb-3 font-semibold text-slate-900"
+                id="client-details-location-payment"
+              >
+                Localisation &amp; conditions financières
+              </h3>
+              <dl className="grid gap-3 sm:grid-cols-2">
+                <div className="min-w-0 rounded-lg border border-slate-100 bg-slate-50/70 p-3">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Google Maps
+                  </dt>
+                  <dd className="mt-1 break-words text-sm font-medium">
+                    {mapsLinkIsSafe ? (
+                      <a
+                        className="text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-900"
+                        href={mapsLink}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        Ouvrir la localisation
+                      </a>
+                    ) : (
+                      mapsLink || '—'
+                    )}
+                  </dd>
+                </div>
+                <ClientDetailItem
+                  label="Coordonnées GPS"
+                  value={
+                    client.coordonneesGPS ||
+                    client.gpsCoordinates ||
+                    client.coordinates
+                  }
+                />
+                <ClientDetailItem
+                  label="Mode de paiement préféré"
+                  value={
+                    client.modePaiementPrefere ||
+                    client.preferredPaymentMethod ||
+                    client.modePaiement
+                  }
+                />
+                <div className="min-w-0 rounded-lg border border-slate-100 bg-slate-50/70 p-3 sm:col-span-2">
+                  <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Conditions particulières
+                  </dt>
+                  <dd className="mt-1 whitespace-pre-wrap break-words text-sm font-medium text-slate-800">
+                    {client.conditionsParticulieres || client.specialConditions || '—'}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
 export default function Clients() {
   const [clients, setClients] = useState([])
   const [search, setSearch] = useState('')
@@ -130,6 +292,7 @@ export default function Clients() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [modalClient, setModalClient] = useState(undefined)
+  const [detailsClient, setDetailsClient] = useState(undefined)
   const [exportingId, setExportingId] = useState('')
   const [toast, setToast] = useState(null)
 
@@ -176,9 +339,24 @@ export default function Clients() {
         }
 
         const nameMatches = normalizeSearch(getClientName(client)).includes(normalizedQuery)
-        const clientPhoneDigits = getClientPhone(client).replace(/\D/g, '')
+        const searchableValues = [
+          getClientPhone(client),
+          client.syndicNom,
+          client.syndicTelephone,
+          client.conciergeNom,
+          client.conciergeTelephone,
+          client.googleMapsLink,
+          client.coordonneesGPS,
+        ]
+        const searchableMatch = searchableValues.some((value) =>
+          normalizeSearch(value || '').includes(normalizedQuery),
+        )
+        const clientPhoneDigits = searchableValues
+          .filter(Boolean)
+          .join(' ')
+          .replace(/\D/g, '')
         const phoneMatches = phoneQuery.length > 0 && clientPhoneDigits.includes(phoneQuery)
-        return nameMatches || phoneMatches
+        return nameMatches || searchableMatch || phoneMatches
       })
       .sort((first, second) => {
         const getValue = sortConfig.key === 'type' ? getClientType : getClientName
@@ -258,6 +436,26 @@ export default function Clients() {
         ['E-mail', String(client.email || '—')],
         ['Adresse complète', address || '—'],
         ['Ville', city],
+        ['Syndic', String(client.syndicNom || client.nomSyndic || '—')],
+        [
+          'Téléphone du syndic',
+          String(client.syndicTelephone || client.telephoneSyndic || '—'),
+        ],
+        ['Concierge', String(client.conciergeNom || client.nomConcierge || '—')],
+        [
+          'Téléphone du concierge',
+          String(client.conciergeTelephone || client.telephoneConcierge || '—'),
+        ],
+        ['Google Maps', String(client.googleMapsLink || client.localisationGoogleMaps || '—')],
+        ['Coordonnées GPS', String(client.coordonneesGPS || client.gpsCoordinates || '—')],
+        [
+          'Mode de paiement préféré',
+          String(client.modePaiementPrefere || client.preferredPaymentMethod || '—'),
+        ],
+        [
+          'Conditions particulières',
+          String(client.conditionsParticulieres || client.specialConditions || '—'),
+        ],
         ['Statut', isClientActive(client) ? 'Actif' : 'Inactif'],
       ].map(([designation, value]) => ({ designation, value }))
 
@@ -504,6 +702,15 @@ export default function Clients() {
                       <td className="whitespace-nowrap px-5 py-4">
                         <div className="flex items-center justify-end gap-1">
                           <button
+                            aria-label={`Afficher les détails de ${getClientName(client)}`}
+                            className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                            onClick={() => setDetailsClient(client)}
+                            title="Afficher la fiche détaillée"
+                            type="button"
+                          >
+                            <Eye aria-hidden="true" className="h-4 w-4" />
+                          </button>
+                          <button
                             aria-label={`Exporter la fiche PDF de ${getClientName(client)}`}
                             className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600/20 disabled:cursor-wait disabled:opacity-50"
                             disabled={Boolean(exportingId)}
@@ -551,6 +758,12 @@ export default function Clients() {
           client={modalClient}
           onClose={() => setModalClient(undefined)}
           onSaved={handleSaved}
+        />
+      )}
+      {detailsClient !== undefined && (
+        <ClientDetailsModal
+          client={detailsClient}
+          onClose={() => setDetailsClient(undefined)}
         />
       )}
     </div>

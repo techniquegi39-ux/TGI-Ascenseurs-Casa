@@ -29,8 +29,46 @@ const INTERVENTION_TYPES = [
   'Installation',
 ]
 const INTERVENTION_STATUSES = ['Planifiée', 'En cours', 'Terminée', 'Annulée']
+const MAINTENANCE_CHECKLIST_ITEMS = [
+  'Graissage',
+  'Nettoyage cuvette',
+  'Contrôle des sécurités',
+  'Ajustement des freins',
+]
 const COMPLETED_REPORT_ERROR =
   'Le rapport technique est obligatoire pour clôturer une intervention.'
+
+function getElapsedMinutes(arrival, departure) {
+  if (!arrival || !departure) {
+    return null
+  }
+
+  const parseTime = (time) => {
+    const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time)
+    return match ? Number(match[1]) * 60 + Number(match[2]) : null
+  }
+  const arrivalMinutes = parseTime(arrival)
+  const departureMinutes = parseTime(departure)
+  if (arrivalMinutes === null || departureMinutes === null) {
+    return null
+  }
+
+  return departureMinutes >= arrivalMinutes
+    ? departureMinutes - arrivalMinutes
+    : 24 * 60 - arrivalMinutes + departureMinutes
+}
+
+function formatElapsedTime(minutes) {
+  if (minutes === null) {
+    return 'Calculé lorsque les deux heures sont renseignées'
+  }
+
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = minutes % 60
+  return [hours ? `${hours} h` : '', remainingMinutes ? `${remainingMinutes} min` : '']
+    .filter(Boolean)
+    .join(' ') || '0 min'
+}
 
 function getClientName(client) {
   return String(client.nom || client.raisonSociale || client.name || 'Client sans nom')
@@ -75,6 +113,8 @@ function toLocalDateTime(value) {
 
 function getInitialFormData(intervention) {
   const replacedParts = intervention?.piecesRemplacees || intervention?.partsReplaced || []
+  const maintenanceChecklist =
+    intervention?.checklistMaintenance || intervention?.maintenanceChecklist || []
 
   return {
     clientId: String(intervention?.clientId || ''),
@@ -102,6 +142,17 @@ function getInitialFormData(intervention) {
     piecesRemplacees: Array.isArray(replacedParts)
       ? replacedParts.map(String).join('\n')
       : String(replacedParts),
+    heureArrivee: String(intervention?.heureArrivee || intervention?.arrivalTime || ''),
+    heureDepart: String(intervention?.heureDepart || intervention?.departureTime || ''),
+    checklistMaintenance: Array.isArray(maintenanceChecklist)
+      ? maintenanceChecklist.map(String)
+      : String(maintenanceChecklist)
+          .split(/\r?\n|;/)
+          .map((item) => item.trim())
+          .filter(Boolean),
+    observationsInternes: String(
+      intervention?.observationsInternes || intervention?.internalNotes || '',
+    ),
     status: String(intervention?.status || intervention?.statut || 'Planifiée'),
   }
 }
@@ -404,6 +455,10 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
     if (formData.piecesRemplacees.length > 3000) {
       nextErrors.piecesRemplacees = 'La liste des pièces ne doit pas dépasser 3 000 caractères.'
     }
+    if (formData.observationsInternes.trim().length > 5000) {
+      nextErrors.observationsInternes =
+        'Les observations internes ne doivent pas dépasser 5 000 caractères.'
+    }
     if (!INTERVENTION_STATUSES.includes(formData.status)) {
       nextErrors.status = 'Sélectionnez un statut valide.'
     }
@@ -453,6 +508,11 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
       descriptionProbleme: formData.descriptionProbleme.trim(),
       travauxEffectues: formData.travauxEffectues.trim(),
       piecesRemplacees,
+      heureArrivee: formData.heureArrivee,
+      heureDepart: formData.heureDepart,
+      tempsPasseMinutes: getElapsedMinutes(formData.heureArrivee, formData.heureDepart),
+      checklistMaintenance: formData.checklistMaintenance,
+      observationsInternes: formData.observationsInternes.trim(),
       status: formData.status,
       updatedAt: serverTimestamp(),
       updatedBy: currentUser?.uid || null,
@@ -494,6 +554,17 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
       onClose()
     }
   }
+
+  function toggleMaintenanceItem(item) {
+    setFormData((previous) => ({
+      ...previous,
+      checklistMaintenance: previous.checklistMaintenance.includes(item)
+        ? previous.checklistMaintenance.filter((checkedItem) => checkedItem !== item)
+        : [...previous.checklistMaintenance, item],
+    }))
+  }
+
+  const elapsedMinutes = getElapsedMinutes(formData.heureArrivee, formData.heureDepart)
 
   return (
     <div
@@ -738,6 +809,34 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
                 disabled={isSaving}
               />
               <Field
+                error={errors.heureArrivee}
+                id="intervention-arrival-time"
+                label="Heure d’arrivée"
+                name="heureArrivee"
+                onChange={handleChange}
+                type="time"
+                value={formData.heureArrivee}
+                disabled={isSaving}
+              />
+              <Field
+                error={errors.heureDepart}
+                id="intervention-departure-time"
+                label="Heure de départ"
+                name="heureDepart"
+                onChange={handleChange}
+                type="time"
+                value={formData.heureDepart}
+                disabled={isSaving}
+              />
+              <div className="flex flex-col justify-center rounded-lg border border-blue-100 bg-blue-50/70 px-4 py-3">
+                <span className="text-xs font-semibold uppercase tracking-wide text-blue-800">
+                  Temps passé
+                </span>
+                <span className="mt-1 text-sm font-semibold text-slate-900">
+                  {formatElapsedTime(elapsedMinutes)}
+                </span>
+              </div>
+              <Field
                 error={errors.technicien}
                 id="intervention-technician"
                 label="Technicien assigné"
@@ -838,6 +937,51 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
                     placeholder={'Une pièce par ligne, par exemple :\nContacteur de porte\nFusible 2A'}
                     rows={3}
                     value={formData.piecesRemplacees}
+                    disabled={isSaving}
+                  />
+                  {formData.type === 'Maintenance Préventive' && (
+                    <fieldset className="rounded-lg border border-slate-200 bg-white p-4">
+                      <legend className="px-1 text-sm font-medium text-slate-700">
+                        Checklist de maintenance préventive
+                      </legend>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {MAINTENANCE_CHECKLIST_ITEMS.map((item) => (
+                          <label
+                            className="inline-flex items-center gap-2 text-sm text-slate-700"
+                            htmlFor={`intervention-check-${item
+                              .normalize('NFD')
+                              .replace(/[\u0300-\u036f]/g, '')
+                              .replace(/\s+/g, '-')
+                              .toLowerCase()}`}
+                            key={item}
+                          >
+                            <input
+                              checked={formData.checklistMaintenance.includes(item)}
+                              className="h-4 w-4 rounded border-slate-300 text-blue-700 focus:ring-blue-600"
+                              disabled={isSaving}
+                              id={`intervention-check-${item
+                                .normalize('NFD')
+                                .replace(/[\u0300-\u036f]/g, '')
+                                .replace(/\s+/g, '-')
+                                .toLowerCase()}`}
+                              onChange={() => toggleMaintenanceItem(item)}
+                              type="checkbox"
+                            />
+                            {item}
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                  )}
+                  <TextAreaField
+                    error={errors.observationsInternes}
+                    id="intervention-internal-observations"
+                    label="Observations internes (non visibles sur le PDF client)"
+                    name="observationsInternes"
+                    onChange={handleChange}
+                    placeholder="Notes internes réservées à l’équipe TGI..."
+                    rows={3}
+                    value={formData.observationsInternes}
                     disabled={isSaving}
                   />
                 </div>
