@@ -1,10 +1,10 @@
 import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 
-const NAVY = '#17365D'
-const STEEL_BLUE = '#4682B4'
-const BORDER = '#D5DEE8'
-const MUTED = '#64748B'
-const PALE_BLUE = '#EEF4F9'
+const NAVY = '#1E3A8A'
+const STEEL_BLUE = '#1E3A8A'
+const BORDER = '#E2E8F0'
+const MUTED = '#475569'
+const PALE_BLUE = '#F8FAFC'
 
 const styles = StyleSheet.create({
   page: {

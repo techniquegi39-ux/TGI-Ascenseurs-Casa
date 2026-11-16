@@ -1,182 +1,172 @@
 import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 
-const NAVY = '#17365D'
-const STEEL_BLUE = '#4682B4'
-const BORDER = '#D5DEE8'
-const MUTED = '#64748B'
-const PALE_BLUE = '#EEF4F9'
+const NAVY = '#1E3A8A'
+const BORDER = '#E2E8F0'
+const MUTED = '#475569'
+const PALE_BLUE = '#F8FAFC'
 
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 164,
-    paddingRight: 38,
+    paddingTop: 226,
+    paddingRight: 42,
     paddingBottom: 92,
-    paddingLeft: 38,
+    paddingLeft: 42,
     backgroundColor: '#FFFFFF',
     color: '#1E293B',
     fontFamily: 'Helvetica',
-    fontSize: 9,
+    fontSize: 10,
   },
   header: {
     position: 'absolute',
-    top: 24,
-    right: 38,
-    left: 38,
-    height: 66,
+    top: 22,
+    right: 42,
+    left: 42,
+    height: 132,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingBottom: 10,
-    borderBottomWidth: 1.5,
-    borderBottomColor: STEEL_BLUE,
   },
   logo: {
-    width: 76,
+    width: 86,
     height: 60,
     objectFit: 'contain',
   },
   companyBlock: {
-    flexGrow: 1,
-    alignItems: 'flex-end',
-    marginLeft: 18,
+    width: '48%',
   },
   companyName: {
-    marginBottom: 3,
+    marginTop: 5,
+    marginBottom: 2,
     color: NAVY,
-    fontSize: 15,
+    fontSize: 12,
     fontFamily: 'Helvetica-Bold',
   },
   companyDetail: {
-    marginTop: 2,
+    marginTop: 1.5,
     color: MUTED,
     fontSize: 8,
-    textAlign: 'right',
   },
   titleBlock: {
     position: 'absolute',
-    top: 104,
-    right: 38,
-    left: 38,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+    top: 174,
+    right: 42,
+    left: 42,
+  },
+  titleBanner: {
+    minHeight: 42,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: NAVY,
+    borderRadius: 2,
   },
   title: {
-    color: NAVY,
-    fontSize: 17,
+    flexGrow: 1,
+    paddingRight: 8,
+    color: '#FFFFFF',
+    fontSize: 18,
     fontFamily: 'Helvetica-Bold',
-    letterSpacing: 0.5,
   },
   quoteDates: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 7,
+    alignItems: 'flex-end',
   },
   dateText: {
-    color: MUTED,
+    marginTop: 2,
+    color: '#FFFFFF',
     fontSize: 8,
   },
   sectionLabel: {
-    marginBottom: 6,
-    color: NAVY,
+    marginBottom: 5,
+    color: MUTED,
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   clientInfo: {
-    marginBottom: 14,
-    padding: 11,
-    backgroundColor: PALE_BLUE,
-    borderLeftWidth: 3,
-    borderLeftColor: STEEL_BLUE,
-    borderRadius: 3,
+    width: '48%',
+    padding: 10,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 4,
   },
   clientName: {
-    marginBottom: 5,
+    marginBottom: 3,
     color: NAVY,
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: 'Helvetica-Bold',
   },
   clientDetail: {
-    marginTop: 2,
-    color: '#475569',
+    marginTop: 1.5,
+    color: MUTED,
     fontSize: 8,
   },
   table: {
     width: '100%',
-    borderWidth: 1,
-    borderColor: BORDER,
   },
   tableHeader: {
     flexDirection: 'row',
     backgroundColor: NAVY,
   },
   headerCell: {
-    paddingVertical: 8,
-    paddingHorizontal: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 7,
     color: '#FFFFFF',
-    fontSize: 8,
+    fontSize: 9,
     fontFamily: 'Helvetica-Bold',
   },
   tableRow: {
     flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
+    borderBottomWidth: 0.6,
+    borderBottomColor: BORDER,
   },
   alternateRow: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: PALE_BLUE,
   },
   cell: {
-    paddingVertical: 8,
-    paddingHorizontal: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 7,
     color: '#334155',
-    fontSize: 8,
-    borderRightWidth: 1,
-    borderRightColor: BORDER,
-  },
-  lastCell: {
-    borderRightWidth: 0,
+    fontSize: 10,
   },
   emptyCell: {
     width: '100%',
     paddingVertical: 13,
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     color: MUTED,
-    fontSize: 9,
+    fontSize: 10,
     textAlign: 'center',
   },
   afterTable: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginTop: 13,
+    marginTop: 14,
   },
   quoteNotes: {
-    flexGrow: 1,
-    marginRight: 16,
+    width: '50%',
+    paddingRight: 12,
     paddingTop: 4,
   },
   note: {
     marginTop: 4,
-    color: '#475569',
-    fontSize: 8,
+    color: MUTED,
+    fontSize: 9,
     lineHeight: 1.4,
   },
   documentConditions: {
-    marginTop: 14,
+    marginTop: 12,
     padding: 10,
     borderWidth: 1,
     borderColor: BORDER,
-    borderLeftWidth: 3,
-    borderLeftColor: STEEL_BLUE,
     borderRadius: 3,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: PALE_BLUE,
   },
   conditionsHeading: {
     marginBottom: 5,
     color: NAVY,
-    fontSize: 8,
+    fontSize: 9,
     fontFamily: 'Helvetica-Bold',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
@@ -187,53 +177,52 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   conditionLabel: {
-    width: '29%',
+    width: '32%',
     paddingRight: 8,
     color: MUTED,
-    fontSize: 8,
+    fontSize: 9,
     fontFamily: 'Helvetica-Bold',
   },
   conditionValue: {
     flexGrow: 1,
     color: '#334155',
-    fontSize: 8,
+    fontSize: 9,
     lineHeight: 1.35,
   },
   totals: {
-    width: 220,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 3,
+    width: '50%',
+    alignItems: 'stretch',
+    paddingLeft: 8,
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
   totalLabel: {
-    color: '#475569',
-    fontSize: 8,
+    color: MUTED,
+    fontSize: 9,
   },
   totalValue: {
     color: '#1E293B',
-    fontSize: 8,
-    fontFamily: 'Helvetica-Bold',
-  },
-  grandTotal: {
-    marginTop: 4,
-    paddingTop: 7,
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
-  },
-  grandTotalLabel: {
-    color: NAVY,
     fontSize: 9,
     fontFamily: 'Helvetica-Bold',
   },
+  grandTotal: {
+    marginTop: 5,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    backgroundColor: NAVY,
+    borderRadius: 2,
+  },
+  grandTotalLabel: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'Helvetica-Bold',
+  },
   grandTotalValue: {
-    color: NAVY,
-    fontSize: 10,
+    color: '#FFFFFF',
+    fontSize: 14,
     fontFamily: 'Helvetica-Bold',
   },
   signatureArea: {
@@ -266,28 +255,36 @@ const styles = StyleSheet.create({
   },
   footer: {
     position: 'absolute',
-    right: 38,
+    right: 42,
     bottom: 20,
-    left: 38,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
+    left: 42,
+    paddingTop: 7,
+    borderTopWidth: 2,
+    borderTopColor: NAVY,
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
   },
   footerDetails: {
-    maxWidth: '80%',
+    flexDirection: 'row',
+    flexGrow: 1,
+    paddingRight: 12,
+  },
+  footerColumn: {
+    width: '50%',
+    paddingRight: 8,
   },
   legalText: {
     color: MUTED,
-    fontSize: 7,
-    lineHeight: 1.35,
+    fontSize: 8,
+    lineHeight: 1.3,
+    marginTop: 1,
   },
   pageNumber: {
     color: NAVY,
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
+    textAlign: 'right',
   },
 })
 
@@ -422,7 +419,7 @@ function getCompanyDetails(companyInfo) {
 }
 
 function getLegalDetails(companyInfo) {
-  const details = [
+  const banking = [
     getText(companyInfo, 'banque', 'bank')
       ? `Banque : ${getText(companyInfo, 'banque', 'bank')}`
       : '',
@@ -430,6 +427,8 @@ function getLegalDetails(companyInfo) {
     getText(companyInfo, 'capitalSocial', 'capital')
       ? `Capital social : ${getText(companyInfo, 'capitalSocial', 'capital')}`
       : '',
+  ].filter(Boolean)
+  const legal = [
     getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')
       ? `IF : ${getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')}`
       : '',
@@ -442,9 +441,12 @@ function getLegalDetails(companyInfo) {
     getText(companyInfo, 'mentionsLegales', 'legalMentions'),
   ].filter(Boolean)
 
-  return details.length
-    ? details.join('  ·  ')
-    : 'TGI Ascenseurs Casa · Document généré par TGI Manager Pro'
+  if (banking.length === 0 && legal.length === 0) {
+    banking.push('TGI Ascenseurs Casa')
+    legal.push('Document généré par TGI Manager Pro')
+  }
+
+  return { banking, legal }
 }
 
 function getQuoteNumber(quote) {
@@ -471,6 +473,7 @@ export default function QuotePdfDocument({ quote = {} }) {
     getText(clientInfo, 'adresse', 'address'),
   ].filter(Boolean)
   const companyDetails = getCompanyDetails(companyInfo)
+  const legalDetails = getLegalDetails(companyInfo)
   const issueDate = quote.dateEmission || quote.date
   const validityDate = quote.dateValidite || quote.validUntil || quote.validityDate
   const vatLabel = getVatLabel(quote, items, totals.totalHT, totals.totalTVA)
@@ -486,11 +489,11 @@ export default function QuotePdfDocument({ quote = {} }) {
     >
       <Page size="A4" style={styles.page} wrap>
         <View fixed style={styles.header}>
-          <Image
-            src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
-            style={styles.logo}
-          />
           <View style={styles.companyBlock}>
+            <Image
+              src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
+              style={styles.logo}
+            />
             <Text style={styles.companyName}>{companyName}</Text>
             {companyDetails.map((detail) => (
               <Text key={detail} style={styles.companyDetail}>
@@ -498,26 +501,25 @@ export default function QuotePdfDocument({ quote = {} }) {
               </Text>
             ))}
           </View>
-        </View>
-
-        <View fixed style={styles.titleBlock}>
-          <Text style={styles.title}>DEVIS N° {getQuoteNumber(quote)}</Text>
-          <View style={styles.quoteDates}>
-            <Text style={styles.dateText}>Date d’émission : {formatDate(issueDate)}</Text>
-            <Text style={styles.dateText}>
-              Date de validité : {formatDate(validityDate)}
-            </Text>
+          <View style={styles.clientInfo} wrap={false}>
+            <Text style={styles.sectionLabel}>Proposé à :</Text>
+            <Text style={styles.clientName}>{clientName}</Text>
+            {clientDetails.map((detail) => (
+              <Text key={detail} style={styles.clientDetail}>
+                {detail}
+              </Text>
+            ))}
           </View>
         </View>
 
-        <View style={styles.clientInfo} wrap={false}>
-          <Text style={styles.sectionLabel}>Proposé à</Text>
-          <Text style={styles.clientName}>{clientName}</Text>
-          {clientDetails.map((detail) => (
-            <Text key={detail} style={styles.clientDetail}>
-              {detail}
-            </Text>
-          ))}
+        <View fixed style={styles.titleBlock}>
+          <View style={styles.titleBanner}>
+            <Text style={styles.title}>DEVIS N° {getQuoteNumber(quote)}</Text>
+            <View style={styles.quoteDates}>
+              <Text style={styles.dateText}>— {formatDate(issueDate)}</Text>
+              <Text style={styles.dateText}>Valide jusqu’au : {formatDate(validityDate)}</Text>
+            </View>
+          </View>
         </View>
 
         <View style={styles.table}>
@@ -557,7 +559,6 @@ export default function QuotePdfDocument({ quote = {} }) {
                 <Text
                   style={[
                     styles.cell,
-                    styles.lastCell,
                     { width: '23%', textAlign: 'right' },
                   ]}
                 >
@@ -619,11 +620,24 @@ export default function QuotePdfDocument({ quote = {} }) {
 
         <View fixed style={styles.footer}>
           <View style={styles.footerDetails}>
-            <Text style={styles.legalText}>{getLegalDetails(companyInfo)}</Text>
-            <Text style={styles.legalText}>
-              Ce devis est valable jusqu’à la date indiquée ci-dessus, sous réserve de
-              disponibilité des équipements.
-            </Text>
+            <View style={styles.footerColumn}>
+              {legalDetails.banking.map((detail) => (
+                <Text key={detail} style={styles.legalText}>
+                  {detail}
+                </Text>
+              ))}
+            </View>
+            <View style={styles.footerColumn}>
+              {legalDetails.legal.map((detail) => (
+                <Text key={detail} style={styles.legalText}>
+                  {detail}
+                </Text>
+              ))}
+              <Text style={styles.legalText}>
+                Ce devis est valable jusqu’à la date indiquée ci-dessus, sous réserve de
+                disponibilité des équipements.
+              </Text>
+            </View>
           </View>
           <Text
             fixed
