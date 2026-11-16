@@ -5,9 +5,9 @@ import {
 } from './PdfDocumentChrome.jsx'
 import { pdfPageStyles } from './PdfDocumentStyles.js'
 
-const NAVY = '#1E3A8A'
+const NAVY = '#0284C7'
 const BORDER = '#E2E8F0'
-const MUTED = '#475569'
+const MUTED = '#64748B'
 const PALE = '#F8FAFC'
 
 const styles = StyleSheet.create({
@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
     color: NAVY,
     fontSize: 10,
     fontFamily: 'Helvetica-Bold',
-    letterSpacing: 0.4,
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
   statusBadge: {
@@ -57,14 +57,15 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontFamily: 'Helvetica-Bold',
     textTransform: 'uppercase',
-    letterSpacing: 0.4,
+    letterSpacing: 1.2,
   },
   row: {
-    padding: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
     flexDirection: 'row',
     alignItems: 'flex-start',
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+    borderBottomColor: '#F1F5F9',
     backgroundColor: '#FFFFFF',
   },
   alternateRow: {

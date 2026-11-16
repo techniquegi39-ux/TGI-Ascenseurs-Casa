@@ -6,10 +6,10 @@ import {
 } from './PdfDocumentChrome.jsx'
 import { pdfPageStyles } from './PdfDocumentStyles.js'
 
-const TGI_NAVY = '#1E3A8A'
-const TGI_BLUE = '#1E3A8A'
+const TGI_NAVY = '#0F172A'
+const TGI_BLUE = '#0284C7'
 const BORDER = '#E2E8F0'
-const MUTED = '#475569'
+const MUTED = '#64748B'
 const PALE_BLUE = '#F8FAFC'
 
 const styles = StyleSheet.create({
@@ -19,7 +19,7 @@ const styles = StyleSheet.create({
     paddingBottom: 58,
     paddingLeft: 30,
     backgroundColor: '#FFFFFF',
-    color: '#1E293B',
+    color: '#0F172A',
     fontFamily: 'Helvetica',
     fontSize: 9,
   },
@@ -103,14 +103,20 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
+    borderTopWidth: 1,
+    borderTopColor: '#CBD5E1',
+    borderBottomWidth: 1,
+    borderBottomColor: '#CBD5E1',
   },
   headerCell: {
-    paddingVertical: 8,
-    paddingHorizontal: 5,
-    color: '#334155',
-    fontSize: 7,
+    paddingVertical: 9,
+    paddingHorizontal: 8,
+    color: '#475569',
+    fontSize: 8,
     fontFamily: 'Helvetica-Bold',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   tableRow: {
     flexDirection: 'row',
@@ -121,10 +127,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   cell: {
-    paddingVertical: 7,
-    paddingHorizontal: 5,
-    color: '#334155',
-    fontSize: 7,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    color: '#0F172A',
+    fontSize: 8,
   },
   tableSectionTitle: {
     marginBottom: 8,
@@ -158,7 +164,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
   },
   totalValue: {
-    color: '#1E293B',
+    color: '#0F172A',
     fontSize: 9,
     fontFamily: 'Helvetica-Bold',
   },

@@ -1,20 +1,19 @@
 import { Image, StyleSheet, Text, View } from '@react-pdf/renderer'
+import { pdfColors } from './PdfDocumentStyles.js'
 
-const NAVY = '#1E3A8A'
-const MUTED = '#475569'
-const BORDER = '#E2E8F0'
+const { primary, secondary, accent, border } = pdfColors
 
 const styles = StyleSheet.create({
   header: {
     position: 'absolute',
     top: 0,
-    left: 30,
-    right: 30,
-    height: 120,
+    left: 40,
+    right: 40,
+    height: 130,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+    borderBottomWidth: 2,
+    borderBottomColor: accent,
     backgroundColor: '#FFFFFF',
   },
   headerIdentity: {
@@ -25,16 +24,24 @@ const styles = StyleSheet.create({
   },
   logo: {
     width: 128,
-    height: 55,
+    height: 44,
     objectFit: 'contain',
     objectPosition: 'left',
   },
   documentTitle: {
     maxWidth: '100%',
-    marginTop: 4,
-    color: '#0F172A',
-    fontSize: 16,
+    marginTop: 5,
+    color: primary,
+    fontSize: 24,
     fontFamily: 'Helvetica-Bold',
+    lineHeight: 1.05,
+    textTransform: 'uppercase',
+  },
+  documentNumber: {
+    marginTop: 2,
+    color: secondary,
+    fontSize: 9,
+    letterSpacing: 0.8,
   },
   companyBlock: {
     width: '39%',
@@ -43,17 +50,17 @@ const styles = StyleSheet.create({
   },
   companyName: {
     marginBottom: 3,
-    color: '#0F172A',
-    fontSize: 9,
+    color: primary,
+    fontSize: 8,
     fontFamily: 'Helvetica-Bold',
     textAlign: 'right',
   },
   companyDetail: {
     maxWidth: '100%',
     marginTop: 1,
-    color: MUTED,
-    fontSize: 7,
-    lineHeight: 1.15,
+    color: secondary,
+    fontSize: 7.5,
+    lineHeight: 1.4,
     textAlign: 'right',
   },
   clientSummary: {
@@ -68,49 +75,51 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     marginBottom: 6,
-    color: '#64748B',
+    color: secondary,
     fontSize: 9,
     fontFamily: 'Helvetica-Bold',
     textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   clientName: {
     marginBottom: 3,
-    color: '#0F172A',
-    fontSize: 11,
+    color: accent,
+    fontSize: 13,
     fontFamily: 'Helvetica-Bold',
   },
   clientDetail: {
     marginTop: 2,
-    color: MUTED,
-    fontSize: 8,
+    color: secondary,
+    fontSize: 8.5,
     lineHeight: 1.25,
   },
   metaTable: {
     width: '30%',
     paddingHorizontal: 9,
     paddingVertical: 6,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 3,
+    borderLeftWidth: 1,
+    borderLeftColor: border,
   },
   metaRow: {
     paddingVertical: 4,
     flexDirection: 'row',
     justifyContent: 'space-between',
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+    borderBottomColor: border,
   },
   metaRowLast: {
     borderBottomWidth: 0,
   },
   metaLabel: {
     width: '38%',
-    color: MUTED,
+    color: secondary,
     fontSize: 7,
     fontFamily: 'Helvetica-Bold',
+    letterSpacing: 0.8,
   },
   metaValue: {
     width: '62%',
-    color: '#0F172A',
+    color: primary,
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
     textAlign: 'right',
@@ -118,32 +127,32 @@ const styles = StyleSheet.create({
   footer: {
     position: 'absolute',
     bottom: 0,
-    left: 30,
-    right: 30,
+    left: 40,
+    right: 40,
     height: 70,
     paddingTop: 8,
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: BORDER,
+    borderTopColor: border,
     backgroundColor: '#FFFFFF',
   },
   footerCompany: {
     marginBottom: 2,
-    color: '#0F172A',
+    color: primary,
     fontSize: 7,
     fontFamily: 'Helvetica-Bold',
     textAlign: 'center',
   },
   footerText: {
     marginTop: 1,
-    color: MUTED,
+    color: secondary,
     fontSize: 6.5,
     lineHeight: 1.15,
     textAlign: 'center',
   },
   footerPage: {
     marginTop: 3,
-    color: NAVY,
+    color: accent,
     fontSize: 7,
     fontFamily: 'Helvetica-Bold',
     textAlign: 'center',
@@ -158,25 +167,25 @@ const styles = StyleSheet.create({
     minHeight: 92,
     padding: 11,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: border,
     borderRadius: 3,
     backgroundColor: '#FFFFFF',
   },
   signatureTitle: {
     marginBottom: 4,
-    color: '#0F172A',
+    color: primary,
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
   },
   signatureHint: {
-    color: MUTED,
+    color: secondary,
     fontSize: 7,
   },
   signatureLine: {
     height: 34,
     marginTop: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#CBD5E1',
+    borderBottomColor: pdfColors.tableHeaderBorder,
   },
 })
 
@@ -206,7 +215,20 @@ function getCompanyHeaderDetails(companyInfo) {
   ].filter(Boolean)
 }
 
+function splitDocumentTitle(documentTitle) {
+  const title = String(documentTitle || 'Document').trim()
+  const match = /^(.*\S)\s+([A-Z]{1,8}[-/][A-Z0-9./_-]+)$/i.exec(title)
+
+  if (!match) {
+    return { type: title, number: '' }
+  }
+
+  return { type: match[1], number: match[2] }
+}
+
 export function PdfDocumentHeader({ companyInfo = {}, companyName, documentTitle }) {
+  const { type, number } = splitDocumentTitle(documentTitle)
+
   return (
     <View fixed style={styles.header}>
       <View style={styles.headerIdentity}>
@@ -214,7 +236,8 @@ export function PdfDocumentHeader({ companyInfo = {}, companyName, documentTitle
           src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
           style={styles.logo}
         />
-        <Text style={styles.documentTitle}>{documentTitle}</Text>
+        <Text style={styles.documentTitle}>{type}</Text>
+        {number ? <Text style={styles.documentNumber}>{number}</Text> : null}
       </View>
       <View style={styles.companyBlock}>
         <Text style={styles.companyName}>{companyName}</Text>
@@ -232,7 +255,7 @@ export function PdfClientSummary({ clientName, clientDetails = [], metaRows = []
   return (
     <View style={styles.clientSummary}>
       <View style={styles.clientBlock}>
-        <Text style={styles.sectionLabel}>DOCUMENT ÉTABLI POUR</Text>
+        <Text style={styles.sectionLabel}>ÉTABLI POUR :</Text>
         <Text style={styles.clientName}>{clientName}</Text>
         {clientDetails.map((detail, index) => (
           <Text key={`${detail}-${index}`} style={styles.clientDetail}>

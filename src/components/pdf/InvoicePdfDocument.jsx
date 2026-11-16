@@ -8,11 +8,11 @@ import {
 import PdfFinancialDetails from './PdfFinancialDetails.jsx'
 import { pdfPageStyles } from './PdfDocumentStyles.js'
 
-const NAVY = '#1E3A8A'
+const NAVY = '#0284C7'
 const BORDER = '#E2E8F0'
-const MUTED = '#475569'
+const MUTED = '#64748B'
 const PALE_BLUE = '#F8FAFC'
-const PALE_GRAY = '#F3F4F6'
+const PALE_GRAY = '#F8FAFC'
 
 const styles = StyleSheet.create({
   page: {
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   },
   clientName: {
     marginBottom: 4,
-    color: '#111827',
+    color: '#0F172A',
     fontSize: 12,
     fontFamily: 'Helvetica-Bold',
   },
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   invoiceInfo: {
     width: '42%',
     padding: 12,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
     borderRadius: 4,
   },
   invoiceInfoRow: {
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   },
   invoiceInfoValue: {
     width: '57%',
-    color: '#111827',
+    color: '#0F172A',
     fontSize: 9,
     fontFamily: 'Helvetica-Bold',
     textAlign: 'right',
@@ -138,22 +138,28 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   tableHeader: {
-    paddingVertical: 8,
-    paddingHorizontal: 5,
+    paddingVertical: 9,
+    paddingHorizontal: 8,
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
+    borderTopWidth: 1,
+    borderTopColor: '#CBD5E1',
+    borderBottomWidth: 1,
+    borderBottomColor: '#CBD5E1',
   },
   headerCell: {
-    color: '#334155',
-    fontSize: 7,
+    color: '#475569',
+    fontSize: 8,
     fontFamily: 'Helvetica-Bold',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   tableRow: {
-    paddingVertical: 7,
-    paddingHorizontal: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+    borderBottomColor: '#F1F5F9',
   },
   alternateRow: {
     backgroundColor: PALE_BLUE,
@@ -183,7 +189,7 @@ const styles = StyleSheet.create({
   },
   signatureTitle: {
     marginBottom: 7,
-    color: '#111827',
+    color: '#0F172A',
     fontSize: 11,
     fontFamily: 'Helvetica-Bold',
   },
@@ -201,7 +207,7 @@ const styles = StyleSheet.create({
   totals: {
     width: '48%',
     padding: 12,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
     borderRadius: 4,
   },
   totalRow: {
@@ -214,7 +220,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
   },
   totalValue: {
-    color: '#111827',
+    color: '#0F172A',
     fontSize: 9,
     fontFamily: 'Helvetica-Bold',
   },
@@ -271,7 +277,7 @@ const styles = StyleSheet.create({
   },
   conditionValue: {
     flexGrow: 1,
-    color: '#334155',
+    color: '#0F172A',
     fontSize: 9,
     lineHeight: 1.35,
   },

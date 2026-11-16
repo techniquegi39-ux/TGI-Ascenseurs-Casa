@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from '@react-pdf/renderer'
+import { pdfColors } from './PdfDocumentStyles.js'
 
-const BORDER = '#E2E8F0'
-const MUTED = '#475569'
-const NAVY = '#1E3A8A'
+const { primary, secondary, accent, tableRule, tableHeader, tableHeaderBorder } =
+  pdfColors
 
 const styles = StyleSheet.create({
   section: {
@@ -10,92 +10,104 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: 8,
-    color: '#0F172A',
+    color: primary,
     fontSize: 10,
     fontFamily: 'Helvetica-Bold',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   table: {
     width: '100%',
   },
   tableHeader: {
-    paddingVertical: 8,
-    paddingHorizontal: 5,
+    paddingVertical: 9,
+    paddingHorizontal: 8,
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: tableHeader,
+    borderTopWidth: 1,
+    borderTopColor: tableHeaderBorder,
+    borderBottomWidth: 1,
+    borderBottomColor: tableHeaderBorder,
   },
   headerCell: {
-    color: '#334155',
-    fontSize: 7,
+    color: '#475569',
+    fontSize: 8,
     fontFamily: 'Helvetica-Bold',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   tableRow: {
-    paddingVertical: 7,
-    paddingHorizontal: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+    borderBottomColor: tableRule,
   },
   tableCell: {
     paddingRight: 4,
-    color: '#1E293B',
-    fontSize: 7.5,
+    color: primary,
+    fontSize: 8,
   },
   emptyRow: {
-    padding: 10,
+    padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+    borderBottomColor: tableRule,
   },
   emptyText: {
-    color: MUTED,
+    color: secondary,
     fontSize: 8,
     textAlign: 'center',
   },
   totalsHeading: {
     marginBottom: 7,
-    color: '#0F172A',
-    fontSize: 10,
+    color: secondary,
+    fontSize: 8,
     fontFamily: 'Helvetica-Bold',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   totalsWrap: {
     marginTop: 16,
     alignItems: 'flex-end',
   },
   totals: {
-    width: '52%',
-    padding: 10,
-    backgroundColor: '#F8FAFC',
+    width: '45%',
   },
   totalRow: {
-    paddingVertical: 4,
+    paddingVertical: 5,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   totalLabel: {
-    color: MUTED,
+    color: secondary,
     fontSize: 8,
   },
   totalValue: {
-    color: '#0F172A',
+    color: primary,
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
     textAlign: 'right',
   },
   grandTotal: {
-    marginTop: 5,
-    paddingVertical: 8,
-    paddingHorizontal: 9,
+    marginTop: 7,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    backgroundColor: tableHeader,
+    borderLeftWidth: 3,
+    borderLeftColor: accent,
   },
   grandTotalLabel: {
-    color: NAVY,
+    color: primary,
     fontSize: 10,
     fontFamily: 'Helvetica-Bold',
+    letterSpacing: 0.7,
   },
   grandTotalValue: {
-    color: NAVY,
-    fontSize: 10,
+    color: accent,
+    fontSize: 12,
     fontFamily: 'Helvetica-Bold',
     textAlign: 'right',
   },

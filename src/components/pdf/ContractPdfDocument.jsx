@@ -7,11 +7,11 @@ import {
 } from './PdfDocumentChrome.jsx'
 import { pdfPageStyles } from './PdfDocumentStyles.js'
 
-const NAVY = '#1E3A8A'
+const NAVY = '#0284C7'
 const BORDER = '#E2E8F0'
-const MUTED = '#475569'
+const MUTED = '#64748B'
 const PALE_BLUE = '#F8FAFC'
-const PALE_GRAY = '#F3F4F6'
+const PALE_GRAY = '#F8FAFC'
 
 const styles = StyleSheet.create({
   page: {
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
     padding: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
     borderRadius: 4,
   },
   contractMetaItem: {
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Helvetica-Bold',
   },
   introText: {
-    color: '#334155',
+    color: '#64748B',
     fontSize: 10,
     lineHeight: 1.5,
   },
@@ -130,10 +130,10 @@ const styles = StyleSheet.create({
   },
   equipmentRow: {
     flexDirection: 'row',
-    paddingVertical: 9,
+    paddingVertical: 10,
     paddingHorizontal: 10,
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+    borderBottomColor: '#F1F5F9',
   },
   equipmentRowAlternate: {
     backgroundColor: PALE_BLUE,
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   },
   equipmentDescription: {
     flexGrow: 1,
-    color: '#334155',
+    color: '#0F172A',
     fontSize: 9,
     lineHeight: 1.4,
   },
@@ -155,17 +155,25 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     fontSize: 10,
     fontFamily: 'Helvetica-Bold',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   equipmentTableHeader: {
-    paddingVertical: 8,
+    paddingVertical: 9,
     paddingHorizontal: 10,
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
+    borderTopWidth: 1,
+    borderTopColor: '#CBD5E1',
+    borderBottomWidth: 1,
+    borderBottomColor: '#CBD5E1',
   },
   equipmentHeaderCell: {
-    color: '#334155',
+    color: '#475569',
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   emptyText: {
     color: MUTED,
@@ -180,7 +188,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexBasis: 0,
     padding: 10,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
     borderRadius: 4,
   },
   financialCardSpaced: {
@@ -194,7 +202,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   financialValue: {
-    color: '#1E293B',
+    color: '#0F172A',
     fontSize: 10,
     fontFamily: 'Helvetica-Bold',
   },
@@ -222,17 +230,22 @@ const styles = StyleSheet.create({
   },
   financialSummaryGrand: {
     marginTop: 5,
-    padding: 8,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
+    borderLeftWidth: 3,
+    borderLeftColor: NAVY,
   },
   grandTotal: {
     padding: 6,
-    color: '#FFFFFF',
+    color: NAVY,
     fontSize: 12,
-    backgroundColor: NAVY,
+    backgroundColor: '#F8FAFC',
     borderRadius: 3,
+    borderLeftWidth: 3,
+    borderLeftColor: NAVY,
   },
   clauseBox: {
     padding: 16,
@@ -242,7 +255,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   clauseText: {
-    color: '#1E293B',
+    color: '#0F172A',
     fontSize: 10,
     lineHeight: 1.55,
     textAlign: 'justify',
@@ -260,7 +273,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   signatureTitle: {
-    color: '#111827',
+    color: '#0F172A',
     fontSize: 10,
     fontFamily: 'Helvetica-Bold',
     textAlign: 'left',
