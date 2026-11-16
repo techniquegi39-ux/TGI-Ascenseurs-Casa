@@ -1,4 +1,11 @@
-import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import {
+  PdfClientSummary,
+  PdfDocumentFooter,
+  PdfDocumentHeader,
+  PdfSignatures,
+} from './PdfDocumentChrome.jsx'
+import { pdfPageStyles } from './PdfDocumentStyles.js'
 
 const NAVY = '#1E3A8A'
 const BORDER = '#E2E8F0'
@@ -132,7 +139,7 @@ const styles = StyleSheet.create({
     backgroundColor: PALE_BLUE,
   },
   equipmentIndex: {
-    width: 22,
+    width: '8%',
     color: NAVY,
     fontSize: 9,
     fontFamily: 'Helvetica-Bold',
@@ -142,6 +149,23 @@ const styles = StyleSheet.create({
     color: '#334155',
     fontSize: 9,
     lineHeight: 1.4,
+  },
+  equipmentTableTitle: {
+    marginBottom: 8,
+    color: '#0F172A',
+    fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
+  },
+  equipmentTableHeader: {
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+  },
+  equipmentHeaderCell: {
+    color: '#334155',
+    fontSize: 8,
+    fontFamily: 'Helvetica-Bold',
   },
   emptyText: {
     color: MUTED,
@@ -173,6 +197,35 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     fontSize: 10,
     fontFamily: 'Helvetica-Bold',
+  },
+  financialSummary: {
+    width: '52%',
+    marginTop: 6,
+    marginBottom: 10,
+    marginLeft: 'auto',
+    padding: 10,
+    backgroundColor: '#F8FAFC',
+  },
+  financialSummaryRow: {
+    paddingVertical: 4,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  financialSummaryLabel: {
+    color: MUTED,
+    fontSize: 8,
+  },
+  financialSummaryValue: {
+    color: '#0F172A',
+    fontSize: 8,
+    fontFamily: 'Helvetica-Bold',
+  },
+  financialSummaryGrand: {
+    marginTop: 5,
+    padding: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#F1F5F9',
   },
   grandTotal: {
     padding: 6,
@@ -315,16 +368,6 @@ function getContractNumber(contract) {
   return getText(contract, 'number', 'numero', 'contractNumber') || 'Sans numéro'
 }
 
-function getCompanyDetails(companyInfo) {
-  return [
-    getText(companyInfo, 'address', 'adresse'),
-    getText(companyInfo, 'rc') ? `RC : ${getText(companyInfo, 'rc')}` : '',
-    getText(companyInfo, 'ice') ? `ICE : ${getText(companyInfo, 'ice')}` : '',
-    getText(companyInfo, 'phone', 'telephone', 'téléphone'),
-    getText(companyInfo, 'email'),
-  ].filter(Boolean)
-}
-
 function getLegalDetails(companyInfo) {
   const banking = [
     getText(companyInfo, 'banque', 'bank')
@@ -426,7 +469,6 @@ export default function ContractPdfDocument({ contract = {} }) {
     companyRc ? `RC : ${companyRc}` : '',
     companyIce ? `ICE : ${companyIce}` : '',
   ].filter(Boolean)
-  const companyDetails = getCompanyDetails(companyInfo)
   const legalDetails = getLegalDetails(companyInfo)
   const elevators = getElevators(contract)
   const dateDebut = contract.dateDebut || contract.startDate
@@ -456,6 +498,20 @@ export default function ContractPdfDocument({ contract = {} }) {
   const documentTitleSentence = isInstallation
     ? 'Contrat d’installation'
     : 'Contrat d’entretien'
+  const clientRepresentative = getText(
+    clientInfo,
+    'representant',
+    'représentant',
+    'representative',
+    'contactPerson',
+  )
+  const clientPhone = getText(clientInfo, 'telephone', 'téléphone', 'phone')
+  const clientDetails = [
+    clientRepresentative ? `Représentant : ${clientRepresentative}` : '',
+    `ICE : ${clientIce}`,
+    clientPhone ? `Téléphone : ${clientPhone}` : '',
+    `Adresse : ${clientAddress}`,
+  ].filter(Boolean)
   const responseSla = getText(
     contract,
     'slaIntervention',
@@ -473,45 +529,23 @@ export default function ContractPdfDocument({ contract = {} }) {
       subject={`${documentTitleSentence} ${getContractNumber(contract)}`}
       title={`${documentTitleSentence} ${getContractNumber(contract)}`}
     >
-      <Page size="A4" style={styles.page} wrap>
-        <View fixed style={styles.header}>
-          <View style={styles.headerIdentity}>
-            <View style={styles.logoFrame}>
-              <Image
-                src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
-                style={styles.logo}
-              />
-            </View>
-            <Text style={styles.documentTitle}>{documentTitle}</Text>
-          </View>
-          <View style={styles.companyBlock}>
-            <Text style={styles.companyName}>{companyName}</Text>
-            {companyDetails.map((detail) => (
-              <Text key={detail} style={styles.companyDetail}>
-                {detail}
-              </Text>
-            ))}
-          </View>
-        </View>
+      <Page size="A4" style={pdfPageStyles.page} wrap>
+        <PdfDocumentHeader
+          companyInfo={companyInfo}
+          companyName={companyName}
+          documentTitle={`${documentTitle} ${getContractNumber(contract)}`}
+        />
+        <PdfClientSummary
+          clientName={clientName}
+          clientDetails={clientDetails}
+          metaRows={[
+            { label: 'DATE', value: formatDate(dateDebut) },
+            { label: 'ÉCHÉANCE', value: formatDate(dateFin) },
+            { label: 'STATUT', value: getText(contract, 'status', 'statut') || '—' },
+          ]}
+        />
 
         <View>
-          <View style={styles.contractMeta}>
-            <View style={styles.contractMetaCard}>
-              <View style={styles.contractMetaItem}>
-                <Text style={styles.contractMetaLabel}>N° de contrat</Text>
-                <Text style={styles.financialValue}>{getContractNumber(contract)}</Text>
-              </View>
-              <View style={styles.contractMetaItem}>
-                <Text style={styles.contractMetaLabel}>Date de début</Text>
-                <Text style={styles.financialValue}>{formatDate(dateDebut)}</Text>
-              </View>
-              <View style={styles.contractMetaItem}>
-                <Text style={styles.contractMetaLabel}>Date de fin</Text>
-                <Text style={styles.financialValue}>{formatDate(dateFin)}</Text>
-              </View>
-            </View>
-          </View>
-
           <View style={styles.intro}>
             <View style={styles.introCard}>
               <Text style={styles.introLead}>Entre les soussignés :</Text>
@@ -526,22 +560,33 @@ export default function ContractPdfDocument({ contract = {} }) {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>1. Objet du contrat et équipements concernés</Text>
+            <Text style={styles.equipmentTableTitle}>
+              DÉTAIL DES ARTICLES ET PRESTATIONS
+            </Text>
             {elevators.length > 0 ? (
-              elevators.map((elevator, index) => (
-                <View
-                  key={elevator.id || `${getElevatorDescription(elevator)}-${index}`}
-                  style={[
-                    styles.equipmentRow,
-                    index % 2 === 1 ? styles.equipmentRowAlternate : null,
-                  ]}
-                  wrap={false}
-                >
-                  <Text style={styles.equipmentIndex}>{index + 1}.</Text>
-                  <Text style={styles.equipmentDescription}>
-                    {getElevatorDescription(elevator)}
+              <>
+                <View fixed style={styles.equipmentTableHeader}>
+                  <Text style={[styles.equipmentHeaderCell, { width: '8%' }]}>#</Text>
+                  <Text style={[styles.equipmentHeaderCell, { width: '92%' }]}>
+                    Désignation
                   </Text>
                 </View>
-              ))
+                {elevators.map((elevator, index) => (
+                  <View
+                    key={elevator.id || `${getElevatorDescription(elevator)}-${index}`}
+                    style={[
+                      styles.equipmentRow,
+                      index % 2 === 1 ? styles.equipmentRowAlternate : null,
+                    ]}
+                    wrap={false}
+                  >
+                    <Text style={styles.equipmentIndex}>{index + 1}</Text>
+                    <Text style={styles.equipmentDescription}>
+                      {getElevatorDescription(elevator)}
+                    </Text>
+                  </View>
+                ))}
+              </>
             ) : (
               <Text style={styles.emptyText}>Aucun équipement associé à ce contrat.</Text>
             )}
@@ -549,20 +594,31 @@ export default function ContractPdfDocument({ contract = {} }) {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>2. Conditions financières et durée</Text>
-            <View style={styles.financialGrid}>
-              <View style={[styles.financialCard, styles.financialCardSpaced]}>
-                <Text style={styles.financialLabel}>Montant HT</Text>
-                <Text style={styles.financialValue}>{formatCurrency(totalHT)}</Text>
+            <Text style={styles.equipmentTableTitle}>RÉCAPITULATIF FINANCIER</Text>
+            <View style={styles.financialSummary} wrap={false}>
+              <View style={styles.financialSummaryRow}>
+                <Text style={styles.financialSummaryLabel}>Total brut HT</Text>
+                <Text style={styles.financialSummaryValue}>{formatCurrency(totalHT)}</Text>
               </View>
-              <View style={[styles.financialCard, styles.financialCardSpaced]}>
-                <Text style={styles.financialLabel}>TVA ({vatRate} %)</Text>
-                <Text style={styles.financialValue}>
+              <View style={styles.financialSummaryRow}>
+                <Text style={styles.financialSummaryLabel}>Remise</Text>
+                <Text style={styles.financialSummaryValue}>{formatCurrency(0)}</Text>
+              </View>
+              <View style={styles.financialSummaryRow}>
+                <Text style={styles.financialSummaryLabel}>Net HT</Text>
+                <Text style={styles.financialSummaryValue}>{formatCurrency(totalHT)}</Text>
+              </View>
+              <View style={styles.financialSummaryRow}>
+                <Text style={styles.financialSummaryLabel}>TVA ({vatRate}%)</Text>
+                <Text style={styles.financialSummaryValue}>
                   {formatCurrency(totalTTC - totalHT)}
                 </Text>
               </View>
-              <View style={styles.financialCard}>
-                <Text style={styles.financialLabel}>Montant TTC</Text>
-                <Text style={[styles.financialValue, styles.grandTotal]}>
+              <View style={styles.financialSummaryGrand}>
+                <Text style={[styles.financialSummaryLabel, { fontFamily: 'Helvetica-Bold' }]}>
+                  TOTAL TTC
+                </Text>
+                <Text style={[styles.financialSummaryValue, { color: NAVY, fontSize: 10 }]}>
                   {formatCurrency(totalTTC)}
                 </Text>
               </View>
@@ -614,51 +670,19 @@ export default function ContractPdfDocument({ contract = {} }) {
             </View>
           </View>
 
-          <View style={styles.signatures} wrap={false}>
-            <View style={styles.signatureBox}>
-              <Text style={styles.signatureTitle}>Le Prestataire</Text>
-              <Text style={styles.signatureHint}>{companyName}</Text>
-              <View style={styles.signatureLine} />
-            </View>
-            <View style={styles.signatureBox}>
-              <Text style={styles.signatureTitle}>Le Client</Text>
-              <Text style={styles.signatureHint}>Lu et approuvé</Text>
-              <View style={styles.signatureLine} />
-            </View>
-          </View>
+          <PdfSignatures
+            clientLabel="LE CLIENT (Nom, date, signature et cachet)"
+            companyLabel="TGI ASCENSEURS (Signature et cachet)"
+            clientHint="Lu et approuvé"
+            companyHint={companyName}
+          />
         </View>
 
-        <View fixed style={styles.footer}>
-          <View style={styles.footerColumn}>
-            {legalDetails.banking.map((detail) => (
-              <Text key={detail} style={styles.legalText}>
-                {detail}
-              </Text>
-            ))}
-          </View>
-          <View style={styles.footerColumn}>
-            {legalDetails.registrations.map((detail) => (
-              <Text key={detail} style={styles.legalText}>
-                {detail}
-              </Text>
-            ))}
-          </View>
-          <View style={styles.footerPageColumn}>
-            {legalDetails.legal.map((detail) => (
-              <Text key={detail} style={styles.legalText}>
-                {detail}
-              </Text>
-            ))}
-            <Text style={styles.legalText}>
-              {documentTitleSentence} · Exemplaire destiné aux parties signataires.
-            </Text>
-            <Text
-              fixed
-              render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
-              style={styles.footerPage}
-            />
-          </View>
-        </View>
+        <PdfDocumentFooter
+          companyName={companyName}
+          companyInfo={companyInfo}
+          legalDetails={legalDetails}
+        />
       </Page>
     </Document>
   )

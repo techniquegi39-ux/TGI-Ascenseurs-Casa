@@ -1,4 +1,10 @@
-import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import {
+  PdfClientSummary,
+  PdfDocumentFooter,
+  PdfDocumentHeader,
+} from './PdfDocumentChrome.jsx'
+import { pdfPageStyles } from './PdfDocumentStyles.js'
 
 const NAVY = '#1E3A8A'
 const BORDER = '#E2E8F0'
@@ -94,12 +100,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Helvetica-Bold',
   },
   sectionHeader: {
-    marginTop: 20,
-    padding: 8,
-    backgroundColor: NAVY,
+    marginTop: 14,
+    marginBottom: 4,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
   },
   sectionTitle: {
-    color: '#FFFFFF',
+    color: NAVY,
     fontSize: 9,
     fontFamily: 'Helvetica-Bold',
     textTransform: 'uppercase',
@@ -207,14 +215,6 @@ function isClientActive(client) {
   return true
 }
 
-function getCompanyDetails(companyInfo) {
-  return [
-    getText(companyInfo, 'address', 'adresse'),
-    getText(companyInfo, 'phone', 'telephone', 'téléphone'),
-    getText(companyInfo, 'email'),
-  ].filter(Boolean)
-}
-
 function getLegalDetails(companyInfo) {
   const banking = [
     getText(companyInfo, 'banque', 'bank')
@@ -311,13 +311,23 @@ export default function ClientPdfDocument({
   generatedAt = new Date(),
 }) {
   const companyName = getText(companyInfo, 'name', 'nom') || 'TGI ASCENSEURS CASA'
-  const companyDetails = getCompanyDetails(companyInfo)
   const legalDetails = getLegalDetails(companyInfo)
   const clientName = getText(client, 'nom', 'raisonSociale', 'name') || 'Client sans nom'
   const clientReference =
     getText(client, 'reference', 'ref') ||
     (client.id ? `CL-${String(client.id).slice(0, 7).toUpperCase()}` : 'Sans référence')
   const sections = getClientSections(client)
+  const clientDetails = [
+    getText(client, 'ice', 'identifiantFiscal')
+      ? `ICE : ${getText(client, 'ice', 'identifiantFiscal')}`
+      : '',
+    getText(client, 'telephone', 'téléphone', 'phone')
+      ? `Téléphone : ${getText(client, 'telephone', 'téléphone', 'phone')}`
+      : '',
+    getText(client, 'adresse', 'address')
+      ? `Adresse : ${getText(client, 'adresse', 'address')}`
+      : '',
+  ].filter(Boolean)
 
   return (
     <Document
@@ -325,41 +335,21 @@ export default function ClientPdfDocument({
       subject={`Fiche client ${clientReference}`}
       title={`Fiche client ${clientName}`}
     >
-      <Page size="A4" style={styles.page} wrap>
-        <View fixed style={styles.header}>
-          <View style={styles.headerIdentity}>
-            <View style={styles.logoFrame}>
-              <Image
-                src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
-                style={styles.logo}
-              />
-            </View>
-            <Text style={styles.documentTitle}>FICHE CLIENT</Text>
-          </View>
-          <View style={styles.companyBlock}>
-            <Text style={styles.companyName}>{companyName}</Text>
-            {companyDetails.map((detail) => (
-              <Text key={detail} style={styles.companyDetail}>
-                {detail}
-              </Text>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.documentMeta}>
-          <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>Client</Text>
-            <Text style={styles.metaValue}>{clientName}</Text>
-          </View>
-          <View style={[styles.metaItem, { alignItems: 'flex-end' }]}>
-            <Text style={[styles.metaLabel, { textAlign: 'right' }]}>
-              Référence · Date d’édition
-            </Text>
-            <Text style={[styles.metaValue, { textAlign: 'right' }]}>
-              {clientReference} · {formatDate(generatedAt)}
-            </Text>
-          </View>
-        </View>
+      <Page size="A4" style={pdfPageStyles.page} wrap>
+        <PdfDocumentHeader
+          companyInfo={companyInfo}
+          companyName={companyName}
+          documentTitle={`Fiche client ${clientReference}`}
+        />
+        <PdfClientSummary
+          clientName={clientName}
+          clientDetails={clientDetails}
+          metaRows={[
+            { label: 'DATE', value: formatDate(generatedAt) },
+            { label: 'ÉCHÉANCE', value: '—' },
+            { label: 'STATUT', value: isClientActive(client) ? 'Actif' : 'Inactif' },
+          ]}
+        />
 
         {sections.map((section) => (
           <View key={section.title}>
@@ -378,34 +368,11 @@ export default function ClientPdfDocument({
           </View>
         ))}
 
-        <View fixed style={styles.footer}>
-          <View style={styles.footerColumn}>
-            {legalDetails.banking.map((detail) => (
-              <Text key={detail} style={styles.legalText}>
-                {detail}
-              </Text>
-            ))}
-          </View>
-          <View style={styles.footerColumn}>
-            {legalDetails.registrations.map((detail) => (
-              <Text key={detail} style={styles.legalText}>
-                {detail}
-              </Text>
-            ))}
-          </View>
-          <View style={[styles.footerColumn, { alignItems: 'flex-end' }]}>
-            {legalDetails.legal.map((detail) => (
-              <Text key={detail} style={styles.legalText}>
-                {detail}
-              </Text>
-            ))}
-            <Text
-              fixed
-              render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
-              style={styles.footerPage}
-            />
-          </View>
-        </View>
+        <PdfDocumentFooter
+          companyName={companyName}
+          companyInfo={companyInfo}
+          legalDetails={legalDetails}
+        />
       </Page>
     </Document>
   )

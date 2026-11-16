@@ -1,4 +1,11 @@
-import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import {
+  PdfClientSummary,
+  PdfDocumentFooter,
+  PdfDocumentHeader,
+  PdfSignatures,
+} from './PdfDocumentChrome.jsx'
+import { pdfPageStyles } from './PdfDocumentStyles.js'
 
 const NAVY = '#1E3A8A'
 const BORDER = '#E2E8F0'
@@ -130,19 +137,19 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   tableHeader: {
-    padding: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 5,
     flexDirection: 'row',
-    backgroundColor: NAVY,
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
+    backgroundColor: '#F1F5F9',
   },
   headerCell: {
-    color: '#FFFFFF',
-    fontSize: 9,
+    color: '#334155',
+    fontSize: 8,
     fontFamily: 'Helvetica-Bold',
   },
   tableRow: {
-    padding: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 5,
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
@@ -152,7 +159,13 @@ const styles = StyleSheet.create({
   },
   cell: {
     color: '#334155',
+    fontSize: 9,
+  },
+  tableSectionTitle: {
+    marginBottom: 8,
+    color: '#0F172A',
     fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
   },
   emptyCell: {
     width: '100%',
@@ -279,16 +292,6 @@ function getDeliveryNoteNumber(deliveryNote) {
   )
 }
 
-function getCompanyDetails(companyInfo) {
-  return [
-    getText(companyInfo, 'address', 'adresse'),
-    getText(companyInfo, 'rc') ? `RC : ${getText(companyInfo, 'rc')}` : '',
-    getText(companyInfo, 'ice') ? `ICE : ${getText(companyInfo, 'ice')}` : '',
-    getText(companyInfo, 'phone', 'telephone', 'téléphone'),
-    getText(companyInfo, 'email'),
-  ].filter(Boolean)
-}
-
 function getLegalDetails(companyInfo) {
   const banking = [
     getText(companyInfo, 'banque', 'bank')
@@ -338,20 +341,6 @@ export default function DeliveryNotePdfDocument({ deliveryNote = {} }) {
     getText(deliveryNote, 'clientName') ||
     (typeof deliveryNote.client === 'string' ? deliveryNote.client.trim() : '') ||
     'Client non renseigné'
-  const clientDetails = [
-    getText(clientInfo, 'ice', 'identifiantFiscal')
-      ? `ICE : ${getText(clientInfo, 'ice', 'identifiantFiscal')}`
-      : '',
-    getText(clientInfo, 'telephone', 'téléphone', 'phone')
-      ? `Téléphone : ${getText(clientInfo, 'telephone', 'téléphone', 'phone')}`
-      : '',
-    getText(clientInfo, 'adresse', 'address'),
-  ].filter(Boolean)
-  const companyDetails = getCompanyDetails(companyInfo)
-  const legalDetails = getLegalDetails(companyInfo)
-  const items = getDeliveryNoteItems(deliveryNote)
-  const deliveryDate =
-    deliveryNote.dateLivraison || deliveryNote.deliveryDate || deliveryNote.date
   const reference = getText(
     deliveryNote,
     'referenceDocument',
@@ -369,6 +358,27 @@ export default function DeliveryNotePdfDocument({ deliveryNote = {} }) {
     'carrierReceiver',
     'receptionnaire',
   )
+  const clientDetails = [
+    getText(clientInfo, 'representant', 'représentant', 'representative', 'contactPerson')
+      ? `Représentant : ${getText(clientInfo, 'representant', 'représentant', 'representative', 'contactPerson')}`
+      : '',
+    getText(clientInfo, 'ice', 'identifiantFiscal')
+      ? `ICE : ${getText(clientInfo, 'ice', 'identifiantFiscal')}`
+      : '',
+    getText(clientInfo, 'telephone', 'téléphone', 'phone')
+      ? `Téléphone : ${getText(clientInfo, 'telephone', 'téléphone', 'phone')}`
+      : '',
+    getText(clientInfo, 'adresse', 'address')
+      ? `Adresse : ${getText(clientInfo, 'adresse', 'address')}`
+      : '',
+    deliveryLocation ? `Lieu : ${deliveryLocation}` : '',
+    carrierReceiver ? `Transporteur / Réceptionnaire : ${carrierReceiver}` : '',
+    reference ? `Référence : ${reference}` : '',
+  ].filter(Boolean)
+  const legalDetails = getLegalDetails(companyInfo)
+  const items = getDeliveryNoteItems(deliveryNote)
+  const deliveryDate =
+    deliveryNote.dateLivraison || deliveryNote.deliveryDate || deliveryNote.date
 
   return (
     <Document
@@ -376,145 +386,63 @@ export default function DeliveryNotePdfDocument({ deliveryNote = {} }) {
       subject={`Bon de livraison ${getDeliveryNoteNumber(deliveryNote)}`}
       title={`Bon de livraison ${getDeliveryNoteNumber(deliveryNote)}`}
     >
-      <Page size="A4" style={styles.page} wrap>
-        <View fixed style={styles.header}>
-          <View style={styles.headerIdentity}>
-            <View style={styles.logoFrame}>
-              <Image
-                src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
-                style={styles.logo}
-              />
-            </View>
-            <Text style={styles.documentTitle}>BON DE LIVRAISON</Text>
-          </View>
-          <View style={styles.companyBlock}>
-            <Text style={styles.companyName}>{companyName}</Text>
-            {companyDetails.map((detail) => (
-              <Text key={detail} style={styles.companyDetail}>
-                {detail}
+      <Page size="A4" style={pdfPageStyles.page} wrap>
+        <PdfDocumentHeader
+          companyInfo={companyInfo}
+          companyName={companyName}
+          documentTitle={`Bon de livraison ${getDeliveryNoteNumber(deliveryNote)}`}
+        />
+        <PdfClientSummary
+          clientName={clientName}
+          clientDetails={clientDetails}
+          metaRows={[
+            { label: 'DATE', value: formatDate(deliveryDate) },
+            { label: 'ÉCHÉANCE', value: '—' },
+            { label: 'STATUT', value: getText(deliveryNote, 'status', 'statut') || 'Brouillon' },
+          ]}
+        />
+        <View style={styles.tableWrap}>
+          <Text style={styles.tableSectionTitle}>DÉTAIL DES ARTICLES ET PRESTATIONS</Text>
+          <View style={styles.table}>
+            <View fixed style={styles.tableHeader}>
+              <Text style={[styles.headerCell, { width: '8%' }]}>#</Text>
+              <Text style={[styles.headerCell, { width: '70%' }]}>Désignation</Text>
+              <Text style={[styles.headerCell, { width: '22%', textAlign: 'right' }]}>
+                Qté
               </Text>
-            ))}
-          </View>
-        </View>
-
-        <View>
-          <View style={styles.clientDetails}>
-            <View style={styles.clientBlock}>
-              <Text style={styles.sectionLabel}>Livré à</Text>
-              <Text style={styles.clientName}>{clientName}</Text>
-              {clientDetails.map((detail) => (
-                <Text key={detail} style={styles.clientDetail}>
-                  {detail}
-                </Text>
-              ))}
             </View>
-            <View style={styles.deliveryInfo}>
-              <Text style={styles.sectionLabel}>Détails de livraison</Text>
-              <View style={styles.deliveryInfoRow}>
-                <Text style={styles.deliveryInfoLabel}>N° de bon</Text>
-                <Text style={styles.deliveryInfoValue}>
-                  {getDeliveryNoteNumber(deliveryNote)}
-                </Text>
+            {items.length === 0 ? (
+              <View style={styles.tableRow} wrap={false}>
+                <Text style={styles.emptyCell}>Aucun article renseigné.</Text>
               </View>
-              <View style={styles.deliveryInfoRow}>
-                <Text style={styles.deliveryInfoLabel}>Date de livraison</Text>
-                <Text style={styles.deliveryInfoValue}>{formatDate(deliveryDate)}</Text>
-              </View>
-              {reference && (
-                <View style={styles.deliveryInfoRow}>
-                  <Text style={styles.deliveryInfoLabel}>Référence commande</Text>
-                  <Text style={styles.deliveryInfoValue}>{reference}</Text>
+            ) : (
+              items.map((item, index) => (
+                <View
+                  key={`${item.designation}-${index}`}
+                  style={[styles.tableRow, index % 2 === 1 ? styles.alternateRow : null]}
+                  wrap={false}
+                >
+                  <Text style={[styles.cell, { width: '8%' }]}>{index + 1}</Text>
+                  <Text style={[styles.cell, { width: '70%' }]}>{item.designation}</Text>
+                  <Text style={[styles.cell, { width: '22%', textAlign: 'right' }]}>
+                    {formatQuantity(item.quantity)}
+                  </Text>
                 </View>
-              )}
-              <View style={styles.deliveryInfoRow}>
-                <Text style={styles.deliveryInfoLabel}>Lieu</Text>
-                <Text style={styles.deliveryInfoValue}>
-                  {deliveryLocation || 'Non renseigné'}
-                </Text>
-              </View>
-              <View style={styles.deliveryInfoRow}>
-                <Text style={styles.deliveryInfoLabel}>Transporteur / Réceptionnaire</Text>
-                <Text style={styles.deliveryInfoValue}>
-                  {carrierReceiver || 'Non renseigné'}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.tableWrap}>
-            <View style={styles.table}>
-              <View fixed style={styles.tableHeader}>
-                <Text style={[styles.headerCell, { width: '78%' }]}>Désignation</Text>
-                <Text style={[styles.headerCell, { width: '22%', textAlign: 'right' }]}>
-                  Quantité
-                </Text>
-              </View>
-              {items.length === 0 ? (
-                <View style={styles.tableRow} wrap={false}>
-                  <Text style={styles.emptyCell}>Aucun article renseigné.</Text>
-                </View>
-              ) : (
-                items.map((item, index) => (
-                  <View
-                    key={`${item.designation}-${index}`}
-                    style={[
-                      styles.tableRow,
-                      index % 2 === 1 ? styles.alternateRow : null,
-                    ]}
-                    wrap={false}
-                  >
-                    <Text style={[styles.cell, { width: '78%' }]}>{item.designation}</Text>
-                    <Text style={[styles.cell, { width: '22%', textAlign: 'right' }]}>
-                      {formatQuantity(item.quantity)}
-                    </Text>
-                  </View>
-                ))
-              )}
-            </View>
-          </View>
-
-          <View style={styles.tableWrap}>
-            <View style={styles.signatureBox} wrap={false}>
-              <Text style={styles.signatureTitle}>Accusé de réception</Text>
-              <Text style={styles.signatureHint}>
-                Nom, date, signature et cachet du client
-              </Text>
-              <View style={styles.signatureLine} />
-            </View>
+              ))
+            )}
           </View>
         </View>
-
-        <View fixed style={styles.footer}>
-          <View style={styles.footerColumn}>
-            {legalDetails.banking.map((detail) => (
-              <Text key={detail} style={styles.legalText}>
-                {detail}
-              </Text>
-            ))}
-          </View>
-          <View style={styles.footerColumn}>
-            {legalDetails.registrations.map((detail) => (
-              <Text key={detail} style={styles.legalText}>
-                {detail}
-              </Text>
-            ))}
-          </View>
-          <View style={styles.footerPageColumn}>
-            {legalDetails.legal.map((detail) => (
-              <Text key={detail} style={styles.legalText}>
-                {detail}
-              </Text>
-            ))}
-            <Text style={styles.legalText}>
-              Veuillez vérifier les quantités reçues et signaler toute réserve à la livraison.
-            </Text>
-            <Text
-              fixed
-              render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
-              style={styles.footerPage}
-            />
-          </View>
-        </View>
+        <PdfSignatures
+          clientLabel="LE CLIENT (Nom, date, signature et cachet)"
+          companyLabel="TGI ASCENSEURS (Signature et cachet)"
+          clientHint="Accusé de réception"
+          companyHint="Livraison conforme"
+        />
+        <PdfDocumentFooter
+          companyName={companyName}
+          companyInfo={companyInfo}
+          legalDetails={legalDetails}
+        />
       </Page>
     </Document>
   )

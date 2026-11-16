@@ -1,4 +1,12 @@
-import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import {
+  PdfClientSummary,
+  PdfDocumentFooter,
+  PdfDocumentHeader,
+  PdfSignatures,
+} from './PdfDocumentChrome.jsx'
+import PdfFinancialDetails from './PdfFinancialDetails.jsx'
+import { pdfPageStyles } from './PdfDocumentStyles.js'
 
 const NAVY = '#1E3A8A'
 const BORDER = '#E2E8F0'
@@ -130,19 +138,19 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   tableHeader: {
-    padding: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 5,
     flexDirection: 'row',
-    backgroundColor: NAVY,
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
+    backgroundColor: '#F1F5F9',
   },
   headerCell: {
-    color: '#FFFFFF',
-    fontSize: 9,
+    color: '#334155',
+    fontSize: 7,
     fontFamily: 'Helvetica-Bold',
   },
   tableRow: {
-    padding: 10,
+    paddingVertical: 7,
+    paddingHorizontal: 5,
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
@@ -152,7 +160,7 @@ const styles = StyleSheet.create({
   },
   cell: {
     color: '#1F2937',
-    fontSize: 10,
+    fontSize: 7.5,
   },
   emptyCell: {
     width: '100%',
@@ -349,34 +357,42 @@ function formatDate(value) {
     : '—'
 }
 
-function formatCurrency(value) {
-  return `${new Intl.NumberFormat('fr-MA', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(getNumber(value))} MAD`
-}
-
-function formatQuantity(value) {
-  return new Intl.NumberFormat('fr-MA', {
-    maximumFractionDigits: 3,
-  }).format(getNumber(value))
-}
-
 function normalizeTaxRate(value) {
   return getNumber(String(value ?? 0).replace('%', '').trim())
+}
+
+function getDiscountAmount(item, grossHT) {
+  const rawDiscount =
+    item.discountAmount ??
+    item.remiseMontant ??
+    item.discount ??
+    item.remise
+  if (rawDiscount === undefined || rawDiscount === null || rawDiscount === '') {
+    return undefined
+  }
+  if (typeof rawDiscount === 'string' && rawDiscount.trim().endsWith('%')) {
+    const percentage = getNumber(rawDiscount.trim().slice(0, -1))
+    return Math.min(grossHT, Math.max(0, grossHT * (percentage / 100)))
+  }
+  return Math.min(grossHT, Math.max(0, getNumber(rawDiscount)))
 }
 
 function getItems(invoice) {
   return (Array.isArray(invoice?.items) ? invoice.items : []).map((item) => {
     const quantity = getNumber(item.quantity ?? item.quantite)
     const unitPrice = getNumber(item.unitPrice ?? item.prixUnitaire ?? item.puHT)
+    const grossHT = Math.max(0, quantity * unitPrice)
+    const explicitDiscount = getDiscountAmount(item, grossHT)
+    const defaultTotalHT = Math.max(0, grossHT - (explicitDiscount || 0))
     const taxRate = normalizeTaxRate(item.taxRate ?? item.tauxTVA ?? item.tva)
-    const totalHT = getNumber(item.totalHT ?? item.totalHt, quantity * unitPrice)
+    const totalHT = getNumber(item.totalHT ?? item.totalHt, defaultTotalHT)
 
     return {
       designation: getText(item, 'designation', 'description') || '—',
       quantity,
       unitPrice,
+      grossHT,
+      discount: explicitDiscount ?? Math.max(0, grossHT - totalHT),
       totalHT,
       taxRate,
     }
@@ -392,9 +408,10 @@ function getTotals(invoice, items) {
     )
     return {
       totalHT: totals.totalHT + item.totalHT,
+      grossHT: totals.grossHT + item.grossHT,
       totalTVA: totals.totalTVA + totalTVA,
     }
-  }, { totalHT: 0, totalTVA: 0 })
+  }, { totalHT: 0, grossHT: 0, totalTVA: 0 })
   const totalHT = getNumber(invoice.totalHT ?? invoice.totaux?.totalHT, computed.totalHT)
   const totalTVA = getNumber(
     invoice.totalTVA ?? invoice.totaux?.totalTVA ?? invoice.totaux?.totalTva,
@@ -412,6 +429,8 @@ function getTotals(invoice, items) {
     totalTTC,
     amountPaid,
     remaining: Math.max(0, totalTTC - amountPaid),
+    grossHT: computed.grossHT,
+    discount: Math.max(0, computed.grossHT - totalHT),
   }
 }
 
@@ -431,16 +450,6 @@ function getVatLabel(invoice, items, totalHT, totalTVA) {
     }).format((totalTVA / totalHT) * 100)} %)`
   }
   return 'TVA'
-}
-
-function getCompanyDetails(companyInfo) {
-  return [
-    getText(companyInfo, 'address', 'adresse'),
-    getText(companyInfo, 'rc') ? `RC : ${getText(companyInfo, 'rc')}` : '',
-    getText(companyInfo, 'ice') ? `ICE : ${getText(companyInfo, 'ice')}` : '',
-    getText(companyInfo, 'phone', 'telephone', 'téléphone'),
-    getText(companyInfo, 'email'),
-  ].filter(Boolean)
 }
 
 function getLegalDetails(companyInfo, invoice) {
@@ -493,15 +502,22 @@ export default function InvoicePdfDocument({ invoice = {} }) {
     getText(invoice, 'clientName') ||
     'Client non renseigné'
   const clientDetails = [
+    getText(clientInfo, 'representant', 'représentant', 'representative', 'contactPerson')
+      ? `Représentant : ${getText(clientInfo, 'representant', 'représentant', 'representative', 'contactPerson')}`
+      : '',
     getText(clientInfo, 'ice', 'identifiantFiscal')
       ? `ICE : ${getText(clientInfo, 'ice', 'identifiantFiscal')}`
       : '',
     getText(clientInfo, 'telephone', 'téléphone', 'phone')
       ? `Téléphone : ${getText(clientInfo, 'telephone', 'téléphone', 'phone')}`
       : '',
-    getText(clientInfo, 'adresse', 'address'),
+    getText(clientInfo, 'adresse', 'address')
+      ? `Adresse : ${getText(clientInfo, 'adresse', 'address')}`
+      : '',
+    getText(invoice, 'delai', 'delaiLivraison', 'deliveryDelay')
+      ? `Délai : ${getText(invoice, 'delai', 'delaiLivraison', 'deliveryDelay')}`
+      : '',
   ].filter(Boolean)
-  const companyDetails = getCompanyDetails(companyInfo)
   const legalDetails = getLegalDetails(companyInfo, invoice)
   const invoiceDate = invoice.dateFacture || invoice.dateEmission || invoice.date
   const dueDate = invoice.dateEcheance || invoice.dueDate
@@ -521,187 +537,66 @@ export default function InvoicePdfDocument({ invoice = {} }) {
       subject={`Facture ${getInvoiceNumber(invoice)}`}
       title={`Facture ${getInvoiceNumber(invoice)}`}
     >
-      <Page size="A4" style={styles.page} wrap>
-        <View fixed style={styles.header}>
-          <View style={styles.headerIdentity}>
-            <View style={styles.logoFrame}>
-              <Image
-                src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
-                style={styles.logo}
-              />
-            </View>
-            <Text style={styles.documentTitle}>FACTURE</Text>
+      <Page size="A4" style={pdfPageStyles.page} wrap>
+        <PdfDocumentHeader
+          companyInfo={companyInfo}
+          companyName={companyName}
+          documentTitle={`Facture ${getInvoiceNumber(invoice)}`}
+        />
+        <PdfClientSummary
+          clientName={clientName}
+          clientDetails={clientDetails}
+          metaRows={[
+            { label: 'DATE', value: formatDate(invoiceDate) },
+            { label: 'ÉCHÉANCE', value: formatDate(dueDate) },
+            {
+              label: 'STATUT',
+              value: getText(invoice, 'status', 'statut', 'workflowStatus') || 'Brouillon',
+            },
+          ]}
+        />
+        <PdfFinancialDetails
+          items={items}
+          totals={totals}
+          vatLabel={vatLabel}
+          includePaymentBalance
+        />
+
+        <View style={styles.documentConditions}>
+          <Text style={styles.conditionsHeading}>Conditions commerciales</Text>
+          <View style={styles.conditionRow}>
+            <Text style={styles.conditionLabel}>Conditions de règlement</Text>
+            <Text style={styles.conditionValue}>{paymentTerms || 'Non renseignées'}</Text>
           </View>
-          <View style={styles.companyBlock}>
-            <Text style={styles.companyName}>{companyName}</Text>
-            {companyDetails.map((detail) => (
-              <Text key={detail} style={styles.companyDetail}>
-                {detail}
-              </Text>
-            ))}
+          <View style={styles.conditionRow}>
+            <Text style={styles.conditionLabel}>Mode de paiement</Text>
+            <Text style={styles.conditionValue}>{paymentMethod || 'Non renseigné'}</Text>
+          </View>
+          <View style={styles.conditionRow}>
+            <Text style={styles.conditionLabel}>Conditions particulières</Text>
+            <Text style={styles.conditionValue}>{specialConditions || 'Aucune'}</Text>
           </View>
         </View>
 
-        <View>
-          <View style={styles.clientDetails}>
-            <View style={styles.clientBlock}>
-              <Text style={styles.sectionLabel}>Facturé à :</Text>
-              <Text style={styles.clientName}>{clientName}</Text>
-              {clientDetails.map((detail) => (
-                <Text key={detail} style={styles.clientDetail}>
-                  {detail}
-                </Text>
-              ))}
-            </View>
-            <View style={styles.invoiceInfo}>
-              <View style={styles.invoiceInfoRow}>
-                <Text style={styles.invoiceInfoLabel}>Date de la facture</Text>
-                <Text style={styles.invoiceInfoValue}>{formatDate(invoiceDate)}</Text>
-              </View>
-              <View style={styles.invoiceInfoRow}>
-                <Text style={styles.invoiceInfoLabel}>N° de facture</Text>
-                <Text style={styles.invoiceInfoValue}>{getInvoiceNumber(invoice)}</Text>
-              </View>
-              <View style={styles.invoiceInfoRow}>
-                <Text style={styles.invoiceInfoLabel}>Date d’échéance</Text>
-                <Text style={styles.invoiceInfoValue}>{formatDate(dueDate)}</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.tableWrap}>
-            <View style={styles.table}>
-              <View fixed style={styles.tableHeader}>
-                <Text style={[styles.headerCell, { width: '43%' }]}>Désignation</Text>
-                <Text style={[styles.headerCell, { width: '12%', textAlign: 'right' }]}>
-                  Qté
-                </Text>
-                <Text style={[styles.headerCell, { width: '22%', textAlign: 'right' }]}>
-                  Prix unitaire HT
-                </Text>
-                <Text style={[styles.headerCell, { width: '23%', textAlign: 'right' }]}>
-                  Total HT
-                </Text>
-              </View>
-              {items.length === 0 ? (
-                <View style={styles.tableRow} wrap={false}>
-                  <Text style={styles.emptyCell}>Aucun article renseigné.</Text>
-                </View>
-              ) : (
-                items.map((item, index) => (
-                  <View
-                    key={`${item.designation}-${index}`}
-                    style={[
-                      styles.tableRow,
-                      index % 2 === 1 ? styles.alternateRow : null,
-                    ]}
-                    wrap={false}
-                  >
-                    <Text style={[styles.cell, { width: '43%' }]}>{item.designation}</Text>
-                    <Text style={[styles.cell, { width: '12%', textAlign: 'right' }]}>
-                      {formatQuantity(item.quantity)}
-                    </Text>
-                    <Text style={[styles.cell, { width: '22%', textAlign: 'right' }]}>
-                      {formatCurrency(item.unitPrice)}
-                    </Text>
-                    <Text style={[styles.cell, { width: '23%', textAlign: 'right' }]}>
-                      {formatCurrency(item.totalHT)}
-                    </Text>
-                  </View>
-                ))
-              )}
-            </View>
-          </View>
-
-          <View style={[styles.tableWrap, styles.closingSection]}>
-            <View style={styles.signatureBox} wrap={false}>
-              <Text style={styles.signatureTitle}>Bon pour accord et signature</Text>
-              <Text style={styles.signatureHint}>
-                Nom, date, signature et cachet du client
+        {(invoice.referenceDevis || invoice.notes) && (
+          <View style={[styles.tableWrap, styles.notes]}>
+            {invoice.referenceDevis && (
+              <Text style={styles.legalText}>
+                Référence du devis : {String(invoice.referenceDevis)}
               </Text>
-              <View style={styles.signatureLine} />
-            </View>
-
-            <View style={styles.totals} wrap={false}>
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Sous-total HT</Text>
-                <Text style={styles.totalValue}>{formatCurrency(totals.totalHT)}</Text>
-              </View>
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>{vatLabel}</Text>
-                <Text style={styles.totalValue}>{formatCurrency(totals.totalTVA)}</Text>
-              </View>
-              <View style={styles.grandTotal}>
-                <Text style={styles.grandTotalLabel}>TOTAL TTC</Text>
-                <Text style={styles.grandTotalValue}>{formatCurrency(totals.totalTTC)}</Text>
-              </View>
-              <View style={[styles.totalRow, styles.balanceRow]}>
-                <Text style={styles.totalLabel}>Montant payé</Text>
-                <Text style={styles.totalValue}>{formatCurrency(totals.amountPaid)}</Text>
-              </View>
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Reste à payer</Text>
-                <Text style={styles.totalValue}>{formatCurrency(totals.remaining)}</Text>
-              </View>
-            </View>
+            )}
+            {invoice.notes && <Text style={styles.legalText}>{String(invoice.notes)}</Text>}
           </View>
-
-          <View style={[styles.tableWrap, styles.documentConditions]}>
-            <Text style={styles.conditionsHeading}>Conditions commerciales</Text>
-            <View style={styles.conditionRow}>
-              <Text style={styles.conditionLabel}>Conditions de règlement</Text>
-              <Text style={styles.conditionValue}>{paymentTerms || 'Non renseignées'}</Text>
-            </View>
-            <View style={styles.conditionRow}>
-              <Text style={styles.conditionLabel}>Mode de paiement</Text>
-              <Text style={styles.conditionValue}>{paymentMethod || 'Non renseigné'}</Text>
-            </View>
-            <View style={styles.conditionRow}>
-              <Text style={styles.conditionLabel}>Conditions particulières</Text>
-              <Text style={styles.conditionValue}>{specialConditions || 'Aucune'}</Text>
-            </View>
-          </View>
-
-          {(invoice.referenceDevis || invoice.notes) && (
-            <View style={[styles.tableWrap, styles.notes]}>
-              {invoice.referenceDevis && (
-                <Text style={styles.legalText}>
-                  Référence du devis : {String(invoice.referenceDevis)}
-                </Text>
-              )}
-              {invoice.notes && <Text style={styles.legalText}>{String(invoice.notes)}</Text>}
-            </View>
-          )}
-        </View>
-
-        <View fixed style={styles.footer}>
-          <View style={styles.footerColumn}>
-            {legalDetails.banking.map((detail) => (
-              <Text key={detail} style={styles.legalText}>
-                {detail}
-              </Text>
-            ))}
-          </View>
-          <View style={styles.footerColumn}>
-            {legalDetails.registrations.map((detail) => (
-              <Text key={detail} style={styles.legalText}>
-                {detail}
-              </Text>
-            ))}
-          </View>
-          <View style={[styles.footerColumn, { alignItems: 'flex-end' }]}>
-            {legalDetails.legal.map((detail) => (
-              <Text key={detail} style={styles.legalText}>
-                {detail}
-              </Text>
-            ))}
-            <Text
-              fixed
-              render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
-              style={styles.footerPage}
-            />
-          </View>
-        </View>
+        )}
+        <PdfSignatures
+          clientHint="Nom, date, signature et cachet du client"
+          companyHint="Signature et cachet"
+        />
+        <PdfDocumentFooter
+          companyName={companyName}
+          companyInfo={companyInfo}
+          legalDetails={legalDetails}
+        />
       </Page>
     </Document>
   )

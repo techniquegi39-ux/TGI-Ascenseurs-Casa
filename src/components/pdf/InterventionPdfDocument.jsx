@@ -1,4 +1,11 @@
-import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import {
+  PdfClientSummary,
+  PdfDocumentFooter,
+  PdfDocumentHeader,
+  PdfSignatures,
+} from './PdfDocumentChrome.jsx'
+import { pdfPageStyles } from './PdfDocumentStyles.js'
 
 const NAVY = '#1E3A8A'
 const BORDER = '#E2E8F0'
@@ -181,19 +188,19 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   tableHeader: {
-    padding: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 5,
     flexDirection: 'row',
-    backgroundColor: NAVY,
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
+    backgroundColor: '#F1F5F9',
   },
   headerCell: {
-    color: '#FFFFFF',
-    fontSize: 9,
+    color: '#334155',
+    fontSize: 8,
     fontFamily: 'Helvetica-Bold',
   },
   tableRow: {
-    padding: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 5,
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
@@ -203,7 +210,13 @@ const styles = StyleSheet.create({
   },
   cell: {
     color: '#334155',
+    fontSize: 9,
+  },
+  tableSectionTitle: {
+    marginBottom: 8,
+    color: '#0F172A',
     fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
   },
   signatures: {
     marginTop: 18,
@@ -316,16 +329,6 @@ function getInterventionNumber(intervention) {
       ? `INT-${String(intervention.id).slice(0, 7).toUpperCase()}`
       : 'Sans numéro')
   )
-}
-
-function getCompanyDetails(companyInfo) {
-  return [
-    getText(companyInfo, 'address', 'adresse'),
-    getText(companyInfo, 'rc') ? `RC : ${getText(companyInfo, 'rc')}` : '',
-    getText(companyInfo, 'ice') ? `ICE : ${getText(companyInfo, 'ice')}` : '',
-    getText(companyInfo, 'phone', 'telephone', 'téléphone'),
-    getText(companyInfo, 'email'),
-  ].filter(Boolean)
 }
 
 function getLegalDetails(companyInfo) {
@@ -474,6 +477,13 @@ export default function InterventionPdfDocument({ intervention = {} }) {
   const clientAddress =
     getText(clientInfo, 'adresse', 'address') ||
     getText(intervention, 'clientAddress', 'adresseClient')
+  const clientRepresentative = getText(
+    clientInfo,
+    'representant',
+    'représentant',
+    'representative',
+    'contactPerson',
+  )
   const equipmentType =
     getText(equipmentInfo, 'type', 'equipmentType') ||
     getText(intervention, 'elevatorType', 'equipmentType') ||
@@ -522,8 +532,12 @@ export default function InterventionPdfDocument({ intervention = {} }) {
   )
   const parts = getParts(intervention)
   const maintenanceChecklist = getMaintenanceChecklist(intervention)
-  const companyDetails = getCompanyDetails(companyInfo)
   const legalDetails = getLegalDetails(companyInfo)
+  const clientDetails = [
+    clientRepresentative ? `Représentant : ${clientRepresentative}` : '',
+    clientPhone ? `Téléphone : ${clientPhone}` : '',
+    clientAddress ? `Adresse : ${clientAddress}` : '',
+  ].filter(Boolean)
 
   return (
     <Document
@@ -531,36 +545,24 @@ export default function InterventionPdfDocument({ intervention = {} }) {
       subject={`Fiche d’intervention ${getInterventionNumber(intervention)}`}
       title={`Fiche d’intervention ${getInterventionNumber(intervention)}`}
     >
-      <Page size="A4" style={styles.page} wrap>
-        <View fixed style={styles.header}>
-          <View style={styles.headerIdentity}>
-            <View style={styles.logoFrame}>
-              <Image
-                src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
-                style={styles.logo}
-              />
-            </View>
-            <Text style={styles.documentTitle}>FICHE D’INTERVENTION</Text>
-          </View>
-          <View style={styles.companyBlock}>
-            <Text style={styles.companyName}>{companyName}</Text>
-            {companyDetails.map((detail) => (
-              <Text key={detail} style={styles.companyDetail}>
-                {detail}
-              </Text>
-            ))}
-          </View>
-        </View>
-
+      <Page size="A4" style={pdfPageStyles.page} wrap>
+        <PdfDocumentHeader
+          companyInfo={companyInfo}
+          companyName={companyName}
+          documentTitle={`Fiche d’intervention ${getInterventionNumber(intervention)}`}
+        />
+        <PdfClientSummary
+          clientName={clientName}
+          clientDetails={clientDetails}
+          metaRows={[
+            { label: 'DATE', value: formatDateTime(interventionDate) },
+            { label: 'ÉCHÉANCE', value: '—' },
+            { label: 'STATUT', value: getText(intervention, 'status', 'statut') || '—' },
+          ]}
+        />
         <View>
           <View style={styles.infoGrid}>
-            <View style={styles.infoCard} wrap={false}>
-              <Text style={styles.sectionLabel}>Client</Text>
-              <Text style={styles.infoCardTitle}>{clientName}</Text>
-              {clientPhone && <Text style={styles.infoText}>Tél. : {clientPhone}</Text>}
-              {clientAddress && <Text style={styles.infoText}>{clientAddress}</Text>}
-            </View>
-            <View style={styles.infoCard} wrap={false}>
+            <View style={[styles.infoCard, { width: '100%' }]} wrap={false}>
               <Text style={styles.sectionLabel}>Équipement concerné</Text>
               <Text style={styles.infoCardTitle}>{equipmentType}</Text>
               {equipmentReference && (
@@ -642,12 +644,13 @@ export default function InterventionPdfDocument({ intervention = {} }) {
 
           {parts.length > 0 && (
             <View style={styles.tableSection}>
-              <Text style={styles.sectionLabel}>Pièces de rechange</Text>
+              <Text style={styles.tableSectionTitle}>DÉTAIL DES ARTICLES ET PRESTATIONS</Text>
               <View style={styles.table}>
                 <View fixed style={styles.tableHeader}>
-                  <Text style={[styles.headerCell, { width: '76%' }]}>Désignation</Text>
-                  <Text style={[styles.headerCell, { width: '24%', textAlign: 'right' }]}>
-                    Quantité
+                  <Text style={[styles.headerCell, { width: '8%' }]}>#</Text>
+                  <Text style={[styles.headerCell, { width: '70%' }]}>Désignation</Text>
+                  <Text style={[styles.headerCell, { width: '22%', textAlign: 'right' }]}>
+                    Qté
                   </Text>
                 </View>
                 {parts.map((part, index) => (
@@ -659,8 +662,9 @@ export default function InterventionPdfDocument({ intervention = {} }) {
                     ]}
                     wrap={false}
                   >
-                    <Text style={[styles.cell, { width: '76%' }]}>{part.designation}</Text>
-                    <Text style={[styles.cell, { width: '24%', textAlign: 'right' }]}>
+                    <Text style={[styles.cell, { width: '8%' }]}>{index + 1}</Text>
+                    <Text style={[styles.cell, { width: '70%' }]}>{part.designation}</Text>
+                    <Text style={[styles.cell, { width: '22%', textAlign: 'right' }]}>
                       {formatQuantity(part.quantity)}
                     </Text>
                   </View>
@@ -669,50 +673,19 @@ export default function InterventionPdfDocument({ intervention = {} }) {
             </View>
           )}
 
-          <View style={styles.signatures} wrap={false}>
-            <View style={styles.signatureBox}>
-              <Text style={styles.signatureTitle}>Signature du Technicien</Text>
-              <View style={styles.signatureLine} />
-            </View>
-            <View style={styles.signatureBox}>
-              <Text style={styles.signatureTitle}>Signature du Client</Text>
-              <Text style={styles.signatureHint}>Bon pour accord</Text>
-              <View style={styles.signatureLine} />
-            </View>
-          </View>
+          <PdfSignatures
+            clientLabel="LE CLIENT (Nom, date, signature et cachet)"
+            companyLabel="TGI ASCENSEURS (Signature et cachet)"
+            clientHint="Bon pour accord"
+            companyHint="Signature du technicien"
+          />
         </View>
 
-        <View fixed style={styles.footer}>
-          <View style={styles.footerColumn}>
-            {legalDetails.banking.map((detail) => (
-              <Text key={detail} style={styles.legalText}>
-                {detail}
-              </Text>
-            ))}
-          </View>
-          <View style={styles.footerColumn}>
-            {legalDetails.registrations.map((detail) => (
-              <Text key={detail} style={styles.legalText}>
-                {detail}
-              </Text>
-            ))}
-          </View>
-          <View style={styles.footerPageColumn}>
-            {legalDetails.legal.map((detail) => (
-              <Text key={detail} style={styles.legalText}>
-                {detail}
-              </Text>
-            ))}
-            <Text style={styles.legalText}>
-              TGI Ascenseurs Casa · Rapport d’intervention destiné au suivi technique.
-            </Text>
-            <Text
-              fixed
-              render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
-              style={styles.footerPage}
-            />
-          </View>
-        </View>
+        <PdfDocumentFooter
+          companyName={companyName}
+          companyInfo={companyInfo}
+          legalDetails={legalDetails}
+        />
       </Page>
     </Document>
   )

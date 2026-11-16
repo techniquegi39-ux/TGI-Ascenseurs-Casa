@@ -1,4 +1,12 @@
-import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import {
+  PdfClientSummary,
+  PdfDocumentFooter,
+  PdfDocumentHeader,
+  PdfSignatures,
+} from './PdfDocumentChrome.jsx'
+import PdfFinancialDetails from './PdfFinancialDetails.jsx'
+import { pdfPageStyles } from './PdfDocumentStyles.js'
 
 const NAVY = '#1E3A8A'
 const BORDER = '#E2E8F0'
@@ -128,19 +136,19 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: NAVY,
+    backgroundColor: '#F1F5F9',
   },
   headerCell: {
-    padding: 10,
-    color: '#FFFFFF',
-    fontSize: 9,
+    paddingVertical: 8,
+    paddingHorizontal: 5,
+    color: '#334155',
+    fontSize: 7,
     fontFamily: 'Helvetica-Bold',
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
   },
   tableRow: {
     flexDirection: 'row',
-    padding: 10,
+    paddingVertical: 7,
+    paddingHorizontal: 5,
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
@@ -149,7 +157,7 @@ const styles = StyleSheet.create({
   },
   cell: {
     color: '#334155',
-    fontSize: 10,
+    fontSize: 7.5,
   },
   emptyCell: {
     width: '100%',
@@ -349,29 +357,35 @@ function formatDate(value) {
     : '—'
 }
 
-function formatCurrency(value) {
-  return `${new Intl.NumberFormat('fr-MA', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(getNumber(value))} MAD`
-}
-
-function formatQuantity(value) {
-  return new Intl.NumberFormat('fr-MA', {
-    maximumFractionDigits: 3,
-  }).format(getNumber(value))
-}
-
 function normalizeTaxRate(value) {
   return getNumber(String(value ?? 0).replace('%', '').trim())
+}
+
+function getDiscountAmount(item, grossHT) {
+  const rawDiscount =
+    item.discountAmount ??
+    item.remiseMontant ??
+    item.discount ??
+    item.remise
+  if (rawDiscount === undefined || rawDiscount === null || rawDiscount === '') {
+    return undefined
+  }
+  if (typeof rawDiscount === 'string' && rawDiscount.trim().endsWith('%')) {
+    const percentage = getNumber(rawDiscount.trim().slice(0, -1))
+    return Math.min(grossHT, Math.max(0, grossHT * (percentage / 100)))
+  }
+  return Math.min(grossHT, Math.max(0, getNumber(rawDiscount)))
 }
 
 function getItems(quote) {
   return (Array.isArray(quote?.items) ? quote.items : []).map((item) => {
     const quantity = getNumber(item.quantity ?? item.quantite)
     const unitPrice = getNumber(item.unitPrice ?? item.prixUnitaire ?? item.puHT)
+    const grossHT = Math.max(0, quantity * unitPrice)
+    const explicitDiscount = getDiscountAmount(item, grossHT)
+    const defaultTotalHT = Math.max(0, grossHT - (explicitDiscount || 0))
     const taxRate = normalizeTaxRate(item.taxRate ?? item.tauxTVA ?? item.tva)
-    const totalHT = getNumber(item.totalHT ?? item.totalHt, quantity * unitPrice)
+    const totalHT = getNumber(item.totalHT ?? item.totalHt, defaultTotalHT)
     const totalTVA = getNumber(
       item.totalTVA ?? item.totalTva,
       totalHT * (taxRate / 100),
@@ -381,6 +395,8 @@ function getItems(quote) {
       designation: getText(item, 'designation', 'description') || '—',
       quantity,
       unitPrice,
+      grossHT,
+      discount: explicitDiscount ?? Math.max(0, grossHT - totalHT),
       totalHT,
       totalTVA,
       taxRate,
@@ -392,9 +408,10 @@ function getTotals(quote, items) {
   const computed = items.reduce(
     (totals, item) => ({
       totalHT: totals.totalHT + item.totalHT,
+      grossHT: totals.grossHT + item.grossHT,
       totalTVA: totals.totalTVA + item.totalTVA,
     }),
-    { totalHT: 0, totalTVA: 0 },
+    { totalHT: 0, grossHT: 0, totalTVA: 0 },
   )
   const totalHT = getNumber(quote.totalHT ?? quote.totaux?.totalHT, computed.totalHT)
   const totalTVA = getNumber(
@@ -405,7 +422,13 @@ function getTotals(quote, items) {
     quote.totalTTC ?? quote.totaux?.totalTTC ?? quote.totaux?.totalTtc,
     totalHT + totalTVA,
   )
-  return { totalHT, totalTVA, totalTTC }
+  return {
+    totalHT,
+    totalTVA,
+    totalTTC,
+    grossHT: computed.grossHT,
+    discount: Math.max(0, computed.grossHT - totalHT),
+  }
 }
 
 function getVatLabel(quote, items, totalHT, totalTVA) {
@@ -424,16 +447,6 @@ function getVatLabel(quote, items, totalHT, totalTVA) {
     }).format((totalTVA / totalHT) * 100)} %)`
   }
   return 'TVA'
-}
-
-function getCompanyDetails(companyInfo) {
-  return [
-    getText(companyInfo, 'address', 'adresse'),
-    getText(companyInfo, 'rc') ? `RC : ${getText(companyInfo, 'rc')}` : '',
-    getText(companyInfo, 'ice') ? `ICE : ${getText(companyInfo, 'ice')}` : '',
-    getText(companyInfo, 'phone', 'telephone', 'téléphone'),
-    getText(companyInfo, 'email'),
-  ].filter(Boolean)
 }
 
 function getLegalDetails(companyInfo) {
@@ -484,15 +497,22 @@ export default function QuotePdfDocument({ quote = {} }) {
     getText(quote, 'clientName') ||
     'Client non renseigné'
   const clientDetails = [
+    getText(clientInfo, 'representant', 'représentant', 'representative', 'contactPerson')
+      ? `Représentant : ${getText(clientInfo, 'representant', 'représentant', 'representative', 'contactPerson')}`
+      : '',
     getText(clientInfo, 'ice', 'identifiantFiscal')
       ? `ICE : ${getText(clientInfo, 'ice', 'identifiantFiscal')}`
       : '',
     getText(clientInfo, 'telephone', 'téléphone', 'phone')
       ? `Téléphone : ${getText(clientInfo, 'telephone', 'téléphone', 'phone')}`
       : '',
-    getText(clientInfo, 'adresse', 'address'),
+    getText(clientInfo, 'adresse', 'address')
+      ? `Adresse : ${getText(clientInfo, 'adresse', 'address')}`
+      : '',
+    getText(quote, 'delai', 'delaiLivraison', 'deliveryDelay')
+      ? `Délai : ${getText(quote, 'delai', 'delaiLivraison', 'deliveryDelay')}`
+      : '',
   ].filter(Boolean)
-  const companyDetails = getCompanyDetails(companyInfo)
   const legalDetails = getLegalDetails(companyInfo)
   const issueDate = quote.dateEmission || quote.date
   const validityDate = quote.dateValidite || quote.validUntil || quote.validityDate
@@ -507,123 +527,24 @@ export default function QuotePdfDocument({ quote = {} }) {
       subject={`Devis ${getQuoteNumber(quote)}`}
       title={`Devis ${getQuoteNumber(quote)}`}
     >
-      <Page size="A4" style={styles.page} wrap>
-        <View fixed style={styles.header}>
-          <View style={styles.headerIdentity}>
-            <View style={styles.logoFrame}>
-              <Image
-                src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
-                style={styles.logo}
-              />
-            </View>
-            <Text style={styles.documentTitle}>DEVIS</Text>
-          </View>
-          <View style={styles.companyBlock}>
-            <Text style={styles.companyName}>{companyName}</Text>
-            {companyDetails.map((detail) => (
-              <Text key={detail} style={styles.companyDetail}>
-                {detail}
-              </Text>
-            ))}
-          </View>
-        </View>
+      <Page size="A4" style={pdfPageStyles.page} wrap>
+        <PdfDocumentHeader
+          companyInfo={companyInfo}
+          companyName={companyName}
+          documentTitle={`Devis ${getQuoteNumber(quote)}`}
+        />
+        <PdfClientSummary
+          clientName={clientName}
+          clientDetails={clientDetails}
+          metaRows={[
+            { label: 'DATE', value: formatDate(issueDate) },
+            { label: 'ÉCHÉANCE', value: formatDate(validityDate) },
+            { label: 'STATUT', value: getText(quote, 'status', 'statut') || 'Brouillon' },
+          ]}
+        />
+        <PdfFinancialDetails items={items} totals={totals} vatLabel={vatLabel} />
 
-        <View>
-          <View style={styles.clientDetails}>
-            <View style={styles.clientBlock}>
-              <Text style={styles.title}>Proposé à :</Text>
-              <Text style={styles.clientName}>{clientName}</Text>
-              {clientDetails.map((detail) => (
-                <Text key={detail} style={styles.clientDetail}>
-                  {detail}
-                </Text>
-              ))}
-            </View>
-            <View style={styles.quoteInfo}>
-              <View style={styles.quoteInfoRow}>
-                <Text style={styles.quoteInfoLabel}>N° de devis</Text>
-                <Text style={styles.quoteInfoValue}>{getQuoteNumber(quote)}</Text>
-              </View>
-              <View style={styles.quoteInfoRow}>
-                <Text style={styles.quoteInfoLabel}>Date d’émission</Text>
-                <Text style={styles.quoteInfoValue}>{formatDate(issueDate)}</Text>
-              </View>
-              <View style={styles.quoteInfoRow}>
-                <Text style={styles.quoteInfoLabel}>Date de validité</Text>
-                <Text style={styles.quoteInfoValue}>{formatDate(validityDate)}</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.tableWrap}>
-            <View style={styles.table}>
-              <View fixed style={styles.tableHeader}>
-                <Text style={[styles.headerCell, { width: '43%' }]}>Désignation</Text>
-                <Text style={[styles.headerCell, { width: '12%', textAlign: 'right' }]}>
-                  Qté
-                </Text>
-                <Text style={[styles.headerCell, { width: '22%', textAlign: 'right' }]}>
-                  Prix unitaire HT
-                </Text>
-                <Text style={[styles.headerCell, { width: '23%', textAlign: 'right' }]}>
-                  Total HT
-                </Text>
-              </View>
-              {items.length === 0 ? (
-                <View style={styles.tableRow} wrap={false}>
-                  <Text style={styles.emptyCell}>Aucun article renseigné.</Text>
-                </View>
-              ) : (
-                items.map((item, index) => (
-                  <View
-                    key={`${item.designation}-${index}`}
-                    style={[
-                      styles.tableRow,
-                      index % 2 === 1 ? styles.alternateRow : null,
-                    ]}
-                    wrap={false}
-                  >
-                    <Text style={[styles.cell, { width: '43%' }]}>{item.designation}</Text>
-                    <Text style={[styles.cell, { width: '12%', textAlign: 'right' }]}>
-                      {formatQuantity(item.quantity)}
-                    </Text>
-                    <Text style={[styles.cell, { width: '22%', textAlign: 'right' }]}>
-                      {formatCurrency(item.unitPrice)}
-                    </Text>
-                    <Text style={[styles.cell, { width: '23%', textAlign: 'right' }]}>
-                      {formatCurrency(item.totalHT)}
-                    </Text>
-                  </View>
-                ))
-              )}
-            </View>
-          </View>
-
-          <View style={[styles.tableWrap, styles.afterTable]}>
-            <View style={styles.signatureBox} wrap={false}>
-              <Text style={styles.signatureTitle}>Bon pour accord</Text>
-              <Text style={styles.signatureHint}>
-                Nom, date, signature et cachet du client
-              </Text>
-              <View style={styles.signatureLine} />
-            </View>
-            <View style={styles.totals} wrap={false}>
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Total HT</Text>
-                <Text style={styles.totalValue}>{formatCurrency(totals.totalHT)}</Text>
-              </View>
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>{vatLabel}</Text>
-                <Text style={styles.totalValue}>{formatCurrency(totals.totalTVA)}</Text>
-              </View>
-              <View style={styles.grandTotal}>
-                <Text style={styles.grandTotalLabel}>TOTAL TTC</Text>
-                <Text style={styles.grandTotalValue}>{formatCurrency(totals.totalTTC)}</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={[styles.tableWrap, styles.documentConditions]}>
+        <View style={styles.documentConditions}>
             <Text style={styles.conditionsHeading}>Conditions commerciales</Text>
             <View style={styles.conditionRow}>
               <Text style={styles.conditionLabel}>Conditions de règlement</Text>
@@ -647,40 +568,12 @@ export default function QuotePdfDocument({ quote = {} }) {
               {quote.notes && <Text style={styles.note}>{String(quote.notes)}</Text>}
             </View>
           )}
-        </View>
-
-        <View fixed style={styles.footer}>
-          <View style={styles.footerColumn}>
-            {legalDetails.banking.map((detail) => (
-              <Text key={detail} style={styles.legalText}>
-                {detail}
-              </Text>
-            ))}
-          </View>
-          <View style={styles.footerColumn}>
-            {legalDetails.registrations.map((detail) => (
-              <Text key={detail} style={styles.legalText}>
-                {detail}
-              </Text>
-            ))}
-          </View>
-          <View style={styles.footerPageColumn}>
-            {legalDetails.legal.map((detail) => (
-              <Text key={detail} style={styles.legalText}>
-                {detail}
-              </Text>
-            ))}
-            <Text style={styles.legalText}>
-              Ce devis est valable jusqu’à la date indiquée ci-dessus, sous réserve de
-              disponibilité des équipements.
-            </Text>
-            <Text
-              fixed
-              render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
-              style={styles.footerPage}
-            />
-          </View>
-        </View>
+        <PdfSignatures />
+        <PdfDocumentFooter
+          companyName={companyName}
+          companyInfo={companyInfo}
+          legalDetails={legalDetails}
+        />
       </Page>
     </Document>
   )

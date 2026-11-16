@@ -1,4 +1,10 @@
-import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import {
+  PdfClientSummary,
+  PdfDocumentFooter,
+  PdfDocumentHeader,
+} from './PdfDocumentChrome.jsx'
+import { pdfPageStyles } from './PdfDocumentStyles.js'
 
 const TGI_NAVY = '#1E3A8A'
 const TGI_BLUE = '#1E3A8A'
@@ -94,39 +100,37 @@ const styles = StyleSheet.create({
   },
   table: {
     width: '100%',
-    borderWidth: 1,
-    borderColor: BORDER,
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: TGI_NAVY,
-    color: '#FFFFFF',
+    backgroundColor: '#F1F5F9',
   },
   headerCell: {
     paddingVertical: 8,
-    paddingHorizontal: 6,
-    color: '#FFFFFF',
-    fontSize: 8,
+    paddingHorizontal: 5,
+    color: '#334155',
+    fontSize: 7,
     fontFamily: 'Helvetica-Bold',
   },
   tableRow: {
     flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
   },
   alternateRow: {
     backgroundColor: '#F8FAFC',
   },
   cell: {
     paddingVertical: 7,
-    paddingHorizontal: 6,
+    paddingHorizontal: 5,
     color: '#334155',
-    fontSize: 8,
-    borderRightWidth: 1,
-    borderRightColor: BORDER,
+    fontSize: 7,
   },
-  lastCell: {
-    borderRightWidth: 0,
+  tableSectionTitle: {
+    marginBottom: 8,
+    color: '#0F172A',
+    fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
   },
   emptyCell: {
     paddingVertical: 12,
@@ -394,12 +398,6 @@ export default function MasterPdfTemplate({
 }) {
   const companyName =
     getCompanyValue(companyInfo, 'name', 'nom') || 'TGI Ascenseurs Casa'
-  const companyDetails = [
-    getCompanyValue(companyInfo, 'address', 'adresse'),
-    getCompanyValue(companyInfo, 'rc') ? `RC : ${getCompanyValue(companyInfo, 'rc')}` : '',
-    getCompanyValue(companyInfo, 'ice') ? `ICE : ${getCompanyValue(companyInfo, 'ice')}` : '',
-    getCompanyValue(companyInfo, 'phone', 'telephone', 'téléphone'),
-  ].filter(Boolean)
   const clientName = getCompanyValue(clientInfo, 'nom', 'name', 'raisonSociale')
   const clientDetails = getClientDetails(clientInfo)
   const safeColumns = Array.isArray(columns) ? columns : []
@@ -411,40 +409,26 @@ export default function MasterPdfTemplate({
       subject={documentTitle || 'Document TGI Ascenseurs Casa'}
       title={documentTitle || 'TGI Ascenseurs Casa'}
     >
-      <Page size="A4" orientation="landscape" style={styles.page} wrap>
-        <View fixed style={styles.header}>
-          <Image
-            src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
-            style={styles.logo}
-          />
-          <View style={styles.companyBlock}>
-            <Text style={styles.companyName}>{companyName}</Text>
-            {companyDetails.map((detail) => (
-              <Text key={detail} style={styles.companyDetail}>
-                {detail}
-              </Text>
-            ))}
-          </View>
-        </View>
+      <Page size="A4" orientation="landscape" style={pdfPageStyles.page} wrap>
+        <PdfDocumentHeader
+          companyInfo={companyInfo}
+          companyName={companyName}
+          documentTitle={documentTitle || 'Document'}
+        />
 
-        <View fixed style={styles.titleBlock}>
-          <Text style={styles.title}>{documentTitle || 'Document'}</Text>
-          <Text style={styles.date}>{formatDocumentDate(date)}</Text>
-        </View>
-
-        {clientName && (
-          <View style={styles.clientInfo} wrap={false}>
-            <Text style={styles.clientName}>{clientName}</Text>
-            {clientDetails.map((detail) => (
-              <Text key={detail} style={styles.clientDetail}>
-                {detail}
-              </Text>
-            ))}
-          </View>
-        )}
+        <PdfClientSummary
+          clientName={clientName || 'Tous les clients'}
+          clientDetails={clientDetails}
+          metaRows={[
+            { label: 'DATE', value: formatDocumentDate(date) },
+            { label: 'ÉCHÉANCE', value: '—' },
+            { label: 'STATUT', value: '—' },
+          ]}
+        />
 
         {safeColumns.length > 0 && (
           <View style={styles.table}>
+            <Text style={styles.tableSectionTitle}>DÉTAIL DES ARTICLES ET PRESTATIONS</Text>
             <View fixed style={styles.tableHeader}>
               {safeColumns.map((column, index) => (
                 <Text
@@ -479,7 +463,6 @@ export default function MasterPdfTemplate({
                       style={[
                         styles.cell,
                         { width: getColumnWidth(column, safeColumns.length) },
-                        columnIndex === safeColumns.length - 1 ? styles.lastCell : null,
                         column?.align === 'right' ? { textAlign: 'right' } : null,
                       ]}
                     >
@@ -495,14 +478,11 @@ export default function MasterPdfTemplate({
         <TotalsBlock totals={totals} />
         {notes && <Text style={styles.notes}>{notes}</Text>}
 
-        <View fixed style={styles.footer}>
-          <Text style={styles.legalText}>{getLegalDetails(companyInfo)}</Text>
-          <Text
-            fixed
-            render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`}
-            style={styles.pageNumber}
-          />
-        </View>
+        <PdfDocumentFooter
+          companyName={companyName}
+          companyInfo={companyInfo}
+          legalDetails={{ legal: [getLegalDetails(companyInfo)] }}
+        />
       </Page>
     </Document>
   )
