@@ -6,7 +6,10 @@ import {
   PdfSignatures,
 } from './PdfDocumentChrome.jsx'
 import { pdfPageStyles } from './PdfDocumentStyles.js'
-import { breakLongTextAtCharacters } from './pdfTextUtils.js'
+import {
+  breakLongTextAtCharacters,
+  isPdfFieldFullWidth,
+} from './pdfTextUtils.js'
 
 const NAVY = '#1E1B4B'
 const BORDER = '#E2E8F0'
@@ -109,6 +112,9 @@ const styles = StyleSheet.create({
     paddingRight: 20,
     paddingVertical: 8,
   },
+  detailItemFullWidth: {
+    width: '100%',
+  },
   detailLabel: {
     color: '#94A3B8',
     fontSize: 8,
@@ -119,6 +125,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
     maxWidth: '100%',
     flexShrink: 1,
+    flexWrap: 'wrap',
     color: '#0F172A',
     fontSize: 11,
     fontFamily: 'Helvetica-Bold',
@@ -467,9 +474,26 @@ function getMaintenanceChecklist(intervention) {
 
 function groupIntoPairs(items) {
   const rows = []
-  for (let index = 0; index < items.length; index += 2) {
-    rows.push(items.slice(index, index + 2))
+  let currentRow = []
+
+  for (const item of items) {
+    if (isPdfFieldFullWidth(item[0], item[1])) {
+      if (currentRow.length > 0) {
+        rows.push(currentRow)
+        currentRow = []
+      }
+      rows.push([item])
+      continue
+    }
+
+    currentRow.push(item)
+    if (currentRow.length === 2) {
+      rows.push(currentRow)
+      currentRow = []
+    }
   }
+
+  if (currentRow.length > 0) rows.push(currentRow)
   return rows
 }
 
@@ -594,7 +618,15 @@ export default function InterventionPdfDocument({ intervention = {} }) {
                   wrap={false}
                 >
                   {row.map(([label, value]) => (
-                    <View key={label} style={styles.detailItem}>
+                    <View
+                      key={label}
+                      style={[
+                        styles.detailItem,
+                        isPdfFieldFullWidth(label, value)
+                          ? styles.detailItemFullWidth
+                          : null,
+                      ]}
+                    >
                       <Text style={styles.detailLabel}>{label}</Text>
                       <Text
                         style={styles.detailValue}
@@ -617,7 +649,15 @@ export default function InterventionPdfDocument({ intervention = {} }) {
                 wrap={false}
               >
                 {row.map(([label, value]) => (
-                  <View key={label} style={styles.detailItem}>
+                  <View
+                    key={label}
+                    style={[
+                      styles.detailItem,
+                      isPdfFieldFullWidth(label, value)
+                        ? styles.detailItemFullWidth
+                        : null,
+                    ]}
+                  >
                     <Text style={styles.detailLabel}>{label}</Text>
                     <Text
                       style={styles.detailValue}

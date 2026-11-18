@@ -15,7 +15,10 @@ import {
   pdfCardStyles,
   pdfColors,
 } from './PdfDocumentStyles.js'
-import { breakLongTextAtCharacters } from './pdfTextUtils.js'
+import {
+  breakLongTextAtCharacters,
+  isPdfFieldFullWidth,
+} from './pdfTextUtils.js'
 
 const { primary, secondary, accent, border } = pdfColors
 
@@ -131,6 +134,8 @@ const styles = StyleSheet.create({
   },
   companyDetail: {
     maxWidth: '100%',
+    flexShrink: 1,
+    flexWrap: 'wrap',
     color: '#94A3B8',
     fontSize: 8,
     lineHeight: 1.15,
@@ -180,9 +185,17 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
     borderBottomWidth: 0,
   },
+  clientDetailGridRowFullWidth: {
+    marginBottom: 0,
+    paddingBottom: 0,
+  },
   clientDetailCell: {
     width: '50%',
     paddingRight: 20,
+  },
+  clientDetailCellFullWidth: {
+    width: '100%',
+    marginBottom: 12,
   },
   dataLabelRow: {
     flexDirection: 'row',
@@ -231,6 +244,9 @@ const styles = StyleSheet.create({
   },
   metaValue: {
     width: '62%',
+    maxWidth: '100%',
+    flexShrink: 1,
+    flexWrap: 'wrap',
     color: primary,
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
@@ -281,18 +297,27 @@ const styles = StyleSheet.create({
     color: pdfColors.highlight,
   },
   footerContactText: {
+    maxWidth: '100%',
+    flexShrink: 1,
+    flexWrap: 'wrap',
     marginTop: 1,
     color: '#F8FAFC',
     fontSize: 6,
     lineHeight: 1.15,
   },
   footerLegalText: {
+    maxWidth: '100%',
+    flexShrink: 1,
+    flexWrap: 'wrap',
     marginTop: 1,
     color: '#94A3B8',
     fontSize: 6,
     lineHeight: 1.15,
   },
   footerBankText: {
+    maxWidth: '100%',
+    flexShrink: 1,
+    flexWrap: 'wrap',
     marginTop: 1,
     color: pdfColors.highlight,
     fontSize: 6,
@@ -446,21 +471,39 @@ function isStatusLabel(label) {
 function getClientDetailRows(clientDetails) {
   const fields = clientDetails.map((detail) => {
     if (Array.isArray(detail)) {
-      return [String(detail[0] || 'Information'), String(detail[1] || '').trim()]
+      const label = String(detail[0] || 'Information')
+      const value = String(detail[1] || '').trim()
+      return [label, value, detail[2] === true || isPdfFieldFullWidth(label, value)]
     }
 
     const text = String(detail)
     const separatorIndex = text.indexOf(':')
-    return separatorIndex === -1
-      ? ['Information', text.trim()]
-      : [text.slice(0, separatorIndex).trim(), text.slice(separatorIndex + 1).trim()]
+    const label =
+      separatorIndex === -1 ? 'Information' : text.slice(0, separatorIndex).trim()
+    const value = separatorIndex === -1 ? text.trim() : text.slice(separatorIndex + 1).trim()
+    return [label, value, isPdfFieldFullWidth(label, value)]
   })
   const rows = []
+  let currentRow = []
 
-  for (let index = 0; index < fields.length; index += 2) {
-    rows.push(fields.slice(index, index + 2))
+  for (const field of fields) {
+    if (field[2]) {
+      if (currentRow.length > 0) {
+        rows.push(currentRow)
+        currentRow = []
+      }
+      rows.push([field])
+      continue
+    }
+
+    currentRow.push(field)
+    if (currentRow.length === 2) {
+      rows.push(currentRow)
+      currentRow = []
+    }
   }
 
+  if (currentRow.length > 0) rows.push(currentRow)
   return rows
 }
 
@@ -536,7 +579,11 @@ export function PdfDocumentHeader({ companyInfo = {}, documentTitle }) {
           <Image src={logoSource} style={styles.logo} />
           <View style={styles.companyBlock}>
             {getCompanyHeaderDetails(companyInfo).map((detail, index) => (
-              <Text key={`${detail}-${index}`} style={styles.companyDetail}>
+              <Text
+                key={`${detail}-${index}`}
+                style={styles.companyDetail}
+                hyphenationCallback={breakLongTextAtCharacters}
+              >
                 {detail}
               </Text>
             ))}
@@ -590,14 +637,23 @@ export function PdfClientSummary({ clientName, clientDetails = [], metaRows = []
                 key={`client-detail-row-${rowIndex}`}
                 style={[
                   styles.clientDetailGridRow,
+                  row.length === 1 && row[0][2]
+                    ? styles.clientDetailGridRowFullWidth
+                    : null,
                   rowIndex === detailRows.length - 1
                     ? styles.clientDetailGridRowLast
                     : null,
                 ]}
                 wrap={false}
               >
-                {row.map(([label, value]) => (
-                  <View key={`${label}-${value}`} style={styles.clientDetailCell}>
+                {row.map(([label, value, fullWidth]) => (
+                  <View
+                    key={`${label}-${value}`}
+                    style={[
+                      styles.clientDetailCell,
+                      fullWidth ? styles.clientDetailCellFullWidth : null,
+                    ]}
+                  >
                     <PdfDataLabel label={label} />
                     <Text
                       style={pdfCardStyles.cardValue}
@@ -685,10 +741,19 @@ export function PdfDocumentFooter({
         <View style={[styles.footerColumn, styles.footerColumnFirst]}>
           <Text style={styles.footerHeading}>CONTACT</Text>
           {companyName ? (
-            <Text style={styles.footerContactText}>{companyName}</Text>
+            <Text
+              style={styles.footerContactText}
+              hyphenationCallback={breakLongTextAtCharacters}
+            >
+              {companyName}
+            </Text>
           ) : null}
           {contactLines.map((line, index) => (
-            <Text key={`contact-${index}`} style={styles.footerContactText}>
+            <Text
+              key={`contact-${index}`}
+              style={styles.footerContactText}
+              hyphenationCallback={breakLongTextAtCharacters}
+            >
               {line}
             </Text>
           ))}
@@ -696,7 +761,11 @@ export function PdfDocumentFooter({
         <View style={styles.footerColumn}>
           <Text style={styles.footerHeading}>INFORMATIONS LÉGALES</Text>
           {legalLines.map((line, index) => (
-            <Text key={`legal-${index}`} style={styles.footerLegalText}>
+            <Text
+              key={`legal-${index}`}
+              style={styles.footerLegalText}
+              hyphenationCallback={breakLongTextAtCharacters}
+            >
               {line}
             </Text>
           ))}
@@ -706,7 +775,11 @@ export function PdfDocumentFooter({
             COORDONNÉES BANCAIRES
           </Text>
           {bankLines.map((line, index) => (
-            <Text key={`bank-${index}`} style={styles.footerBankText}>
+            <Text
+              key={`bank-${index}`}
+              style={styles.footerBankText}
+              hyphenationCallback={breakLongTextAtCharacters}
+            >
               {line}
             </Text>
           ))}

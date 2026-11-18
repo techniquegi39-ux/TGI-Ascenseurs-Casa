@@ -317,11 +317,11 @@ function formatDocumentDate(value) {
 
 function getClientDetails(clientInfo = {}) {
   return [
-    getCompanyValue(clientInfo, 'address', 'adresse'),
-    getCompanyValue(clientInfo, 'phone', 'telephone', 'téléphone'),
-    getCompanyValue(clientInfo, 'email'),
-    getCompanyValue(clientInfo, 'ice'),
-  ].filter(Boolean)
+    ['Adresse', getCompanyValue(clientInfo, 'address', 'adresse')],
+    ['Téléphone', getCompanyValue(clientInfo, 'phone', 'telephone', 'téléphone')],
+    ['E-mail', getCompanyValue(clientInfo, 'email')],
+    ['ICE', getCompanyValue(clientInfo, 'ice')],
+  ].filter(([, value]) => value)
 }
 
 function getLegalDetails(companyInfo = {}) {

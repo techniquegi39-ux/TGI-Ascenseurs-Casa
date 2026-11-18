@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from '@react-pdf/renderer'
 import { pdfCardStyles, pdfColors } from './PdfDocumentStyles.js'
+import { breakLongTextAtCharacters } from './pdfTextUtils.js'
 
 const {
   primary,
@@ -47,6 +48,9 @@ const styles = StyleSheet.create({
   },
   tableCell: {
     paddingRight: 4,
+    maxWidth: '100%',
+    flexShrink: 1,
+    flexWrap: 'wrap',
     color: primary,
     fontSize: 8,
   },
@@ -178,7 +182,12 @@ export default function PdfFinancialDetails({
                 wrap={false}
               >
                 <Text style={[styles.tableCell, { width: '4%' }]}>{index + 1}</Text>
-                <Text style={[styles.tableCell, { width: '31%' }]}>{item.designation}</Text>
+                <Text
+                  style={[styles.tableCell, { width: '31%' }]}
+                  hyphenationCallback={breakLongTextAtCharacters}
+                >
+                  {item.designation}
+                </Text>
                 <Text style={[styles.tableCell, { width: '8%', textAlign: 'right' }]}>
                   {formatQuantity(item.quantity)}
                 </Text>

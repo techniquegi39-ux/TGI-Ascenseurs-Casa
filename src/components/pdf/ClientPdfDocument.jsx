@@ -7,7 +7,10 @@ import {
   PdfStatusBadge,
 } from './PdfDocumentChrome.jsx'
 import { pdfCardStyles, pdfPageStyles } from './PdfDocumentStyles.js'
-import { breakLongTextAtCharacters } from './pdfTextUtils.js'
+import {
+  breakLongTextAtCharacters,
+  isPdfFieldFullWidth,
+} from './pdfTextUtils.js'
 
 const styles = StyleSheet.create({
   clientInformation: {
@@ -119,7 +122,8 @@ function getDetailRows(details) {
   const rows = []
   let currentRow = []
 
-  for (const [label, value, fullWidth = false] of details) {
+  for (const [label, value, forceFullWidth = false] of details) {
+    const fullWidth = forceFullWidth || isPdfFieldFullWidth(label, value)
     const detail = [label, value, fullWidth]
 
     if (fullWidth) {
