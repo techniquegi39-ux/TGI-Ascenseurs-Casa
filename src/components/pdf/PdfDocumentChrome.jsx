@@ -15,6 +15,7 @@ import {
   pdfCardStyles,
   pdfColors,
 } from './PdfDocumentStyles.js'
+import { breakLongTextAtCharacters } from './pdfTextUtils.js'
 
 const { primary, secondary, accent, border } = pdfColors
 
@@ -93,6 +94,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 30,
     right: 40,
+    width: 150,
     paddingVertical: 4,
     paddingHorizontal: 7,
     flexDirection: 'row',
@@ -111,6 +113,7 @@ const styles = StyleSheet.create({
     fontSize: 7,
     fontFamily: 'Helvetica-Bold',
     letterSpacing: 0.8,
+    flexWrap: 'nowrap',
   },
   companyBlock: {
     width: '100%',
@@ -157,6 +160,7 @@ const styles = StyleSheet.create({
   },
   clientDetailGridRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     marginBottom: 10,
     paddingBottom: 10,
     borderBottomWidth: 1,
@@ -169,7 +173,7 @@ const styles = StyleSheet.create({
   },
   clientDetailCell: {
     width: '50%',
-    paddingRight: 8,
+    paddingRight: 20,
   },
   dataLabelRow: {
     flexDirection: 'row',
@@ -178,6 +182,8 @@ const styles = StyleSheet.create({
   dataLabelIcon: {
     width: 10,
     height: 10,
+    minWidth: 10,
+    minHeight: 10,
     marginRight: 6,
     flexShrink: 0,
   },
@@ -549,7 +555,9 @@ export function PdfDocumentHeader({ companyInfo = {}, documentTitle }) {
               strokeLinejoin="round"
             />
           </Svg>
-          <Text style={styles.certificationText}>DOCUMENT TGI</Text>
+          <Text style={styles.certificationText} wrap={false}>
+            DOCUMENT TGI
+          </Text>
         </View>
       </View>
       <View fixed style={styles.topAccent} />
@@ -581,7 +589,12 @@ export function PdfClientSummary({ clientName, clientDetails = [], metaRows = []
                 {row.map(([label, value]) => (
                   <View key={`${label}-${value}`} style={styles.clientDetailCell}>
                     <PdfDataLabel label={label} />
-                    <Text style={pdfCardStyles.cardValue}>{value || '—'}</Text>
+                    <Text
+                      style={pdfCardStyles.cardValue}
+                      hyphenationCallback={breakLongTextAtCharacters}
+                    >
+                      {value || '—'}
+                    </Text>
                   </View>
                 ))}
               </View>

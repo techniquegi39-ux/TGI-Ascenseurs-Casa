@@ -6,6 +6,7 @@ import {
   PdfSignatures,
 } from './PdfDocumentChrome.jsx'
 import { pdfPageStyles } from './PdfDocumentStyles.js'
+import { breakLongTextAtCharacters } from './pdfTextUtils.js'
 
 const NAVY = '#1E1B4B'
 const BORDER = '#E2E8F0'
@@ -100,10 +101,12 @@ const styles = StyleSheet.create({
   },
   detailGridRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   detailItem: {
     width: '50%',
-    paddingHorizontal: 8,
+    paddingLeft: 8,
+    paddingRight: 20,
     paddingVertical: 8,
   },
   detailLabel: {
@@ -114,6 +117,8 @@ const styles = StyleSheet.create({
   },
   detailValue: {
     marginTop: 2,
+    maxWidth: '100%',
+    flexShrink: 1,
     color: '#0F172A',
     fontSize: 11,
     fontFamily: 'Helvetica-Bold',
@@ -591,7 +596,12 @@ export default function InterventionPdfDocument({ intervention = {} }) {
                   {row.map(([label, value]) => (
                     <View key={label} style={styles.detailItem}>
                       <Text style={styles.detailLabel}>{label}</Text>
-                      <Text style={styles.detailValue}>{value}</Text>
+                      <Text
+                        style={styles.detailValue}
+                        hyphenationCallback={breakLongTextAtCharacters}
+                      >
+                        {value}
+                      </Text>
                     </View>
                   ))}
                 </View>
@@ -609,7 +619,12 @@ export default function InterventionPdfDocument({ intervention = {} }) {
                 {row.map(([label, value]) => (
                   <View key={label} style={styles.detailItem}>
                     <Text style={styles.detailLabel}>{label}</Text>
-                    <Text style={styles.detailValue}>{value}</Text>
+                    <Text
+                      style={styles.detailValue}
+                      hyphenationCallback={breakLongTextAtCharacters}
+                    >
+                      {value}
+                    </Text>
                   </View>
                 ))}
               </View>

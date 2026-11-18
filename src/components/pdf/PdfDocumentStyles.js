@@ -73,6 +73,8 @@ export const pdfCardStyles = StyleSheet.create({
   },
   cardValue: {
     width: '100%',
+    maxWidth: '100%',
+    flexShrink: 1,
     marginTop: 2,
     color: '#0F172A',
     fontSize: 11,

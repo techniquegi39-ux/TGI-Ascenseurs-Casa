@@ -7,6 +7,7 @@ import {
   PdfStatusBadge,
 } from './PdfDocumentChrome.jsx'
 import { pdfCardStyles, pdfPageStyles } from './PdfDocumentStyles.js'
+import { breakLongTextAtCharacters } from './pdfTextUtils.js'
 
 const styles = StyleSheet.create({
   clientInformation: {
@@ -29,6 +30,7 @@ const styles = StyleSheet.create({
   },
   detailGridRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     marginBottom: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
@@ -39,9 +41,18 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
     borderBottomWidth: 0,
   },
+  detailGridRowFullWidth: {
+    marginBottom: 0,
+    paddingBottom: 0,
+  },
   detailCell: {
     width: '50%',
-    paddingHorizontal: 8,
+    paddingLeft: 8,
+    paddingRight: 20,
+  },
+  detailCellFullWidth: {
+    width: '100%',
+    marginBottom: 12,
   },
 })
 
@@ -106,9 +117,28 @@ function getClientStatus(client) {
 
 function getDetailRows(details) {
   const rows = []
-  for (let index = 0; index < details.length; index += 2) {
-    rows.push(details.slice(index, index + 2))
+  let currentRow = []
+
+  for (const [label, value, fullWidth = false] of details) {
+    const detail = [label, value, fullWidth]
+
+    if (fullWidth) {
+      if (currentRow.length > 0) {
+        rows.push(currentRow)
+        currentRow = []
+      }
+      rows.push([detail])
+      continue
+    }
+
+    currentRow.push(detail)
+    if (currentRow.length === 2) {
+      rows.push(currentRow)
+      currentRow = []
+    }
   }
+
+  if (currentRow.length > 0) rows.push(currentRow)
   return rows
 }
 
@@ -162,8 +192,13 @@ function getClientSections(client) {
         [
           'Google Maps',
           getText(client, 'googleMapsLink', 'localisationGoogleMaps', 'mapsUrl') || '—',
+          true,
         ],
-        ['Coordonnées GPS', getText(client, 'coordonneesGPS', 'gpsCoordinates') || '—'],
+        [
+          'Coordonnées GPS',
+          getText(client, 'coordonneesGPS', 'gpsCoordinates') || '—',
+          true,
+        ],
       ],
     },
     {
@@ -249,14 +284,28 @@ export default function ClientPdfDocument({
                   key={`${section.title}-row-${rowIndex}`}
                   style={[
                     styles.detailGridRow,
+                    row.length === 1 && row[0][2]
+                      ? styles.detailGridRowFullWidth
+                      : null,
                     rowIndex === rows.length - 1 ? styles.detailGridRowLast : null,
                   ]}
                   wrap={false}
                 >
-                  {row.map(([label, value]) => (
-                    <View key={label} style={styles.detailCell}>
+                  {row.map(([label, value, fullWidth]) => (
+                    <View
+                      key={label}
+                      style={[
+                        styles.detailCell,
+                        fullWidth ? styles.detailCellFullWidth : null,
+                      ]}
+                    >
                       <PdfDataLabel label={label} />
-                      <Text style={pdfCardStyles.cardValue}>{value}</Text>
+                      <Text
+                        style={pdfCardStyles.cardValue}
+                        hyphenationCallback={breakLongTextAtCharacters}
+                      >
+                        {value}
+                      </Text>
                     </View>
                   ))}
                 </View>
