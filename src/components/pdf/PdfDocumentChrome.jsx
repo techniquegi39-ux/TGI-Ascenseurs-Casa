@@ -62,7 +62,9 @@ const styles = StyleSheet.create({
     backgroundColor: pdfColors.highlight,
   },
   headerIdentity: {
-    flex: 1,
+    width: 210,
+    flexGrow: 0,
+    flexShrink: 0,
     paddingRight: 10,
     flexDirection: 'column',
     alignItems: 'flex-start',
@@ -77,7 +79,10 @@ const styles = StyleSheet.create({
     paddingLeft: 0,
   },
   documentIdentity: {
-    flex: 1,
+    position: 'absolute',
+    top: 100,
+    right: 40,
+    width: 350,
     paddingLeft: 10,
     justifyContent: 'center',
     alignItems: 'flex-end',
@@ -92,7 +97,6 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   documentTitleCompact: {
-    fontSize: 21,
     letterSpacing: 1,
   },
   documentNumber: {

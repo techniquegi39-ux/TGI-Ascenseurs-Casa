@@ -27,14 +27,16 @@ export const pdfPageStyles = StyleSheet.create({
 
 export const pdfHeaderStyles = StyleSheet.create({
   documentTitle: {
-    fontSize: 28,
+    fontSize: 24,
     flexWrap: 'nowrap',
   },
   certificationBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    width: 250,
+    height: 35,
+    paddingHorizontal: 0,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
 })
 
