@@ -183,31 +183,31 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   financialGrid: {
-    flexDirection: 'row',
     marginBottom: 9,
   },
+  financialGridRow: {
+    marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   financialCard: {
-    flexGrow: 1,
-    flexBasis: 0,
-    padding: 10,
+    width: '49%',
+    padding: 12,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: BORDER,
-    borderRadius: 4,
-  },
-  financialCardSpaced: {
-    marginRight: 9,
+    borderRadius: 6,
   },
   financialLabel: {
-    marginBottom: 4,
-    color: MUTED,
+    color: '#94A3B8',
     fontSize: 8,
-    fontFamily: 'Helvetica-Bold',
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   financialValue: {
+    marginTop: 2,
     color: '#0F172A',
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: 'Helvetica-Bold',
   },
   financialSummary: {
@@ -474,6 +474,14 @@ function getContractTotalTTC(contract, totalHT, vatRate) {
   return getNumber(explicitTotal, totalHT * (1 + vatRate / 100))
 }
 
+function groupIntoPairs(items) {
+  const rows = []
+  for (let index = 0; index < items.length; index += 2) {
+    rows.push(items.slice(index, index + 2))
+  }
+  return rows
+}
+
 export default function ContractPdfDocument({ contract = {} }) {
   const companyInfo = contract.companyInfo || {}
   const clientInfo = contract.clientInfo || contract.client || {}
@@ -530,11 +538,11 @@ export default function ContractPdfDocument({ contract = {} }) {
   )
   const clientPhone = getText(clientInfo, 'telephone', 'téléphone', 'phone')
   const clientDetails = [
-    clientRepresentative ? `Représentant : ${clientRepresentative}` : '',
-    `ICE : ${clientIce}`,
-    clientPhone ? `Téléphone : ${clientPhone}` : '',
-    `Adresse : ${clientAddress}`,
-  ].filter(Boolean)
+    ['Représentant', clientRepresentative],
+    ['ICE', clientIce],
+    ['Téléphone', clientPhone],
+    ['Adresse', clientAddress],
+  ].filter(([, value]) => value)
   const responseSla = getText(
     contract,
     'slaIntervention',
@@ -545,6 +553,17 @@ export default function ContractPdfDocument({ contract = {} }) {
     contract.taciteReconduction ?? contract.automaticRenewal ?? false,
   )
   const clauses = getText(contract, 'clauses', 'conditions') || 'Aucune clause particulière.'
+  const contractTerms = [
+    ['Date de début', formatDate(dateDebut)],
+    ['Date de fin', formatDate(dateFin)],
+    ['Périodicité de paiement', frequency || '—'],
+  ]
+  const serviceTerms = [
+    ['Type de contrat', serviceType],
+    ['Objet / nature', contractNature],
+    ['Délai d’intervention garanti (SLA)', responseSla],
+    ['Tacite reconduction', automaticRenewal ? 'Oui — renouvellement automatique' : 'Non'],
+  ]
 
   return (
     <Document
@@ -657,42 +676,40 @@ export default function ContractPdfDocument({ contract = {} }) {
               </View>
             </View>
             <View style={styles.financialGrid}>
-              <View style={[styles.financialCard, styles.financialCardSpaced]}>
-                <Text style={styles.financialLabel}>Date de début</Text>
-                <Text style={styles.financialValue}>{formatDate(dateDebut)}</Text>
-              </View>
-              <View style={[styles.financialCard, styles.financialCardSpaced]}>
-                <Text style={styles.financialLabel}>Date de fin</Text>
-                <Text style={styles.financialValue}>{formatDate(dateFin)}</Text>
-              </View>
-              <View style={styles.financialCard}>
-                <Text style={styles.financialLabel}>Périodicité de paiement</Text>
-                <Text style={styles.financialValue}>{frequency || '—'}</Text>
-              </View>
+              {groupIntoPairs(contractTerms).map((row, rowIndex) => (
+                <View
+                  key={`contract-term-row-${rowIndex}`}
+                  style={styles.financialGridRow}
+                  wrap={false}
+                >
+                  {row.map(([label, value]) => (
+                    <View key={label} style={styles.financialCard}>
+                      <Text style={styles.financialLabel}>{label}</Text>
+                      <Text style={styles.financialValue}>{value}</Text>
+                    </View>
+                  ))}
+                </View>
+              ))}
             </View>
           </View>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>3. Spécifications et engagements de service</Text>
             <View style={styles.financialGrid}>
-              <View style={[styles.financialCard, styles.financialCardSpaced]}>
-                <Text style={styles.financialLabel}>Type de contrat</Text>
-                <Text style={styles.financialValue}>{serviceType}</Text>
-              </View>
-              <View style={[styles.financialCard, styles.financialCardSpaced]}>
-                <Text style={styles.financialLabel}>Objet / nature</Text>
-                <Text style={styles.financialValue}>{contractNature}</Text>
-              </View>
-              <View style={[styles.financialCard, styles.financialCardSpaced]}>
-                <Text style={styles.financialLabel}>Délai d’intervention garanti (SLA)</Text>
-                <Text style={styles.financialValue}>{responseSla}</Text>
-              </View>
-              <View style={styles.financialCard}>
-                <Text style={styles.financialLabel}>Tacite reconduction</Text>
-                <Text style={styles.financialValue}>
-                  {automaticRenewal ? 'Oui — renouvellement automatique' : 'Non'}
-                </Text>
-              </View>
+              {groupIntoPairs(serviceTerms).map((row, rowIndex) => (
+                <View
+                  key={`service-term-row-${rowIndex}`}
+                  style={styles.financialGridRow}
+                  wrap={false}
+                >
+                  {row.map(([label, value]) => (
+                    <View key={label} style={styles.financialCard}>
+                      <Text style={styles.financialLabel}>{label}</Text>
+                      <Text style={styles.financialValue}>{value}</Text>
+                    </View>
+                  ))}
+                </View>
+              ))}
             </View>
           </View>
 

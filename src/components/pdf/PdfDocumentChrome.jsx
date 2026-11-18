@@ -1,5 +1,9 @@
 import { Image, StyleSheet, Text, View } from '@react-pdf/renderer'
-import { pdfColors } from './PdfDocumentStyles.js'
+import {
+  pdfBadgeStyles,
+  pdfCardStyles,
+  pdfColors,
+} from './PdfDocumentStyles.js'
 
 const { primary, secondary, accent, border } = pdfColors
 
@@ -10,76 +14,81 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 150,
-    paddingTop: 40,
-    paddingBottom: 10,
+    paddingTop: 35,
     paddingHorizontal: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: accent,
   },
-  headerIdentity: {
-    width: '62%',
-    flexDirection: 'row',
-    alignItems: 'center',
+  topAccent: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 5,
+    backgroundColor: pdfColors.highlight,
   },
-  logoFrame: {
-    width: 160,
-    height: 70,
-    padding: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+  watermark: {
+    position: 'absolute',
+    top: 250,
+    left: '15%',
+    right: '15%',
+    width: 400,
+    opacity: 0.04,
+    transform: 'rotate(-20deg)',
+    zIndex: -1,
+  },
+  headerIdentity: {
+    flex: 1,
+    paddingRight: 10,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
   },
   logo: {
-    width: 140,
+    width: 150,
     height: 50,
+    maxHeight: 50,
     objectFit: 'contain',
   },
   documentIdentity: {
-    flexGrow: 1,
-    marginLeft: 14,
+    flex: 1,
+    paddingLeft: 10,
     justifyContent: 'center',
+    alignItems: 'flex-end',
   },
   documentTitle: {
     maxWidth: '100%',
-    color: '#FFFFFF',
-    fontSize: 32,
+    color: pdfColors.highlight,
+    fontSize: 28,
     fontFamily: 'Helvetica-Bold',
     lineHeight: 1.05,
     letterSpacing: 2,
     textTransform: 'uppercase',
+    textAlign: 'right',
   },
   documentTitleCompact: {
-    fontSize: 20,
-    letterSpacing: 0.8,
+    fontSize: 21,
+    letterSpacing: 1,
   },
   documentNumber: {
     marginTop: 2,
     color: '#CBD5E1',
     fontSize: 10,
     letterSpacing: 1,
+    textAlign: 'right',
   },
   companyBlock: {
-    width: '36%',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-  },
-  companyName: {
-    marginBottom: 3,
-    color: '#FFFFFF',
-    fontSize: 8,
-    fontFamily: 'Helvetica-Bold',
-    textAlign: 'right',
+    width: '100%',
+    marginTop: 8,
+    alignItems: 'flex-start',
   },
   companyDetail: {
     maxWidth: '100%',
-    marginTop: 1,
-    color: '#E2E8F0',
-    fontSize: 7.5,
-    lineHeight: 1.4,
-    textAlign: 'right',
+    color: '#94A3B8',
+    fontSize: 8,
+    lineHeight: 1.15,
+    textAlign: 'left',
   },
   clientSummary: {
     marginBottom: 20,
@@ -109,11 +118,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Helvetica-Bold',
   },
-  clientDetail: {
-    marginTop: 2,
-    color: secondary,
-    fontSize: 8.5,
-    lineHeight: 1.25,
+  clientDetailGrid: {
+    marginTop: 8,
+  },
+  clientDetailGridRow: {
+    flexDirection: 'row',
+  },
+  clientDetailCell: {
+    width: '50%',
+    paddingRight: 8,
+    paddingBottom: 10,
   },
   metaTable: {
     width: '30%',
@@ -150,6 +164,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Helvetica-Bold',
     textAlign: 'right',
   },
+  metaStatusValue: {
+    width: '62%',
+    alignItems: 'flex-end',
+  },
   footer: {
     position: 'absolute',
     bottom: 0,
@@ -160,6 +178,8 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     alignItems: 'center',
     backgroundColor: accent,
+    borderTopWidth: 2,
+    borderTopColor: pdfColors.highlight,
   },
   footerCompany: {
     marginBottom: 2,
@@ -225,18 +245,25 @@ function getText(record, ...keys) {
 }
 
 function getCompanyHeaderDetails(companyInfo) {
+  const address = getText(companyInfo, 'address', 'adresse')
+  const phone = getText(companyInfo, 'phone', 'telephone', 'téléphone')
+  const email = getText(companyInfo, 'email')
+  const ice = getText(companyInfo, 'ice')
+  const rc = getText(companyInfo, 'rc')
+  const taxId = getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')
+  const patente = getText(companyInfo, 'patente')
+
   return [
-    getText(companyInfo, 'address', 'adresse'),
-    getText(companyInfo, 'phone', 'telephone', 'téléphone')
-      ? `Tél. : ${getText(companyInfo, 'phone', 'telephone', 'téléphone')}`
-      : '',
-    getText(companyInfo, 'email') ? `Email : ${getText(companyInfo, 'email')}` : '',
-    getText(companyInfo, 'ice') ? `ICE : ${getText(companyInfo, 'ice')}` : '',
-    getText(companyInfo, 'rc') ? `RC : ${getText(companyInfo, 'rc')}` : '',
-    getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')
-      ? `IF : ${getText(companyInfo, 'identifiantFiscal', 'if', 'taxId')}`
-      : '',
-    getText(companyInfo, 'patente') ? `Patente : ${getText(companyInfo, 'patente')}` : '',
+    address,
+    [phone && `Tél. : ${phone}`, email && `Email : ${email}`].filter(Boolean).join(' · '),
+    [
+      ice && `ICE : ${ice}`,
+      rc && `RC : ${rc}`,
+      taxId && `IF : ${taxId}`,
+      patente && `Patente : ${patente}`,
+    ]
+      .filter(Boolean)
+      .join(' · '),
   ].filter(Boolean)
 }
 
@@ -251,64 +278,175 @@ function splitDocumentTitle(documentTitle) {
   return { type: match[1], number: match[2] }
 }
 
-export function PdfDocumentHeader({ companyInfo = {}, companyName, documentTitle }) {
-  const { type, number } = splitDocumentTitle(documentTitle)
+function getStatusBadgeStyles(value) {
+  const status = String(value || '')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('fr-FR')
+
+  if (status.includes('attente') || status.includes('pending')) {
+    return [pdfBadgeStyles.badgePending, pdfBadgeStyles.badgeTextPending]
+  }
+  if (
+    status.includes('cloture') ||
+    status.includes('closed') ||
+    status.includes('finalise')
+  ) {
+    return [pdfBadgeStyles.badgeInfo, pdfBadgeStyles.badgeTextInfo]
+  }
+  if (
+    status.includes('inactif') ||
+    status.includes('inactive') ||
+    status.includes('desactiv') ||
+    status.includes('disabled') ||
+    status.includes('annul') ||
+    status.includes('refus') ||
+    status === 'false' ||
+    status === 'non'
+  ) {
+    return [pdfBadgeStyles.badgeInactive, pdfBadgeStyles.badgeTextInactive]
+  }
+  if (
+    status.includes('actif') ||
+    status.includes('active') ||
+    status.includes('paye') ||
+    status.includes('regle') ||
+    status.includes('valide') ||
+    status.includes('termine') ||
+    status.includes('complete') ||
+    status.includes('success') ||
+    status.includes('livre') ||
+    status === 'true' ||
+    status === 'oui'
+  ) {
+    return [pdfBadgeStyles.badgeActive, pdfBadgeStyles.badgeTextActive]
+  }
+  return [pdfBadgeStyles.badgeInfo, pdfBadgeStyles.badgeTextInfo]
+}
+
+function isStatusLabel(label) {
+  const normalizedLabel = String(label || '').trim().toLocaleLowerCase('fr-FR')
+  return normalizedLabel === 'statut' || normalizedLabel === 'status'
+}
+
+function getClientDetailRows(clientDetails) {
+  const fields = clientDetails.map((detail) => {
+    if (Array.isArray(detail)) {
+      return [String(detail[0] || 'Information'), String(detail[1] || '').trim()]
+    }
+
+    const text = String(detail)
+    const separatorIndex = text.indexOf(':')
+    return separatorIndex === -1
+      ? ['Information', text.trim()]
+      : [text.slice(0, separatorIndex).trim(), text.slice(separatorIndex + 1).trim()]
+  })
+  const rows = []
+
+  for (let index = 0; index < fields.length; index += 2) {
+    rows.push(fields.slice(index, index + 2))
+  }
+
+  return rows
+}
+
+export function PdfStatusBadge({ value }) {
+  const [badgeStyle, textStyle] = getStatusBadgeStyles(value)
 
   return (
-    <View fixed style={styles.header}>
-      <View style={styles.headerIdentity}>
-        <View style={styles.logoFrame}>
-          <Image
-            src={companyInfo.companyLogoBase64 || '/logo.png.jpeg'}
-            style={styles.logo}
-          />
+    <View style={badgeStyle}>
+      <Text style={textStyle}>{value || '—'}</Text>
+    </View>
+  )
+}
+
+export function PdfDocumentHeader({ companyInfo = {}, documentTitle }) {
+  const { type, number } = splitDocumentTitle(documentTitle)
+  const logoSource = companyInfo.companyLogoBase64 || '/logo.png.jpeg'
+
+  return (
+    <>
+      <Image fixed src={logoSource} style={styles.watermark} />
+      <View fixed style={styles.header}>
+        <View style={styles.headerIdentity}>
+          <Image src={logoSource} style={styles.logo} />
+          <View style={styles.companyBlock}>
+            {getCompanyHeaderDetails(companyInfo).map((detail, index) => (
+              <Text key={`${detail}-${index}`} style={styles.companyDetail}>
+                {detail}
+              </Text>
+            ))}
+          </View>
         </View>
         <View style={styles.documentIdentity}>
           <Text
             style={[
               styles.documentTitle,
-              type.length > 16 ? styles.documentTitleCompact : null,
+              type.length > 14 ? styles.documentTitleCompact : null,
             ]}
+            wrap={false}
           >
             {type}
           </Text>
           {number ? <Text style={styles.documentNumber}>{number}</Text> : null}
         </View>
       </View>
-      <View style={styles.companyBlock}>
-        <Text style={styles.companyName}>{companyName}</Text>
-        {getCompanyHeaderDetails(companyInfo).map((detail, index) => (
-          <Text key={`${detail}-${index}`} style={styles.companyDetail}>
-            {detail}
-          </Text>
-        ))}
-      </View>
-    </View>
+      <View fixed style={styles.topAccent} />
+    </>
   )
 }
 
 export function PdfClientSummary({ clientName, clientDetails = [], metaRows = [] }) {
+  const detailRows = getClientDetailRows(clientDetails)
+
   return (
     <View style={styles.clientSummary}>
       <View style={styles.clientBlock}>
         <Text style={styles.sectionLabel}>ÉTABLI POUR :</Text>
         <Text style={styles.clientName}>{clientName}</Text>
-        {clientDetails.map((detail, index) => (
-          <Text key={`${detail}-${index}`} style={styles.clientDetail}>
-            {detail}
-          </Text>
-        ))}
+        {detailRows.length > 0 && (
+          <View style={styles.clientDetailGrid}>
+            {detailRows.map((row, rowIndex) => (
+              <View
+                key={`client-detail-row-${rowIndex}`}
+                style={styles.clientDetailGridRow}
+                wrap={false}
+              >
+                {row.map(([label, value]) => (
+                  <View key={`${label}-${value}`} style={styles.clientDetailCell}>
+                    <Text style={pdfCardStyles.cardLabel}>{label}</Text>
+                    <Text style={pdfCardStyles.cardValue}>{value || '—'}</Text>
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
+        )}
       </View>
       <View style={styles.metaTable}>
-        {metaRows.map(({ label, value }, index) => (
-          <View
-            key={`${label}-${index}`}
-            style={[styles.metaRow, index === metaRows.length - 1 ? styles.metaRowLast : null]}
-          >
-            <Text style={styles.metaLabel}>{label}</Text>
-            <Text style={styles.metaValue}>{value || '—'}</Text>
-          </View>
-        ))}
+        {metaRows.map(({ label, value }, index) => {
+          const isStatus = isStatusLabel(label)
+
+          return (
+            <View
+              key={`${label}-${index}`}
+              style={[
+                styles.metaRow,
+                index === metaRows.length - 1 ? styles.metaRowLast : null,
+              ]}
+            >
+              <Text style={styles.metaLabel}>{label}</Text>
+              {isStatus ? (
+                <View style={styles.metaStatusValue}>
+                  <PdfStatusBadge value={value} />
+                </View>
+              ) : (
+                <Text style={styles.metaValue}>{value || '—'}</Text>
+              )}
+            </View>
+          )
+        })}
       </View>
     </View>
   )

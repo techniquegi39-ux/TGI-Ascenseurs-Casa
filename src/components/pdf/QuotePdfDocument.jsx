@@ -6,7 +6,7 @@ import {
   PdfSignatures,
 } from './PdfDocumentChrome.jsx'
 import PdfFinancialDetails from './PdfFinancialDetails.jsx'
-import { pdfPageStyles } from './PdfDocumentStyles.js'
+import { pdfCardStyles, pdfPageStyles } from './PdfDocumentStyles.js'
 
 const NAVY = '#0A2540'
 const BORDER = '#E2E8F0'
@@ -186,19 +186,9 @@ const styles = StyleSheet.create({
   },
   documentConditions: {
     marginTop: 16,
-    padding: 12,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 4,
   },
-  conditionsHeading: {
-    marginBottom: 5,
-    color: NAVY,
-    fontSize: 9,
-    fontFamily: 'Helvetica-Bold',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
+  documentConditionsBody: {
+    padding: 12,
   },
   conditionRow: {
     flexDirection: 'row',
@@ -506,22 +496,15 @@ export default function QuotePdfDocument({ quote = {} }) {
     getText(quote, 'clientName') ||
     'Client non renseigné'
   const clientDetails = [
-    getText(clientInfo, 'representant', 'représentant', 'representative', 'contactPerson')
-      ? `Représentant : ${getText(clientInfo, 'representant', 'représentant', 'representative', 'contactPerson')}`
-      : '',
-    getText(clientInfo, 'ice', 'identifiantFiscal')
-      ? `ICE : ${getText(clientInfo, 'ice', 'identifiantFiscal')}`
-      : '',
-    getText(clientInfo, 'telephone', 'téléphone', 'phone')
-      ? `Téléphone : ${getText(clientInfo, 'telephone', 'téléphone', 'phone')}`
-      : '',
-    getText(clientInfo, 'adresse', 'address')
-      ? `Adresse : ${getText(clientInfo, 'adresse', 'address')}`
-      : '',
-    getText(quote, 'delai', 'delaiLivraison', 'deliveryDelay')
-      ? `Délai : ${getText(quote, 'delai', 'delaiLivraison', 'deliveryDelay')}`
-      : '',
-  ].filter(Boolean)
+    [
+      'Représentant',
+      getText(clientInfo, 'representant', 'représentant', 'representative', 'contactPerson'),
+    ],
+    ['ICE', getText(clientInfo, 'ice', 'identifiantFiscal')],
+    ['Téléphone', getText(clientInfo, 'telephone', 'téléphone', 'phone')],
+    ['Adresse', getText(clientInfo, 'adresse', 'address')],
+    ['Délai', getText(quote, 'delai', 'delaiLivraison', 'deliveryDelay')],
+  ].filter(([, value]) => value)
   const legalDetails = getLegalDetails(companyInfo)
   const issueDate = quote.dateEmission || quote.date
   const validityDate = quote.dateValidite || quote.validUntil || quote.validityDate
@@ -553,8 +536,11 @@ export default function QuotePdfDocument({ quote = {} }) {
         />
         <PdfFinancialDetails items={items} totals={totals} vatLabel={vatLabel} />
 
-        <View style={styles.documentConditions}>
-            <Text style={styles.conditionsHeading}>Conditions commerciales</Text>
+        <View style={[pdfCardStyles.card, styles.documentConditions]}>
+          <View style={pdfCardStyles.cardHeader} wrap={false}>
+            <Text style={pdfCardStyles.cardHeaderText}>Conditions commerciales</Text>
+          </View>
+          <View style={styles.documentConditionsBody}>
             <View style={styles.conditionRow}>
               <Text style={styles.conditionLabel}>Conditions de règlement</Text>
               <Text style={styles.conditionValue}>{paymentTerms || 'Non renseignées'}</Text>
@@ -568,6 +554,7 @@ export default function QuotePdfDocument({ quote = {} }) {
               <Text style={styles.conditionValue}>{specialConditions || 'Aucune'}</Text>
             </View>
           </View>
+        </View>
 
           {(quote.reference || quote.notes) && (
             <View style={[styles.tableWrap, { marginTop: 12 }]}>

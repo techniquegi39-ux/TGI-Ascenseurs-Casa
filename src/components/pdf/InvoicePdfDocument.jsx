@@ -511,22 +511,15 @@ export default function InvoicePdfDocument({ invoice = {} }) {
     getText(invoice, 'clientName') ||
     'Client non renseigné'
   const clientDetails = [
-    getText(clientInfo, 'representant', 'représentant', 'representative', 'contactPerson')
-      ? `Représentant : ${getText(clientInfo, 'representant', 'représentant', 'representative', 'contactPerson')}`
-      : '',
-    getText(clientInfo, 'ice', 'identifiantFiscal')
-      ? `ICE : ${getText(clientInfo, 'ice', 'identifiantFiscal')}`
-      : '',
-    getText(clientInfo, 'telephone', 'téléphone', 'phone')
-      ? `Téléphone : ${getText(clientInfo, 'telephone', 'téléphone', 'phone')}`
-      : '',
-    getText(clientInfo, 'adresse', 'address')
-      ? `Adresse : ${getText(clientInfo, 'adresse', 'address')}`
-      : '',
-    getText(invoice, 'delai', 'delaiLivraison', 'deliveryDelay')
-      ? `Délai : ${getText(invoice, 'delai', 'delaiLivraison', 'deliveryDelay')}`
-      : '',
-  ].filter(Boolean)
+    [
+      'Représentant',
+      getText(clientInfo, 'representant', 'représentant', 'representative', 'contactPerson'),
+    ],
+    ['ICE', getText(clientInfo, 'ice', 'identifiantFiscal')],
+    ['Téléphone', getText(clientInfo, 'telephone', 'téléphone', 'phone')],
+    ['Adresse', getText(clientInfo, 'adresse', 'address')],
+    ['Délai', getText(invoice, 'delai', 'delaiLivraison', 'deliveryDelay')],
+  ].filter(([, value]) => value)
   const legalDetails = getLegalDetails(companyInfo, invoice)
   const invoiceDate = invoice.dateFacture || invoice.dateEmission || invoice.date
   const dueDate = invoice.dateEcheance || invoice.dueDate

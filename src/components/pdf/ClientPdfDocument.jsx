@@ -2,6 +2,7 @@ import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import {
   PdfDocumentFooter,
   PdfDocumentHeader,
+  PdfStatusBadge,
 } from './PdfDocumentChrome.jsx'
 import { pdfCardStyles, pdfPageStyles } from './PdfDocumentStyles.js'
 
@@ -11,6 +12,7 @@ const styles = StyleSheet.create({
   },
   clientInformationHeader: {
     justifyContent: 'space-between',
+    backgroundColor: '#F1F5F9',
   },
   clientName: {
     width: '100%',
@@ -20,23 +22,17 @@ const styles = StyleSheet.create({
     fontFamily: 'Helvetica-Bold',
     borderBottomWidth: 0,
   },
-  statusBadge: {
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 10,
-    backgroundColor: '#DCFCE7',
+  detailGrid: {
+    paddingTop: 12,
+    paddingHorizontal: 4,
   },
-  inactiveStatusBadge: {
-    backgroundColor: '#FEE2E2',
+  detailGridRow: {
+    flexDirection: 'row',
   },
-  statusText: {
-    color: '#166534',
-    fontSize: 8,
-    fontFamily: 'Helvetica-Bold',
-    textTransform: 'uppercase',
-  },
-  inactiveStatusText: {
-    color: '#991B1B',
+  detailCell: {
+    width: '50%',
+    marginBottom: 12,
+    paddingHorizontal: 8,
   },
 })
 
@@ -50,20 +46,61 @@ function getText(record, ...keys) {
   return ''
 }
 
-function isClientActive(client) {
+function getClientStatus(client) {
   const status = client.active ?? client.actif ?? client.status ?? client.statut
 
   if (typeof status === 'boolean') {
-    return status
+    return status ? 'Actif' : 'Inactif'
   }
 
   if (typeof status === 'string') {
-    return !['inactif', 'inactive', 'false', 'non'].includes(
-      status.trim().toLocaleLowerCase('fr-FR'),
-    )
+    const normalizedStatus = status
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase('fr-FR')
+
+    if (normalizedStatus.includes('attente') || normalizedStatus.includes('pending')) {
+      return 'En attente'
+    }
+    if (
+      normalizedStatus.includes('inactif') ||
+      normalizedStatus.includes('inactive') ||
+      normalizedStatus.includes('desactiv') ||
+      normalizedStatus.includes('disabled') ||
+      normalizedStatus.includes('annul') ||
+      normalizedStatus.includes('refus') ||
+      normalizedStatus === 'false' ||
+      normalizedStatus === 'non'
+    ) {
+      return 'Inactif'
+    }
+    if (
+      normalizedStatus.includes('actif') ||
+      normalizedStatus.includes('active') ||
+      normalizedStatus.includes('paye') ||
+      normalizedStatus.includes('regle') ||
+      normalizedStatus.includes('valide') ||
+      normalizedStatus.includes('termine') ||
+      normalizedStatus === 'true' ||
+      normalizedStatus === 'oui'
+    ) {
+      return 'Actif'
+    }
+    if (normalizedStatus) {
+      return status.trim()
+    }
   }
 
-  return true
+  return 'Actif'
+}
+
+function getDetailRows(details) {
+  const rows = []
+  for (let index = 0; index < details.length; index += 2) {
+    rows.push(details.slice(index, index + 2))
+  }
+  return rows
 }
 
 function getLegalDetails(companyInfo) {
@@ -163,6 +200,7 @@ export default function ClientPdfDocument({
     getText(client, 'reference', 'ref') ||
     (client.id ? `CL-${String(client.id).slice(0, 7).toUpperCase()}` : 'Sans référence')
   const sections = getClientSections(client)
+  const clientStatus = getClientStatus(client)
 
   return (
     <Document
@@ -181,21 +219,7 @@ export default function ClientPdfDocument({
             style={[pdfCardStyles.cardHeader, styles.clientInformationHeader]}
           >
             <Text style={pdfCardStyles.cardHeaderText}>INFORMATIONS DU CLIENT</Text>
-            <View
-              style={[
-                styles.statusBadge,
-                !isClientActive(client) && styles.inactiveStatusBadge,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.statusText,
-                  !isClientActive(client) && styles.inactiveStatusText,
-                ]}
-              >
-                {isClientActive(client) ? 'Actif' : 'Inactif'}
-              </Text>
-            </View>
+            <PdfStatusBadge value={clientStatus} />
           </View>
           <Text style={styles.clientName}>{clientName}</Text>
         </View>
@@ -205,22 +229,22 @@ export default function ClientPdfDocument({
             <View style={pdfCardStyles.cardHeader} wrap={false}>
               <Text style={pdfCardStyles.cardHeaderText}>{section.title}</Text>
             </View>
-            {section.details.map(([label, value], index) => (
-              <View
-                key={label}
-                style={[
-                  pdfCardStyles.cardRow,
-                  index % 2 === 1 ? pdfCardStyles.cardRowAlternate : null,
-                  index === section.details.length - 1
-                    ? pdfCardStyles.cardRowLast
-                    : null,
-                ]}
-                wrap={false}
-              >
-                <Text style={pdfCardStyles.cardLabel}>{label}</Text>
-                <Text style={pdfCardStyles.cardValue}>{value}</Text>
-              </View>
-            ))}
+            <View style={styles.detailGrid}>
+              {getDetailRows(section.details).map((row, rowIndex) => (
+                <View
+                  key={`${section.title}-row-${rowIndex}`}
+                  style={styles.detailGridRow}
+                  wrap={false}
+                >
+                  {row.map(([label, value]) => (
+                    <View key={label} style={styles.detailCell}>
+                      <Text style={pdfCardStyles.cardLabel}>{label}</Text>
+                      <Text style={pdfCardStyles.cardValue}>{value}</Text>
+                    </View>
+                  ))}
+                </View>
+              ))}
+            </View>
           </View>
         ))}
 

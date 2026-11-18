@@ -79,27 +79,14 @@ const styles = StyleSheet.create({
   infoGrid: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    justifyContent: 'space-between',
   },
   infoCard: {
-    width: '48%',
+    width: '100%',
     padding: 12,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: BORDER,
-    borderRadius: 4,
-  },
-  infoCardTitle: {
-    marginBottom: 4,
-    color: '#0F172A',
-    fontSize: 12,
-    fontFamily: 'Helvetica-Bold',
-  },
-  infoText: {
-    marginTop: 2,
-    color: '#1F2937',
-    fontSize: 9,
-    lineHeight: 1.4,
+    borderRadius: 6,
   },
   sectionLabel: {
     marginBottom: 7,
@@ -111,28 +98,30 @@ const styles = StyleSheet.create({
   },
   details: {
     marginTop: 14,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    backgroundColor: '#FFFFFF',
-  },
-  detailItem: {
-    width: '33.33%',
-    padding: 8,
+    padding: 12,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: BORDER,
+    borderRadius: 6,
+  },
+  detailGridRow: {
+    flexDirection: 'row',
+  },
+  detailItem: {
+    width: '50%',
+    paddingHorizontal: 8,
+    paddingVertical: 8,
   },
   detailLabel: {
-    marginBottom: 4,
-    color: MUTED,
-    fontSize: 7,
-    fontFamily: 'Helvetica-Bold',
+    color: '#94A3B8',
+    fontSize: 8,
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   detailValue: {
+    marginTop: 2,
     color: '#0F172A',
-    fontSize: 9,
+    fontSize: 11,
     fontFamily: 'Helvetica-Bold',
   },
   maintenanceChecklist: {
@@ -477,6 +466,14 @@ function getMaintenanceChecklist(intervention) {
     .filter(Boolean)
 }
 
+function groupIntoPairs(items) {
+  const rows = []
+  for (let index = 0; index < items.length; index += 2) {
+    rows.push(items.slice(index, index + 2))
+  }
+  return rows
+}
+
 export default function InterventionPdfDocument({ intervention = {} }) {
   const companyInfo = intervention.companyInfo || {}
   const clientInfo = intervention.clientInfo || intervention.client || {}
@@ -547,10 +544,24 @@ export default function InterventionPdfDocument({ intervention = {} }) {
   const maintenanceChecklist = getMaintenanceChecklist(intervention)
   const legalDetails = getLegalDetails(companyInfo)
   const clientDetails = [
-    clientRepresentative ? `Représentant : ${clientRepresentative}` : '',
-    clientPhone ? `Téléphone : ${clientPhone}` : '',
-    clientAddress ? `Adresse : ${clientAddress}` : '',
-  ].filter(Boolean)
+    ['Représentant', clientRepresentative],
+    ['Téléphone', clientPhone],
+    ['Adresse', clientAddress],
+  ].filter(([, value]) => value)
+  const equipmentDetails = [
+    ['Type d’équipement', equipmentType],
+    ...(equipmentReference ? [['N° série / Référence', equipmentReference]] : []),
+    ...(equipmentAddress ? [['Adresse d’installation', equipmentAddress]] : []),
+  ]
+  const interventionDetails = [
+    ['N° d’intervention', getInterventionNumber(intervention)],
+    ['Date d’intervention', formatDateTime(interventionDate)],
+    ['Type', interventionType],
+    ['Technicien', technician || '—'],
+    ['Heure d’arrivée', getText(intervention, 'heureArrivee', 'arrivalTime') || '—'],
+    ['Heure de départ', getText(intervention, 'heureDepart', 'departureTime') || '—'],
+    ['Temps passé', formatElapsedTime(getElapsedMinutes(intervention))],
+  ]
 
   return (
     <Document
@@ -575,53 +586,40 @@ export default function InterventionPdfDocument({ intervention = {} }) {
         />
         <View>
           <View style={styles.infoGrid}>
-            <View style={[styles.infoCard, { width: '100%' }]} wrap={false}>
+            <View style={styles.infoCard}>
               <Text style={styles.sectionLabel}>Équipement concerné</Text>
-              <Text style={styles.infoCardTitle}>{equipmentType}</Text>
-              {equipmentReference && (
-                <Text style={styles.infoText}>N° série / Référence : {equipmentReference}</Text>
-              )}
-              {equipmentAddress && (
-                <Text style={styles.infoText}>Adresse : {equipmentAddress}</Text>
-              )}
+              {groupIntoPairs(equipmentDetails).map((row, rowIndex) => (
+                <View
+                  key={`equipment-row-${rowIndex}`}
+                  style={styles.detailGridRow}
+                  wrap={false}
+                >
+                  {row.map(([label, value]) => (
+                    <View key={label} style={styles.detailItem}>
+                      <Text style={styles.detailLabel}>{label}</Text>
+                      <Text style={styles.detailValue}>{value}</Text>
+                    </View>
+                  ))}
+                </View>
+              ))}
             </View>
           </View>
 
           <View style={styles.details}>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>N° d’intervention</Text>
-              <Text style={styles.detailValue}>{getInterventionNumber(intervention)}</Text>
-            </View>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Date d’intervention</Text>
-              <Text style={styles.detailValue}>{formatDateTime(interventionDate)}</Text>
-            </View>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Type</Text>
-              <Text style={styles.detailValue}>{interventionType}</Text>
-            </View>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Technicien</Text>
-              <Text style={styles.detailValue}>{technician || '—'}</Text>
-            </View>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Heure d’arrivée</Text>
-              <Text style={styles.detailValue}>
-                {getText(intervention, 'heureArrivee', 'arrivalTime') || '—'}
-              </Text>
-            </View>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Heure de départ</Text>
-              <Text style={styles.detailValue}>
-                {getText(intervention, 'heureDepart', 'departureTime') || '—'}
-              </Text>
-            </View>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Temps passé</Text>
-              <Text style={styles.detailValue}>
-                {formatElapsedTime(getElapsedMinutes(intervention))}
-              </Text>
-            </View>
+            {groupIntoPairs(interventionDetails).map((row, rowIndex) => (
+              <View
+                key={`intervention-row-${rowIndex}`}
+                style={styles.detailGridRow}
+                wrap={false}
+              >
+                {row.map(([label, value]) => (
+                  <View key={label} style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>{label}</Text>
+                    <Text style={styles.detailValue}>{value}</Text>
+                  </View>
+                ))}
+              </View>
+            ))}
           </View>
 
           {problemDescription && (

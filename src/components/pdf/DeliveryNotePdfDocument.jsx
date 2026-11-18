@@ -371,22 +371,17 @@ export default function DeliveryNotePdfDocument({ deliveryNote = {} }) {
     'receptionnaire',
   )
   const clientDetails = [
-    getText(clientInfo, 'representant', 'représentant', 'representative', 'contactPerson')
-      ? `Représentant : ${getText(clientInfo, 'representant', 'représentant', 'representative', 'contactPerson')}`
-      : '',
-    getText(clientInfo, 'ice', 'identifiantFiscal')
-      ? `ICE : ${getText(clientInfo, 'ice', 'identifiantFiscal')}`
-      : '',
-    getText(clientInfo, 'telephone', 'téléphone', 'phone')
-      ? `Téléphone : ${getText(clientInfo, 'telephone', 'téléphone', 'phone')}`
-      : '',
-    getText(clientInfo, 'adresse', 'address')
-      ? `Adresse : ${getText(clientInfo, 'adresse', 'address')}`
-      : '',
-    deliveryLocation ? `Lieu : ${deliveryLocation}` : '',
-    carrierReceiver ? `Transporteur / Réceptionnaire : ${carrierReceiver}` : '',
-    reference ? `Référence : ${reference}` : '',
-  ].filter(Boolean)
+    [
+      'Représentant',
+      getText(clientInfo, 'representant', 'représentant', 'representative', 'contactPerson'),
+    ],
+    ['ICE', getText(clientInfo, 'ice', 'identifiantFiscal')],
+    ['Téléphone', getText(clientInfo, 'telephone', 'téléphone', 'phone')],
+    ['Adresse', getText(clientInfo, 'adresse', 'address')],
+    ['Lieu', deliveryLocation],
+    ['Transporteur / Réceptionnaire', carrierReceiver],
+    ['Référence', reference],
+  ].filter(([, value]) => value)
   const legalDetails = getLegalDetails(companyInfo)
   const items = getDeliveryNoteItems(deliveryNote)
   const deliveryDate =
