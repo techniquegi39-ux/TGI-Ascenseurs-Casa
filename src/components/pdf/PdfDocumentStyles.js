@@ -18,7 +18,7 @@ export const pdfPageStyles = StyleSheet.create({
     paddingTop: 220,
     paddingBottom: 130,
     paddingHorizontal: 40,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FAFAFA',
     color: pdfColors.primary,
     fontFamily: 'Helvetica',
     fontSize: 9,

@@ -40,6 +40,15 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 200,
   },
+  watermark: {
+    position: 'absolute',
+    top: '35%',
+    left: '15%',
+    width: '70%',
+    opacity: 0.04,
+    transform: 'rotate(-15deg)',
+    zIndex: -1,
+  },
   topAccent: {
     position: 'absolute',
     top: 0,
@@ -505,6 +514,7 @@ export function PdfDocumentHeader({ companyInfo = {}, documentTitle }) {
 
   return (
     <>
+      <Image fixed src={logoSource} style={styles.watermark} />
       <Svg fixed style={styles.headerGradient} viewBox="0 0 595 200">
         <Defs>
           <LinearGradient id="tgi-header-gradient" x1={0} y1={0} x2={1} y2={0}>
