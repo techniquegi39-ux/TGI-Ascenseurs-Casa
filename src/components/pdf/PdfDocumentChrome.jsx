@@ -14,6 +14,7 @@ import {
   pdfBadgeStyles,
   pdfCardStyles,
   pdfColors,
+  pdfHeaderStyles,
 } from './PdfDocumentStyles.js'
 import {
   breakLongTextAtCharacters,
@@ -84,7 +85,6 @@ const styles = StyleSheet.create({
   documentTitle: {
     maxWidth: '100%',
     color: pdfColors.highlight,
-    fontSize: 28,
     fontFamily: 'Helvetica-Bold',
     lineHeight: 1.05,
     letterSpacing: 2,
@@ -106,11 +106,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 30,
     right: 40,
-    width: 220,
-    paddingVertical: 4,
-    paddingHorizontal: 7,
-    flexDirection: 'row',
-    alignItems: 'center',
     borderWidth: 0.7,
     borderColor: pdfColors.highlight,
     borderRadius: 3,
@@ -592,6 +587,7 @@ export function PdfDocumentHeader({ companyInfo = {}, documentTitle }) {
         <View style={styles.documentIdentity}>
           <Text
             style={[
+              pdfHeaderStyles.documentTitle,
               styles.documentTitle,
               type.length > 14 ? styles.documentTitleCompact : null,
             ]}
@@ -601,7 +597,7 @@ export function PdfDocumentHeader({ companyInfo = {}, documentTitle }) {
           </Text>
           {number ? <Text style={styles.documentNumber}>{number}</Text> : null}
         </View>
-        <View style={styles.certificationBadge}>
+        <View style={[pdfHeaderStyles.certificationBadge, styles.certificationBadge]}>
           <Svg viewBox="0 0 24 24" style={styles.certificationIcon}>
             <Path
               d="M12 2 20 5v6c0 5-3.4 9-8 11-4.6-2-8-6-8-11V5l8-3Z"

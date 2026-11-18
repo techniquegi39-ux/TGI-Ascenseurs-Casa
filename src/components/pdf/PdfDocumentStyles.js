@@ -25,6 +25,19 @@ export const pdfPageStyles = StyleSheet.create({
   },
 })
 
+export const pdfHeaderStyles = StyleSheet.create({
+  documentTitle: {
+    fontSize: 28,
+    flexWrap: 'nowrap',
+  },
+  certificationBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+})
+
 export const pdfTableStyles = StyleSheet.create({
   table: {
     width: '100%',
