@@ -1,24 +1,24 @@
 import { StyleSheet } from '@react-pdf/renderer'
 
 export const pdfColors = {
-  primary: '#0A2540',
+  primary: '#1E1B4B',
   secondary: '#6B7280',
-  accent: '#0A2540',
-  highlight: '#F59E0B',
+  accent: '#1E1B4B',
+  highlight: '#D4AF37',
   border: '#E2E8F0',
   tableRule: '#E2E8F0',
-  tableRowAlternate: '#F1F5F9',
-  tableHeader: '#0A2540',
+  tableRowAlternate: '#F8FAFC',
+  tableHeader: '#1E1B4B',
   tableHeaderText: '#FFFFFF',
-  tableHeaderBorder: '#0A2540',
+  tableHeaderBorder: '#1E1B4B',
 }
 
 export const pdfPageStyles = StyleSheet.create({
   page: {
-    paddingTop: 170,
+    paddingTop: 220,
     paddingBottom: 90,
     paddingHorizontal: 40,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F3F4F6',
     color: pdfColors.primary,
     fontFamily: 'Helvetica',
     fontSize: 9,
@@ -31,28 +31,27 @@ export const pdfCardStyles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#FFFFFF',
     borderRadius: 6,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#E2E8F0',
+    borderTopWidth: 4,
+    borderTopColor: '#D4AF37',
   },
   cardHeader: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    padding: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
-    borderTopWidth: 3,
-    borderTopColor: '#F59E0B',
+    backgroundColor: '#F8FAFC',
   },
   cardHeaderText: {
-    color: '#0A2540',
+    color: pdfColors.primary,
     fontSize: 10,
     fontFamily: 'Helvetica-Bold',
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
   cardRow: {
-    padding: 12,
+    padding: 15,
     flexDirection: 'row',
     alignItems: 'flex-start',
     borderBottomWidth: 1,
@@ -60,7 +59,7 @@ export const pdfCardStyles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   cardRowAlternate: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: pdfColors.tableRowAlternate,
   },
   cardRowLast: {
     borderBottomWidth: 0,

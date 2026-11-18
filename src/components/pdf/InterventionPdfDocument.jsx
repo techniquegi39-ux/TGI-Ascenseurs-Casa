@@ -7,10 +7,10 @@ import {
 } from './PdfDocumentChrome.jsx'
 import { pdfPageStyles } from './PdfDocumentStyles.js'
 
-const NAVY = '#0A2540'
+const NAVY = '#1E1B4B'
 const BORDER = '#E2E8F0'
 const MUTED = '#64748B'
-const PALE_BLUE = '#F1F5F9'
+const PALE_BLUE = '#F8FAFC'
 const PALE_GRAY = '#FFFFFF'
 
 const styles = StyleSheet.create({
@@ -181,8 +181,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   tableHeader: {
-    paddingVertical: 9,
-    paddingHorizontal: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
     flexDirection: 'row',
     backgroundColor: NAVY,
     borderTopWidth: 1,
@@ -192,18 +192,18 @@ const styles = StyleSheet.create({
   },
   headerCell: {
     color: '#FFFFFF',
-    fontSize: 8,
+    fontSize: 9,
     fontFamily: 'Helvetica-Bold',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
     textTransform: 'uppercase',
   },
   tableRow: {
     paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomWidth: 0.5,
+    borderBottomColor: BORDER,
   },
   alternateRow: {
     backgroundColor: '#F1F5F9',
@@ -586,7 +586,7 @@ export default function InterventionPdfDocument({ intervention = {} }) {
         />
         <View>
           <View style={styles.infoGrid}>
-            <View style={styles.infoCard}>
+            <View style={styles.infoCard} wrap={false}>
               <Text style={styles.sectionLabel}>Équipement concerné</Text>
               {groupIntoPairs(equipmentDetails).map((row, rowIndex) => (
                 <View
@@ -605,7 +605,7 @@ export default function InterventionPdfDocument({ intervention = {} }) {
             </View>
           </View>
 
-          <View style={styles.details}>
+          <View style={styles.details} wrap={false}>
             {groupIntoPairs(interventionDetails).map((row, rowIndex) => (
               <View
                 key={`intervention-row-${rowIndex}`}

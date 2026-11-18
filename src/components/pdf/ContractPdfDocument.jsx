@@ -7,7 +7,7 @@ import {
 } from './PdfDocumentChrome.jsx'
 import { pdfPageStyles } from './PdfDocumentStyles.js'
 
-const NAVY = '#0A2540'
+const NAVY = '#1E1B4B'
 const BORDER = '#E2E8F0'
 const MUTED = '#64748B'
 const PALE_GRAY = '#FFFFFF'
@@ -131,14 +131,14 @@ const styles = StyleSheet.create({
   },
   equipmentRow: {
     flexDirection: 'row',
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 10,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomWidth: 0.5,
+    borderBottomColor: BORDER,
   },
   equipmentRowAlternate: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
   },
   equipmentIndex: {
     width: '8%',
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   equipmentTableHeader: {
-    paddingVertical: 9,
+    paddingVertical: 12,
     paddingHorizontal: 10,
     flexDirection: 'row',
     backgroundColor: NAVY,
@@ -172,9 +172,9 @@ const styles = StyleSheet.create({
   },
   equipmentHeaderCell: {
     color: '#FFFFFF',
-    fontSize: 8,
+    fontSize: 9,
     fontFamily: 'Helvetica-Bold',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
     textTransform: 'uppercase',
   },
   emptyText: {
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: NAVY,
     borderWidth: 1,
-    borderColor: '#F59E0B',
+    borderColor: '#D4AF37',
     borderLeftWidth: 4,
   },
   grandTotal: {
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     backgroundColor: NAVY,
     borderRadius: 3,
     borderWidth: 1,
-    borderColor: '#F59E0B',
+    borderColor: '#D4AF37',
     borderLeftWidth: 4,
   },
   clauseBox: {
@@ -589,7 +589,7 @@ export default function ContractPdfDocument({ contract = {} }) {
 
         <View>
           <View style={styles.intro}>
-            <View style={styles.introCard}>
+            <View style={styles.introCard} wrap={false}>
               <Text style={styles.introLead}>Entre les soussignés :</Text>
               <Text style={styles.introText}>
                 {companyName}
@@ -668,7 +668,7 @@ export default function ContractPdfDocument({ contract = {} }) {
                 <Text
                   style={[
                     styles.financialSummaryValue,
-                    { color: '#F59E0B', fontSize: 16, fontFamily: 'Helvetica-Bold' },
+                    { color: '#D4AF37', fontSize: 16, fontFamily: 'Helvetica-Bold' },
                   ]}
                 >
                   {formatCurrency(totalTTC)}

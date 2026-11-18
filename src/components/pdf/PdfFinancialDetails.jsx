@@ -18,8 +18,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   tableHeader: {
-    paddingVertical: 9,
-    paddingHorizontal: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
     flexDirection: 'row',
     backgroundColor: tableHeader,
     borderTopWidth: 1,
@@ -29,17 +29,17 @@ const styles = StyleSheet.create({
   },
   headerCell: {
     color: tableHeaderText,
-    fontSize: 8,
+    fontSize: 9,
     fontFamily: 'Helvetica-Bold',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
     textTransform: 'uppercase',
   },
   tableRow: {
     paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
+    borderBottomWidth: 0.5,
     borderBottomColor: tableRule,
   },
   alternateRow: {
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   grandTotal: {
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 15,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -91,16 +91,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: highlight,
     borderLeftWidth: 4,
+    borderRadius: 4,
   },
   grandTotalLabel: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: 12,
     fontFamily: 'Helvetica-Bold',
     letterSpacing: 0.7,
   },
   grandTotalValue: {
-    color: highlight,
-    fontSize: 16,
+    color: '#FFFFFF',
+    fontSize: 18,
     fontFamily: 'Helvetica-Bold',
     textAlign: 'right',
   },
@@ -198,7 +199,7 @@ export default function PdfFinancialDetails({
 
       <View style={styles.totalsWrap}>
         <View style={[pdfCardStyles.card, styles.totalsCard]} wrap={false}>
-          <View style={pdfCardStyles.cardHeader}>
+          <View style={pdfCardStyles.cardHeader} wrap={false}>
             <Text style={pdfCardStyles.cardHeaderText}>RÉCAPITULATIF FINANCIER</Text>
           </View>
           <View style={pdfCardStyles.cardRow}>
@@ -217,7 +218,7 @@ export default function PdfFinancialDetails({
             <Text style={styles.totalLabel}>{vatLabel}</Text>
             <Text style={styles.totalValue}>{formatCurrency(totals.totalTVA)}</Text>
           </View>
-          <View style={styles.grandTotal}>
+          <View style={styles.grandTotal} wrap={false}>
             <Text style={styles.grandTotalLabel}>TOTAL TTC</Text>
             <Text style={styles.grandTotalValue}>{formatCurrency(totals.totalTTC)}</Text>
           </View>

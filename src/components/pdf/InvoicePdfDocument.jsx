@@ -8,7 +8,7 @@ import {
 import PdfFinancialDetails from './PdfFinancialDetails.jsx'
 import { pdfPageStyles } from './PdfDocumentStyles.js'
 
-const NAVY = '#0A2540'
+const NAVY = '#1E1B4B'
 const BORDER = '#E2E8F0'
 const MUTED = '#64748B'
 const PALE_BLUE = '#F8FAFC'
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   tableHeader: {
-    paddingVertical: 9,
+    paddingVertical: 12,
     paddingHorizontal: 8,
     flexDirection: 'row',
     backgroundColor: NAVY,
@@ -148,17 +148,17 @@ const styles = StyleSheet.create({
   },
   headerCell: {
     color: '#FFFFFF',
-    fontSize: 8,
+    fontSize: 9,
     fontFamily: 'Helvetica-Bold',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
     textTransform: 'uppercase',
   },
   tableRow: {
     paddingVertical: 10,
     paddingHorizontal: 8,
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomWidth: 0.5,
+    borderBottomColor: BORDER,
   },
   alternateRow: {
     backgroundColor: PALE_BLUE,

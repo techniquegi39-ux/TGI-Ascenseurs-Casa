@@ -2,7 +2,10 @@ import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import {
   PdfDocumentFooter,
   PdfDocumentHeader,
+  PdfDataLabel,
+  PdfSignatures,
   PdfStatusBadge,
+  PdfTimeline,
 } from './PdfDocumentChrome.jsx'
 import { pdfCardStyles, pdfPageStyles } from './PdfDocumentStyles.js'
 
@@ -10,28 +13,53 @@ const styles = StyleSheet.create({
   clientInformation: {
     marginBottom: 20,
   },
+  timelineCardWrapper: {
+    position: 'relative',
+    width: '100%',
+  },
+  firstTimelineCard: {
+    marginTop: -40,
+  },
+  timelineMarker: {
+    position: 'absolute',
+    top: 13,
+    left: -24,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#D4AF37',
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+  },
   clientInformationHeader: {
     justifyContent: 'space-between',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
   },
   clientName: {
     width: '100%',
-    padding: 12,
-    color: '#0A2540',
+    padding: 15,
+    color: '#1E1B4B',
     fontSize: 13,
     fontFamily: 'Helvetica-Bold',
     borderBottomWidth: 0,
   },
   detailGrid: {
-    paddingTop: 12,
-    paddingHorizontal: 4,
+    padding: 15,
   },
   detailGridRow: {
     flexDirection: 'row',
+    marginBottom: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  detailGridRowLast: {
+    marginBottom: 0,
+    paddingBottom: 0,
+    borderBottomWidth: 0,
   },
   detailCell: {
     width: '50%',
-    marginBottom: 12,
     paddingHorizontal: 8,
   },
 })
@@ -214,39 +242,67 @@ export default function ClientPdfDocument({
           companyName={companyName}
           documentTitle={`Fiche Client ${clientReference}`}
         />
-        <View style={[pdfCardStyles.card, styles.clientInformation]} wrap={false}>
+        <PdfTimeline />
+        <View
+          style={[styles.timelineCardWrapper, styles.firstTimelineCard]}
+          wrap={false}
+        >
+          <View style={styles.timelineMarker} />
           <View
-            style={[pdfCardStyles.cardHeader, styles.clientInformationHeader]}
+            style={[pdfCardStyles.card, styles.clientInformation]}
+            wrap={false}
           >
-            <Text style={pdfCardStyles.cardHeaderText}>INFORMATIONS DU CLIENT</Text>
-            <PdfStatusBadge value={clientStatus} />
+            <View
+              style={[pdfCardStyles.cardHeader, styles.clientInformationHeader]}
+            >
+              <Text style={pdfCardStyles.cardHeaderText}>
+                INFORMATIONS DU CLIENT
+              </Text>
+              <PdfStatusBadge value={clientStatus} />
+            </View>
+            <Text style={styles.clientName}>{clientName}</Text>
           </View>
-          <Text style={styles.clientName}>{clientName}</Text>
         </View>
 
         {sections.map((section) => (
-          <View key={section.title} style={pdfCardStyles.card}>
-            <View style={pdfCardStyles.cardHeader} wrap={false}>
-              <Text style={pdfCardStyles.cardHeaderText}>{section.title}</Text>
-            </View>
-            <View style={styles.detailGrid}>
-              {getDetailRows(section.details).map((row, rowIndex) => (
-                <View
-                  key={`${section.title}-row-${rowIndex}`}
-                  style={styles.detailGridRow}
-                  wrap={false}
-                >
-                  {row.map(([label, value]) => (
-                    <View key={label} style={styles.detailCell}>
-                      <Text style={pdfCardStyles.cardLabel}>{label}</Text>
-                      <Text style={pdfCardStyles.cardValue}>{value}</Text>
-                    </View>
-                  ))}
-                </View>
-              ))}
+          <View
+            key={section.title}
+            style={styles.timelineCardWrapper}
+            wrap={false}
+          >
+            <View style={styles.timelineMarker} />
+            <View style={pdfCardStyles.card} wrap={false}>
+              <View style={pdfCardStyles.cardHeader} wrap={false}>
+                <Text style={pdfCardStyles.cardHeaderText}>{section.title}</Text>
+              </View>
+              <View style={styles.detailGrid}>
+                {getDetailRows(section.details).map((row, rowIndex, rows) => (
+                  <View
+                    key={`${section.title}-row-${rowIndex}`}
+                    style={[
+                      styles.detailGridRow,
+                      rowIndex === rows.length - 1 ? styles.detailGridRowLast : null,
+                    ]}
+                    wrap={false}
+                  >
+                    {row.map(([label, value]) => (
+                      <View key={label} style={styles.detailCell}>
+                        <PdfDataLabel label={label} />
+                        <Text style={pdfCardStyles.cardValue}>{value}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ))}
+              </View>
             </View>
           </View>
         ))}
+
+        <PdfSignatures
+          clientLabel="LE CLIENT (Nom, date, signature et cachet)"
+          companyLabel="TGI ASCENSEURS"
+          companyHint="Signature officielle"
+        />
 
         <PdfDocumentFooter
           companyName={companyName}
