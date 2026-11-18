@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 30,
     right: 40,
-    width: 150,
+    width: 220,
     paddingVertical: 4,
     paddingHorizontal: 7,
     flexDirection: 'row',
@@ -613,7 +613,7 @@ export function PdfDocumentHeader({ companyInfo = {}, documentTitle }) {
             />
           </Svg>
           <Text style={styles.certificationText} wrap={false}>
-            DOCUMENT TGI
+            DOCUMENT TGI ASCENSEURS
           </Text>
         </View>
       </View>
