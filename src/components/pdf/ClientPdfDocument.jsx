@@ -5,31 +5,12 @@ import {
   PdfDataLabel,
   PdfSignatures,
   PdfStatusBadge,
-  PdfTimeline,
 } from './PdfDocumentChrome.jsx'
 import { pdfCardStyles, pdfPageStyles } from './PdfDocumentStyles.js'
 
 const styles = StyleSheet.create({
   clientInformation: {
     marginBottom: 20,
-  },
-  timelineCardWrapper: {
-    position: 'relative',
-    width: '100%',
-  },
-  firstTimelineCard: {
-    marginTop: -40,
-  },
-  timelineMarker: {
-    position: 'absolute',
-    top: 13,
-    left: -24,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#D4AF37',
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
   },
   clientInformationHeader: {
     justifyContent: 'space-between',
@@ -242,58 +223,44 @@ export default function ClientPdfDocument({
           companyName={companyName}
           documentTitle={`Fiche Client ${clientReference}`}
         />
-        <PdfTimeline />
         <View
-          style={[styles.timelineCardWrapper, styles.firstTimelineCard]}
+          style={[pdfCardStyles.card, styles.clientInformation]}
           wrap={false}
         >
-          <View style={styles.timelineMarker} />
           <View
-            style={[pdfCardStyles.card, styles.clientInformation]}
-            wrap={false}
+            style={[pdfCardStyles.cardHeader, styles.clientInformationHeader]}
           >
-            <View
-              style={[pdfCardStyles.cardHeader, styles.clientInformationHeader]}
-            >
-              <Text style={pdfCardStyles.cardHeaderText}>
-                INFORMATIONS DU CLIENT
-              </Text>
-              <PdfStatusBadge value={clientStatus} />
-            </View>
-            <Text style={styles.clientName}>{clientName}</Text>
+            <Text style={pdfCardStyles.cardHeaderText}>
+              INFORMATIONS DU CLIENT
+            </Text>
+            <PdfStatusBadge value={clientStatus} />
           </View>
+          <Text style={styles.clientName}>{clientName}</Text>
         </View>
 
         {sections.map((section) => (
-          <View
-            key={section.title}
-            style={styles.timelineCardWrapper}
-            wrap={false}
-          >
-            <View style={styles.timelineMarker} />
-            <View style={pdfCardStyles.card} wrap={false}>
-              <View style={pdfCardStyles.cardHeader} wrap={false}>
-                <Text style={pdfCardStyles.cardHeaderText}>{section.title}</Text>
-              </View>
-              <View style={styles.detailGrid}>
-                {getDetailRows(section.details).map((row, rowIndex, rows) => (
-                  <View
-                    key={`${section.title}-row-${rowIndex}`}
-                    style={[
-                      styles.detailGridRow,
-                      rowIndex === rows.length - 1 ? styles.detailGridRowLast : null,
-                    ]}
-                    wrap={false}
-                  >
-                    {row.map(([label, value]) => (
-                      <View key={label} style={styles.detailCell}>
-                        <PdfDataLabel label={label} />
-                        <Text style={pdfCardStyles.cardValue}>{value}</Text>
-                      </View>
-                    ))}
-                  </View>
-                ))}
-              </View>
+          <View key={section.title} style={pdfCardStyles.card} wrap={false}>
+            <View style={pdfCardStyles.cardHeader} wrap={false}>
+              <Text style={pdfCardStyles.cardHeaderText}>{section.title}</Text>
+            </View>
+            <View style={styles.detailGrid}>
+              {getDetailRows(section.details).map((row, rowIndex, rows) => (
+                <View
+                  key={`${section.title}-row-${rowIndex}`}
+                  style={[
+                    styles.detailGridRow,
+                    rowIndex === rows.length - 1 ? styles.detailGridRowLast : null,
+                  ]}
+                  wrap={false}
+                >
+                  {row.map(([label, value]) => (
+                    <View key={label} style={styles.detailCell}>
+                      <PdfDataLabel label={label} />
+                      <Text style={pdfCardStyles.cardValue}>{value}</Text>
+                    </View>
+                  ))}
+                </View>
+              ))}
             </View>
           </View>
         ))}

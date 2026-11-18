@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 220,
+    height: 200,
     paddingTop: 38,
     paddingHorizontal: 40,
     flexDirection: 'row',
@@ -37,18 +37,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     width: '100%',
-    height: 220,
-  },
-  titleWatermark: {
-    position: 'absolute',
-    top: 16,
-    right: -20,
-    color: '#FFFFFF',
-    opacity: 0.06,
-    fontSize: 60,
-    fontFamily: 'Helvetica-Bold',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
+    height: 200,
   },
   topAccent: {
     position: 'absolute',
@@ -57,24 +46,6 @@ const styles = StyleSheet.create({
     right: 0,
     height: 5,
     backgroundColor: pdfColors.highlight,
-  },
-  watermark: {
-    position: 'absolute',
-    top: 350,
-    left: '10%',
-    width: '80%',
-    opacity: 0.03,
-    transform: 'rotate(-15deg)',
-    zIndex: -1,
-  },
-  timelineLine: {
-    position: 'absolute',
-    top: 180,
-    bottom: 100,
-    left: 20,
-    width: 2,
-    backgroundColor: pdfColors.highlight,
-    opacity: 0.65,
   },
   headerIdentity: {
     flex: 1,
@@ -119,7 +90,9 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   certificationBadge: {
-    marginTop: 9,
+    position: 'absolute',
+    top: 30,
+    right: 40,
     paddingVertical: 4,
     paddingHorizontal: 7,
     flexDirection: 'row',
@@ -152,7 +125,6 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   clientSummary: {
-    marginTop: -40,
     marginBottom: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -206,11 +178,14 @@ const styles = StyleSheet.create({
   dataLabelIcon: {
     width: 10,
     height: 10,
-    marginRight: 4,
+    marginRight: 6,
+    flexShrink: 0,
   },
   dataLabelText: {
     width: 'auto',
     flexGrow: 1,
+    flexShrink: 1,
+    marginTop: 0,
   },
   metaTable: {
     width: '30%',
@@ -255,7 +230,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 90,
+    height: 100,
     paddingHorizontal: 40,
     paddingTop: 10,
     backgroundColor: accent,
@@ -508,10 +483,6 @@ function getDataIconPath(label) {
   return 'M4 21h16M6 21V7l6-4 6 4v14M9 10h.01M15 10h.01M9 14h.01M15 14h.01'
 }
 
-export function PdfTimeline() {
-  return <View fixed style={styles.timelineLine} />
-}
-
 export function PdfStatusBadge({ value }) {
   const [badgeStyle, textStyle] = getStatusBadgeStyles(value)
 
@@ -528,7 +499,7 @@ export function PdfDocumentHeader({ companyInfo = {}, documentTitle }) {
 
   return (
     <>
-      <Svg fixed style={styles.headerGradient} viewBox="0 0 595 220">
+      <Svg fixed style={styles.headerGradient} viewBox="0 0 595 200">
         <Defs>
           <LinearGradient id="tgi-header-gradient" x1={0} y1={0} x2={1} y2={0}>
             <Stop offset="0%" stopColor="#0F172A" />
@@ -540,13 +511,11 @@ export function PdfDocumentHeader({ companyInfo = {}, documentTitle }) {
           x="0"
           y="0"
           width="595"
-          height="220"
+          height="200"
           fill="url(#tgi-header-gradient)"
         />
       </Svg>
-      <Image fixed src={logoSource} style={styles.watermark} />
       <View fixed style={styles.header}>
-        <Text style={styles.titleWatermark}>{type}</Text>
         <View style={styles.headerIdentity}>
           <Image src={logoSource} style={styles.logo} />
           <View style={styles.companyBlock}>
@@ -568,19 +537,19 @@ export function PdfDocumentHeader({ companyInfo = {}, documentTitle }) {
             {type}
           </Text>
           {number ? <Text style={styles.documentNumber}>{number}</Text> : null}
-          <View style={styles.certificationBadge}>
-            <Svg viewBox="0 0 24 24" style={styles.certificationIcon}>
-              <Path
-                d="M12 2 20 5v6c0 5-3.4 9-8 11-4.6-2-8-6-8-11V5l8-3Z"
-                fill="none"
-                stroke={pdfColors.highlight}
-                strokeWidth={1.7}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
-            <Text style={styles.certificationText}>DOCUMENT TGI</Text>
-          </View>
+        </View>
+        <View style={styles.certificationBadge}>
+          <Svg viewBox="0 0 24 24" style={styles.certificationIcon}>
+            <Path
+              d="M12 2 20 5v6c0 5-3.4 9-8 11-4.6-2-8-6-8-11V5l8-3Z"
+              fill="none"
+              stroke={pdfColors.highlight}
+              strokeWidth={1.7}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
+          <Text style={styles.certificationText}>DOCUMENT TGI</Text>
         </View>
       </View>
       <View fixed style={styles.topAccent} />

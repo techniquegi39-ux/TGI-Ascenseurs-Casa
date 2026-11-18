@@ -14,12 +14,6 @@ const PALE_BLUE = '#F8FAFC'
 const PALE_GRAY = '#FFFFFF'
 
 const styles = StyleSheet.create({
-  page: {
-    paddingTop: 130,
-    paddingBottom: 90,
-    paddingHorizontal: 40,
-    backgroundColor: '#FFFFFF',
-  },
   header: {
     position: 'absolute',
     top: 0,

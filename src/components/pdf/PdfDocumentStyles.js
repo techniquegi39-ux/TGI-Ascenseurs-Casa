@@ -16,7 +16,7 @@ export const pdfColors = {
 export const pdfPageStyles = StyleSheet.create({
   page: {
     paddingTop: 220,
-    paddingBottom: 90,
+    paddingBottom: 130,
     paddingHorizontal: 40,
     backgroundColor: '#F3F4F6',
     color: pdfColors.primary,

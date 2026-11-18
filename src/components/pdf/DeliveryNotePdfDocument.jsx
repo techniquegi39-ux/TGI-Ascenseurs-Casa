@@ -12,12 +12,6 @@ const BORDER = '#E2E8F0'
 const MUTED = '#64748B'
 
 const styles = StyleSheet.create({
-  page: {
-    paddingTop: 130,
-    paddingBottom: 90,
-    paddingHorizontal: 40,
-    backgroundColor: '#FFFFFF',
-  },
   header: {
     position: 'absolute',
     top: 0,
