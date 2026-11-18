@@ -21,7 +21,7 @@ import {
   Wrench,
   X,
 } from 'lucide-react'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, onSnapshot } from 'firebase/firestore'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import { db } from '../firebase.js'
@@ -177,10 +177,14 @@ function Sidebar({ isOpen, onNavigate, companySettings }) {
 
 function UserAvatar({ userData, currentUser, companySettings }) {
   const name = userData?.nom || currentUser?.displayName || currentUser?.email || 'Utilisateur'
+  const role =
+    typeof userData?.role === 'string'
+      ? userData.role.trim().toLocaleLowerCase('fr-FR')
+      : ''
   const photo =
-    userData?.role === 'Directeur'
+    role === 'directeur'
       ? companySettings.directeurPhoto
-      : userData?.role === 'Commercial'
+      : role === 'commercial'
         ? companySettings.commercialPhoto
         : ''
 
@@ -219,42 +223,35 @@ export default function Layout() {
   const [companySettings, setCompanySettings] = useState({})
 
   useEffect(() => {
-    let isMounted = true
+    const unsubscribe = onSnapshot(
+      doc(db, 'settings', 'company'),
+      (settingsSnapshot) => {
+        const settingsData = settingsSnapshot.exists() ? settingsSnapshot.data() : {}
+        setCompanySettings({
+          companyLogoBase64:
+            typeof settingsData.companyLogoBase64 === 'string'
+              ? settingsData.companyLogoBase64
+              : '',
+          directeurPhoto:
+            typeof settingsData.directeurPhoto === 'string'
+              ? settingsData.directeurPhoto
+              : '',
+          commercialPhoto:
+            typeof settingsData.commercialPhoto === 'string'
+              ? settingsData.commercialPhoto
+              : '',
+        })
+      },
+      (error) => {
+        console.error(
+          'Erreur lors du suivi des paramètres d’affichage de l’entreprise :',
+          error,
+        )
+      },
+    )
 
-    async function loadCompanySettings() {
-      try {
-        const settingsSnapshot = await getDoc(doc(db, 'settings', 'company'))
-        if (isMounted) {
-          const settingsData = settingsSnapshot.exists() ? settingsSnapshot.data() : {}
-          setCompanySettings({
-            companyLogoBase64:
-              typeof settingsData.companyLogoBase64 === 'string'
-                ? settingsData.companyLogoBase64
-                : '',
-            directeurPhoto:
-              typeof settingsData.directeurPhoto === 'string'
-                ? settingsData.directeurPhoto
-                : '',
-            commercialPhoto:
-              typeof settingsData.commercialPhoto === 'string'
-                ? settingsData.commercialPhoto
-                : '',
-          })
-        }
-      } catch (error) {
-        console.error('Erreur lors du chargement des paramètres d’affichage de l’entreprise :', error)
-      }
-    }
-
-    function handleCompanySettingsUpdated() {
-      void loadCompanySettings()
-    }
-
-    void loadCompanySettings()
-    window.addEventListener('company-settings-updated', handleCompanySettingsUpdated)
     return () => {
-      isMounted = false
-      window.removeEventListener('company-settings-updated', handleCompanySettingsUpdated)
+      unsubscribe()
     }
   }, [])
 

@@ -333,7 +333,7 @@ export default function Settings() {
       setPendingImageReads((count) => Math.max(0, count - 1))
     }
 
-    reader.onload = () => {
+    reader.onload = async () => {
       finishReading()
       if (typeof reader.result !== 'string' || !reader.result.startsWith('data:image/')) {
         setFeedback({
@@ -343,8 +343,53 @@ export default function Settings() {
         return
       }
 
-      setFormData((previous) => ({ ...previous, [field]: reader.result }))
+      const photoData = reader.result
+      const otherPhoto =
+        field === 'directeurPhoto' ? formData.commercialPhoto : formData.directeurPhoto
+
+      if (photoData.length + otherPhoto.length > MAX_PROFILE_PHOTOS_DATA_LENGTH) {
+        setFeedback({
+          type: 'error',
+          message: 'La taille totale des photos dépasse la limite de stockage des paramètres.',
+        })
+        return
+      }
+      if (
+        photoData.length + otherPhoto.length + formData.companyLogoBase64.length >
+        MAX_COMPANY_IMAGES_DATA_LENGTH
+      ) {
+        setFeedback({
+          type: 'error',
+          message:
+            'La taille cumulée du logo et des photos dépasse la limite de stockage des paramètres. Réduisez la taille des images.',
+        })
+        return
+      }
+
+      const previousPhoto = formData[field]
+      setFormData((previous) => ({ ...previous, [field]: photoData }))
+      setSaving(true)
       setFeedback(null)
+      try {
+        await setDoc(doc(db, 'settings', 'company'), { [field]: photoData }, { merge: true })
+        window.dispatchEvent(new Event('company-settings-updated'))
+        setFeedback({
+          type: 'success',
+          message: `La photo du ${role.toLocaleLowerCase('fr-FR')} a été enregistrée.`,
+        })
+      } catch (error) {
+        console.error(`Erreur lors de l’enregistrement de la photo du ${role.toLocaleLowerCase('fr-FR')} :`, error)
+        setFormData((previous) => ({ ...previous, [field]: previousPhoto }))
+        setFeedback({
+          type: 'error',
+          message:
+            error instanceof Error
+              ? `Enregistrement de la photo impossible : ${error.message}`
+              : 'Enregistrement de la photo impossible. Veuillez réessayer.',
+        })
+      } finally {
+        setSaving(false)
+      }
     }
     reader.onerror = () => {
       finishReading()
