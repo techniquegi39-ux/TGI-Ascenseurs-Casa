@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from '@react-pdf/renderer'
-import { pdfCardStyles, pdfColors } from './PdfDocumentStyles.js'
+import { pdfCardStyles, pdfColors, pdfTableStyles } from './PdfDocumentStyles.js'
 import { breakLongTextAtCharacters } from './pdfTextUtils.js'
 
 const {
@@ -17,6 +17,7 @@ const {
 const styles = StyleSheet.create({
   table: {
     width: '100%',
+    minWidth: 0,
   },
   tableHeader: {
     paddingVertical: 12,
@@ -36,6 +37,8 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   tableRow: {
+    width: '100%',
+    minWidth: 0,
     paddingVertical: 10,
     paddingHorizontal: 10,
     flexDirection: 'row',
@@ -47,10 +50,6 @@ const styles = StyleSheet.create({
     backgroundColor: tableRowAlternate,
   },
   tableCell: {
-    paddingRight: 4,
-    maxWidth: '100%',
-    flexShrink: 1,
-    flexWrap: 'wrap',
     color: primary,
     fontSize: 8,
   },
@@ -153,18 +152,23 @@ export default function PdfFinancialDetails({
             DÉTAIL DES ARTICLES ET PRESTATIONS
           </Text>
         </View>
-        <View style={styles.table}>
+        <View style={[pdfTableStyles.table, styles.table]}>
           <View fixed style={styles.tableHeader}>
             {COLUMNS.map((column) => (
-              <Text
+              <View
                 key={column.label}
-                style={[
-                  styles.headerCell,
-                  { width: column.width, textAlign: column.align },
-                ]}
+                style={[pdfTableStyles.cell, { width: column.width }]}
               >
-                {column.label}
-              </Text>
+                <Text
+                  style={[
+                    pdfTableStyles.cellText,
+                    styles.headerCell,
+                    { textAlign: column.align },
+                  ]}
+                >
+                  {column.label}
+                </Text>
+              </View>
             ))}
           </View>
           {items.length === 0 ? (
@@ -181,25 +185,37 @@ export default function PdfFinancialDetails({
                 ]}
                 wrap={false}
               >
-                <Text style={[styles.tableCell, { width: '4%' }]}>{index + 1}</Text>
-                <Text
-                  style={[styles.tableCell, { width: '31%' }]}
-                  hyphenationCallback={breakLongTextAtCharacters}
-                >
-                  {item.designation}
-                </Text>
-                <Text style={[styles.tableCell, { width: '8%', textAlign: 'right' }]}>
-                  {formatQuantity(item.quantity)}
-                </Text>
-                <Text style={[styles.tableCell, { width: '17%', textAlign: 'right' }]}>
-                  {formatAmount(item.unitPrice)}
-                </Text>
-                <Text style={[styles.tableCell, { width: '14%', textAlign: 'right' }]}>
-                  {formatAmount(item.discount)}
-                </Text>
-                <Text style={[styles.tableCell, { width: '26%', textAlign: 'right' }]}>
-                  {formatAmount(item.totalHT)}
-                </Text>
+                <View style={[pdfTableStyles.cell, { width: '4%', paddingRight: 4 }]}>
+                  <Text style={[pdfTableStyles.cellText, styles.tableCell]}>{index + 1}</Text>
+                </View>
+                <View style={[pdfTableStyles.cell, { width: '31%', paddingRight: 4 }]}>
+                  <Text
+                    style={[pdfTableStyles.cellText, styles.tableCell]}
+                    hyphenationCallback={breakLongTextAtCharacters}
+                  >
+                    {item.designation}
+                  </Text>
+                </View>
+                <View style={[pdfTableStyles.cell, { width: '8%', paddingRight: 4 }]}>
+                  <Text style={[pdfTableStyles.cellText, styles.tableCell, { textAlign: 'right' }]}>
+                    {formatQuantity(item.quantity)}
+                  </Text>
+                </View>
+                <View style={[pdfTableStyles.cell, { width: '17%', paddingRight: 4 }]}>
+                  <Text style={[pdfTableStyles.cellText, styles.tableCell, { textAlign: 'right' }]}>
+                    {formatAmount(item.unitPrice)}
+                  </Text>
+                </View>
+                <View style={[pdfTableStyles.cell, { width: '14%', paddingRight: 4 }]}>
+                  <Text style={[pdfTableStyles.cellText, styles.tableCell, { textAlign: 'right' }]}>
+                    {formatAmount(item.discount)}
+                  </Text>
+                </View>
+                <View style={[pdfTableStyles.cell, { width: '26%' }]}>
+                  <Text style={[pdfTableStyles.cellText, styles.tableCell, { textAlign: 'right' }]}>
+                    {formatAmount(item.totalHT)}
+                  </Text>
+                </View>
               </View>
             ))
           )}

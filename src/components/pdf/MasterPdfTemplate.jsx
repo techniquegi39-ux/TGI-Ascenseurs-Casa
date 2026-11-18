@@ -4,7 +4,8 @@ import {
   PdfDocumentFooter,
   PdfDocumentHeader,
 } from './PdfDocumentChrome.jsx'
-import { pdfPageStyles } from './PdfDocumentStyles.js'
+import { pdfPageStyles, pdfTableStyles } from './PdfDocumentStyles.js'
+import { breakLongTextAtCharacters } from './pdfTextUtils.js'
 
 const TGI_NAVY = '#0A2540'
 const TGI_BLUE = '#0A2540'
@@ -91,8 +92,11 @@ const styles = StyleSheet.create({
   },
   table: {
     width: '100%',
+    minWidth: 0,
   },
   tableHeader: {
+    width: '100%',
+    minWidth: 0,
     flexDirection: 'row',
     backgroundColor: TGI_NAVY,
     borderTopWidth: 1,
@@ -102,7 +106,6 @@ const styles = StyleSheet.create({
   },
   headerCell: {
     paddingVertical: 9,
-    paddingHorizontal: 8,
     color: '#FFFFFF',
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
@@ -110,6 +113,8 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   tableRow: {
+    width: '100%',
+    minWidth: 0,
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
@@ -120,9 +125,11 @@ const styles = StyleSheet.create({
   },
   cell: {
     paddingVertical: 10,
-    paddingHorizontal: 8,
     color: '#0F172A',
     fontSize: 8,
+  },
+  cellContainer: {
+    paddingHorizontal: 8,
   },
   tableSectionTitle: {
     marginBottom: 8,
@@ -428,20 +435,28 @@ export default function MasterPdfTemplate({
         />
 
         {safeColumns.length > 0 && (
-          <View style={styles.table}>
+          <View style={[pdfTableStyles.table, styles.table]}>
             <Text style={styles.tableSectionTitle}>DÉTAIL DES ARTICLES ET PRESTATIONS</Text>
             <View fixed style={styles.tableHeader}>
               {safeColumns.map((column, index) => (
-                <Text
+                <View
                   key={`${getColumnHeader(column, index)}-${index}`}
                   style={[
-                    styles.headerCell,
+                    pdfTableStyles.cell,
+                    styles.cellContainer,
                     { width: getColumnWidth(column, safeColumns.length) },
-                    column?.align === 'right' ? { textAlign: 'right' } : null,
                   ]}
                 >
-                  {getColumnHeader(column, index)}
-                </Text>
+                  <Text
+                    style={[
+                      pdfTableStyles.cellText,
+                      styles.headerCell,
+                      column?.align === 'right' ? { textAlign: 'right' } : null,
+                    ]}
+                  >
+                    {getColumnHeader(column, index)}
+                  </Text>
+                </View>
               ))}
             </View>
             {safeData.length === 0 ? (
@@ -459,16 +474,25 @@ export default function MasterPdfTemplate({
                   wrap={false}
                 >
                   {safeColumns.map((column, columnIndex) => (
-                    <Text
+                    <View
                       key={`${getColumnHeader(column, columnIndex)}-${columnIndex}`}
                       style={[
-                        styles.cell,
+                        pdfTableStyles.cell,
+                        styles.cellContainer,
                         { width: getColumnWidth(column, safeColumns.length) },
-                        column?.align === 'right' ? { textAlign: 'right' } : null,
                       ]}
                     >
-                      {getCellValue(row, column, columnIndex)}
-                    </Text>
+                      <Text
+                        style={[
+                          pdfTableStyles.cellText,
+                          styles.cell,
+                          column?.align === 'right' ? { textAlign: 'right' } : null,
+                        ]}
+                        hyphenationCallback={breakLongTextAtCharacters}
+                      >
+                        {getCellValue(row, column, columnIndex)}
+                      </Text>
+                    </View>
                   ))}
                 </View>
               ))

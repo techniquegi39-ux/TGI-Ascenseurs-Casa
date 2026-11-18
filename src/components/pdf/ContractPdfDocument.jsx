@@ -5,7 +5,8 @@ import {
   PdfDocumentHeader,
   PdfSignatures,
 } from './PdfDocumentChrome.jsx'
-import { pdfPageStyles } from './PdfDocumentStyles.js'
+import { pdfPageStyles, pdfTableStyles } from './PdfDocumentStyles.js'
+import { breakLongTextAtCharacters } from './pdfTextUtils.js'
 
 const NAVY = '#1E1B4B'
 const BORDER = '#E2E8F0'
@@ -124,6 +125,8 @@ const styles = StyleSheet.create({
     borderBottomColor: BORDER,
   },
   equipmentRow: {
+    width: '100%',
+    minWidth: 0,
     flexDirection: 'row',
     paddingVertical: 12,
     paddingHorizontal: 10,
@@ -136,15 +139,27 @@ const styles = StyleSheet.create({
   },
   equipmentIndex: {
     width: '8%',
+    minWidth: 0,
+    flexShrink: 0,
     color: NAVY,
     fontSize: 9,
     fontFamily: 'Helvetica-Bold',
   },
   equipmentDescription: {
-    flexGrow: 1,
+    width: '100%',
+    maxWidth: '100%',
+    minWidth: 0,
+    flexShrink: 1,
+    flexWrap: 'wrap',
     color: '#0F172A',
     fontSize: 9,
     lineHeight: 1.4,
+  },
+  equipmentDescriptionCell: {
+    width: '92%',
+    minWidth: 0,
+    flexShrink: 0,
+    overflow: 'hidden',
   },
   equipmentTableTitle: {
     marginBottom: 8,
@@ -155,6 +170,8 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   equipmentTableHeader: {
+    width: '100%',
+    minWidth: 0,
     paddingVertical: 12,
     paddingHorizontal: 10,
     flexDirection: 'row',
@@ -601,11 +618,27 @@ export default function ContractPdfDocument({ contract = {} }) {
             </Text>
             {elevators.length > 0 ? (
               <>
-                <View fixed style={styles.equipmentTableHeader}>
-                  <Text style={[styles.equipmentHeaderCell, { width: '8%' }]}>#</Text>
-                  <Text style={[styles.equipmentHeaderCell, { width: '92%' }]}>
-                    Désignation
-                  </Text>
+                <View fixed style={[pdfTableStyles.row, styles.equipmentTableHeader]}>
+                  <View style={[pdfTableStyles.cell, { width: '8%' }]}>
+                    <Text
+                      style={[
+                        pdfTableStyles.cellText,
+                        styles.equipmentHeaderCell,
+                      ]}
+                    >
+                      #
+                    </Text>
+                  </View>
+                  <View style={[pdfTableStyles.cell, { width: '92%' }]}>
+                    <Text
+                      style={[
+                        pdfTableStyles.cellText,
+                        styles.equipmentHeaderCell,
+                      ]}
+                    >
+                      Désignation
+                    </Text>
+                  </View>
                 </View>
                 {elevators.map((elevator, index) => (
                   <View
@@ -617,9 +650,19 @@ export default function ContractPdfDocument({ contract = {} }) {
                     wrap={false}
                   >
                     <Text style={styles.equipmentIndex}>{index + 1}</Text>
-                    <Text style={styles.equipmentDescription}>
-                      {getElevatorDescription(elevator)}
-                    </Text>
+                    <View
+                      style={[
+                        pdfTableStyles.cell,
+                        styles.equipmentDescriptionCell,
+                      ]}
+                    >
+                      <Text
+                        style={styles.equipmentDescription}
+                        hyphenationCallback={breakLongTextAtCharacters}
+                      >
+                        {getElevatorDescription(elevator)}
+                      </Text>
+                    </View>
                   </View>
                 ))}
               </>

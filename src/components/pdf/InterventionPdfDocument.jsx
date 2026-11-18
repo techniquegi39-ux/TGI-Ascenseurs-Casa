@@ -5,7 +5,7 @@ import {
   PdfDocumentHeader,
   PdfSignatures,
 } from './PdfDocumentChrome.jsx'
-import { pdfPageStyles } from './PdfDocumentStyles.js'
+import { pdfPageStyles, pdfTableStyles } from './PdfDocumentStyles.js'
 import {
   breakLongTextAtCharacters,
   isPdfFieldFullWidth,
@@ -204,6 +204,8 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   tableRow: {
+    width: '100%',
+    minWidth: 0,
     paddingVertical: 10,
     paddingHorizontal: 10,
     flexDirection: 'row',
@@ -217,6 +219,12 @@ const styles = StyleSheet.create({
   cell: {
     color: '#0F172A',
     fontSize: 8,
+  },
+  cellContainer: {
+    minWidth: 0,
+    flexShrink: 0,
+    overflow: 'hidden',
+    paddingRight: 4,
   },
   tableSectionTitle: {
     marginBottom: 8,
@@ -705,13 +713,27 @@ export default function InterventionPdfDocument({ intervention = {} }) {
           {parts.length > 0 && (
             <View style={styles.tableSection}>
               <Text style={styles.tableSectionTitle}>DÉTAIL DES ARTICLES ET PRESTATIONS</Text>
-              <View style={styles.table}>
-                <View fixed style={styles.tableHeader}>
-                  <Text style={[styles.headerCell, { width: '8%' }]}>#</Text>
-                  <Text style={[styles.headerCell, { width: '70%' }]}>Désignation</Text>
-                  <Text style={[styles.headerCell, { width: '22%', textAlign: 'right' }]}>
-                    Qté
-                  </Text>
+              <View style={[pdfTableStyles.table, styles.table]}>
+                <View fixed style={[pdfTableStyles.row, styles.tableHeader]}>
+                  <View style={[pdfTableStyles.cell, { width: '8%' }]}>
+                    <Text style={[pdfTableStyles.cellText, styles.headerCell]}>#</Text>
+                  </View>
+                  <View style={[pdfTableStyles.cell, { width: '70%' }]}>
+                    <Text style={[pdfTableStyles.cellText, styles.headerCell]}>
+                      Désignation
+                    </Text>
+                  </View>
+                  <View style={[pdfTableStyles.cell, { width: '22%' }]}>
+                    <Text
+                      style={[
+                        pdfTableStyles.cellText,
+                        styles.headerCell,
+                        { textAlign: 'right' },
+                      ]}
+                    >
+                      Qté
+                    </Text>
+                  </View>
                 </View>
                 {parts.map((part, index) => (
                   <View
@@ -722,11 +744,46 @@ export default function InterventionPdfDocument({ intervention = {} }) {
                     ]}
                     wrap={false}
                   >
-                    <Text style={[styles.cell, { width: '8%' }]}>{index + 1}</Text>
-                    <Text style={[styles.cell, { width: '70%' }]}>{part.designation}</Text>
-                    <Text style={[styles.cell, { width: '22%', textAlign: 'right' }]}>
-                      {formatQuantity(part.quantity)}
-                    </Text>
+                    <View
+                      style={[
+                        pdfTableStyles.cell,
+                        styles.cellContainer,
+                        { width: '8%' },
+                      ]}
+                    >
+                      <Text style={[pdfTableStyles.cellText, styles.cell]}>{index + 1}</Text>
+                    </View>
+                    <View
+                      style={[
+                        pdfTableStyles.cell,
+                        styles.cellContainer,
+                        { width: '70%' },
+                      ]}
+                    >
+                      <Text
+                        style={[pdfTableStyles.cellText, styles.cell]}
+                        hyphenationCallback={breakLongTextAtCharacters}
+                      >
+                        {part.designation}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        pdfTableStyles.cell,
+                        styles.cellContainer,
+                        { width: '22%', paddingRight: 0 },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          pdfTableStyles.cellText,
+                          styles.cell,
+                          { textAlign: 'right' },
+                        ]}
+                      >
+                        {formatQuantity(part.quantity)}
+                      </Text>
+                    </View>
                   </View>
                 ))}
               </View>

@@ -25,6 +25,30 @@ export const pdfPageStyles = StyleSheet.create({
   },
 })
 
+export const pdfTableStyles = StyleSheet.create({
+  table: {
+    width: '100%',
+    minWidth: 0,
+  },
+  row: {
+    width: '100%',
+    minWidth: 0,
+    flexDirection: 'row',
+  },
+  cell: {
+    minWidth: 0,
+    flexShrink: 0,
+    overflow: 'hidden',
+  },
+  cellText: {
+    width: '100%',
+    maxWidth: '100%',
+    minWidth: 0,
+    flexShrink: 1,
+    flexWrap: 'wrap',
+  },
+})
+
 export const pdfCardStyles = StyleSheet.create({
   card: {
     marginBottom: 20,
