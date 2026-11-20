@@ -48,11 +48,26 @@ function createEmptyPart() {
   return { id: createPartId(), designation: '', quantity: '1' }
 }
 
+function getElapsedMinutesFromDates(startDate, endDate) {
+  if (!startDate || !endDate) {
+    return null
+  }
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  if (
+    Number.isNaN(start.getTime()) ||
+    Number.isNaN(end.getTime()) ||
+    end.getTime() <= start.getTime()
+  ) {
+    return null
+  }
+  return Math.round((end.getTime() - start.getTime()) / 60000)
+}
+
 function getElapsedMinutes(arrival, departure) {
   if (!arrival || !departure) {
     return null
   }
-
   const parseTime = (time) => {
     const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time)
     return match ? Number(match[1]) * 60 + Number(match[2]) : null
@@ -73,9 +88,10 @@ function formatElapsedTime(minutes) {
     return 'Calculé lorsque les deux heures sont renseignées'
   }
 
-  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(minutes / 1440)
+  const hours = Math.floor((minutes % 1440) / 60)
   const remainingMinutes = minutes % 60
-  return [hours ? `${hours} h` : '', remainingMinutes ? `${remainingMinutes} min` : '']
+  return [days ? `${days} j` : '', hours ? `${hours} h` : '', remainingMinutes ? `${remainingMinutes} min` : '']
     .filter(Boolean)
     .join(' ') || '0 min'
 }
@@ -121,6 +137,13 @@ function toLocalDateTime(value) {
   return date.toISOString().slice(0, 16)
 }
 
+function toOptionalLocalDateTime(value) {
+  if (!value) {
+    return ''
+  }
+  return toLocalDateTime(value)
+}
+
 function getInitialFormData(intervention) {
   const replacedParts =
     intervention?.partsUsed ??
@@ -146,6 +169,9 @@ function getInitialFormData(intervention) {
     type: String(intervention?.type || INTERVENTION_TYPES[0]),
     dateHeure: toLocalDateTime(
       intervention?.dateIntervention || intervention?.dateHeure || intervention?.date,
+    ),
+    dateFin: toOptionalLocalDateTime(
+      intervention?.dateFin || intervention?.endDate,
     ),
     technicien: String(
       intervention?.technicien || intervention?.technician || intervention?.technicianName || '',
@@ -468,6 +494,18 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
     if (!formData.dateHeure || Number.isNaN(new Date(formData.dateHeure).getTime())) {
       nextErrors.dateHeure = 'Saisissez une date et une heure valides.'
     }
+    if (formData.dateFin) {
+      const endDate = new Date(formData.dateFin)
+      const startDate = new Date(formData.dateHeure)
+      if (
+        Number.isNaN(endDate.getTime()) ||
+        Number.isNaN(startDate.getTime()) ||
+        endDate.getTime() <= startDate.getTime()
+      ) {
+        nextErrors.dateFin =
+          'La date de fin doit être postérieure à la date et heure de début.'
+      }
+    }
     if (!technician) {
       nextErrors.technicien = 'Le nom du technicien est obligatoire.'
     } else if (technician.length > 120) {
@@ -538,6 +576,10 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
 
     setIsSaving(true)
     const dateIntervention = new Date(formData.dateHeure)
+    const dateFin = formData.dateFin ? new Date(formData.dateFin) : null
+    const elapsedMinutes =
+      getElapsedMinutesFromDates(dateIntervention, dateFin) ??
+      getElapsedMinutes(formData.heureArrivee, formData.heureDepart)
     const piecesRemplacees = formData.piecesRemplacees
       .filter((part) => part.designation.trim())
       .map((part) => ({
@@ -552,13 +594,14 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
       elevatorType: String(selectedElevator.type || ''),
       type: formData.type,
       dateIntervention: Timestamp.fromDate(dateIntervention),
+      dateFin: dateFin ? Timestamp.fromDate(dateFin) : null,
       technicien: formData.technicien.trim(),
       descriptionProbleme: formData.descriptionProbleme.trim(),
       travauxEffectues: formData.travauxEffectues.trim(),
       piecesRemplacees,
       heureArrivee: formData.heureArrivee,
       heureDepart: formData.heureDepart,
-      tempsPasseMinutes: getElapsedMinutes(formData.heureArrivee, formData.heureDepart),
+      tempsPasseMinutes: elapsedMinutes,
       checklistMaintenance: formData.checklistMaintenance,
       observationsInternes: formData.observationsInternes.trim(),
       status: formData.status,
@@ -662,7 +705,9 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
     setFormError('')
   }
 
-  const elapsedMinutes = getElapsedMinutes(formData.heureArrivee, formData.heureDepart)
+  const elapsedMinutes =
+    getElapsedMinutesFromDates(formData.dateHeure, formData.dateFin) ??
+    getElapsedMinutes(formData.heureArrivee, formData.heureDepart)
 
   return (
     <div
@@ -904,6 +949,16 @@ export default function InterventionForm({ intervention = null, onClose, onSaved
                 required
                 type="datetime-local"
                 value={formData.dateHeure}
+                disabled={isSaving}
+              />
+              <Field
+                error={errors.dateFin}
+                id="intervention-end-date"
+                label="Date et heure de fin"
+                name="dateFin"
+                onChange={handleChange}
+                type="datetime-local"
+                value={formData.dateFin}
                 disabled={isSaving}
               />
               <Field

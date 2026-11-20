@@ -100,7 +100,7 @@ function formatDateTime(value) {
 
   return new Intl.DateTimeFormat('fr-MA', {
     day: '2-digit',
-    month: 'short',
+    month: '2-digit',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
@@ -192,6 +192,23 @@ function getMaintenanceChecklist(intervention) {
 }
 
 function getElapsedTimeLabel(intervention) {
+  const startValue =
+    intervention.dateIntervention || intervention.dateHeure || intervention.date
+  const endValue = intervention.dateFin || intervention.endDate
+  if (startValue && endValue) {
+    const start = toDate(startValue)
+    const end = toDate(endValue)
+    if (start && end && end.getTime() > start.getTime()) {
+      const minutes = Math.round((end.getTime() - start.getTime()) / 60000)
+      const days = Math.floor(minutes / 1440)
+      const hours = Math.floor((minutes % 1440) / 60)
+      const remainingMinutes = minutes % 60
+      return [days ? `${days} j` : '', hours ? `${hours} h` : '', remainingMinutes ? `${remainingMinutes} min` : '']
+        .filter(Boolean)
+        .join(' ') || '0 min'
+    }
+  }
+
   const storedMinutes = Number(intervention.tempsPasseMinutes)
   let minutes =
     intervention.tempsPasseMinutes !== null &&
@@ -286,6 +303,10 @@ function InterventionDetailsModal({ intervention, clientName, elevatorName, onCl
                 value={formatDateTime(
                   intervention.dateIntervention || intervention.dateHeure || intervention.date,
                 )}
+              />
+              <InterventionDetailItem
+                label="Date et heure de fin"
+                value={formatDateTime(intervention.dateFin || intervention.endDate)}
               />
               <InterventionDetailItem label="Type" value={intervention.type} />
               <InterventionDetailItem

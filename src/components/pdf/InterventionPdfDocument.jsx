@@ -330,7 +330,7 @@ function formatDateTime(value) {
   return date
     ? new Intl.DateTimeFormat('fr-MA', {
         day: '2-digit',
-        month: 'long',
+        month: '2-digit',
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
@@ -422,6 +422,15 @@ function formatQuantity(value) {
 }
 
 function getElapsedMinutes(intervention) {
+  const startValue =
+    intervention.dateIntervention || intervention.dateHeure || intervention.date
+  const endValue = intervention.dateFin || intervention.endDate
+  const startDate = getDate(startValue)
+  const endDate = getDate(endValue)
+  if (startDate && endDate && endDate.getTime() > startDate.getTime()) {
+    return Math.round((endDate.getTime() - startDate.getTime()) / 60000)
+  }
+
   const savedMinutes = Number(intervention.tempsPasseMinutes)
   if (
     intervention.tempsPasseMinutes !== null &&
@@ -455,9 +464,10 @@ function formatElapsedTime(minutes) {
     return '—'
   }
 
-  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(minutes / 1440)
+  const hours = Math.floor((minutes % 1440) / 60)
   const remainingMinutes = minutes % 60
-  return [hours ? `${hours} h` : '', remainingMinutes ? `${remainingMinutes} min` : '']
+  return [days ? `${days} j` : '', hours ? `${hours} h` : '', remainingMinutes ? `${remainingMinutes} min` : '']
     .filter(Boolean)
     .join(' ') || '0 min'
 }
@@ -587,6 +597,9 @@ export default function InterventionPdfDocument({ intervention = {} }) {
   const interventionDetails = [
     ['N° d’intervention', getInterventionNumber(intervention)],
     ['Date d’intervention', formatDateTime(interventionDate)],
+    ['Date et heure de fin', formatDateTime(
+      intervention.dateFin || intervention.endDate,
+    )],
     ['Type', interventionType],
     ['Technicien', technician || '—'],
     ['Heure d’arrivée', getText(intervention, 'heureArrivee', 'arrivalTime') || '—'],
@@ -611,6 +624,10 @@ export default function InterventionPdfDocument({ intervention = {} }) {
           clientDetails={clientDetails}
           metaRows={[
             { label: 'DATE', value: formatDateTime(interventionDate) },
+            {
+              label: 'DATE ET HEURE DE FIN',
+              value: formatDateTime(intervention.dateFin || intervention.endDate),
+            },
             { label: 'ÉCHÉANCE', value: '—' },
             { label: 'STATUT', value: getText(intervention, 'status', 'statut') || '—' },
           ]}
