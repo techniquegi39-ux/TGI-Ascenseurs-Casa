@@ -24,11 +24,13 @@ import {
 } from 'firebase/firestore'
 import { db } from '../firebase.js'
 import { useAuth } from '../context/useAuth.js'
+import { getContractClausesTemplate } from '../utils/contractClausesTemplates.js'
 
 const CONTRACT_TYPES = ['Maintenance', 'Modernisation', 'Installation']
 const CONTRACT_SERVICE_TYPES = [
   'Standard',
   'Préventif',
+  'Omnium / Tout compris',
   'Pièces et Main d’œuvre (P&MO)',
 ]
 const SLA_RESPONSE_TIMES = ['Sous 4h', 'Sous 12h', 'Sous 24h']
@@ -36,24 +38,6 @@ const CONTRACT_STATUSES = ['En négociation', 'Actif', 'Résilié']
 const BILLING_FREQUENCIES = ['Mensuelle', 'Trimestrielle', 'Annuelle']
 const VAT_RATES = [0, 7, 10, 14, 20]
 const MAX_CLAUSE_LENGTH = 10000
-const STANDARD_CONTRACT_CLAUSES = [
-  {
-    label: 'Maintenance préventive',
-    text: 'Le prestataire s’engage à effectuer des visites mensuelles de contrôle et de graissage.',
-  },
-  {
-    label: 'Dépannage',
-    text: 'Intervention garantie sous 24h ouvrables en cas de panne bloquante.',
-  },
-  {
-    label: 'Pièces de rechange',
-    text: 'Le remplacement des pièces d’usure normale est facturé séparément sur devis.',
-  },
-  {
-    label: 'Exclusions',
-    text: 'Les pannes causées par vandalisme, inondation ou force majeure ne sont pas couvertes.',
-  },
-]
 
 function getClientName(client) {
   return String(client.nom || client.raisonSociale || client.name || 'Client sans nom')
@@ -147,7 +131,10 @@ function getInitialFormData(contract) {
     frequenceFacturation: String(
       contract?.frequenceFacturation || contract?.billingFrequency || BILLING_FREQUENCIES[0],
     ),
-    clauses: String(contract?.clauses || contract?.conditions || ''),
+    clauses: String(contract?.clauses || contract?.conditions || '').trim()
+      || (!contract
+        ? getContractClausesTemplate('Maintenance', 'Standard')
+        : ''),
   }
 }
 
@@ -324,6 +311,9 @@ export default function ContractForm({ contract = null, onClose, onSaved }) {
   const [errors, setErrors] = useState({})
   const [formError, setFormError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const [clausesCustomized, setClausesCustomized] = useState(
+    () => Boolean(String(contract?.clauses || contract?.conditions || '').trim()),
+  )
 
   useEffect(() => {
     let isMounted = true
@@ -439,6 +429,27 @@ export default function ContractForm({ contract = null, onClose, onSaved }) {
       setIsLoadingElevators(Boolean(value))
       setElevatorLoadError('')
     }
+    if (name === 'clauses') {
+      setClausesCustomized(Boolean(value.trim()))
+    }
+    if ((name === 'type' || name === 'typeContrat') && !clausesCustomized) {
+      const nextNature = name === 'type' ? value : formData.type
+      const nextServiceType = name === 'typeContrat' ? value : formData.typeContrat
+      const nextTemplate = getContractClausesTemplate(nextNature, nextServiceType)
+      setFormData((previous) => ({
+        ...previous,
+        [name]: value,
+        clauses: nextTemplate,
+      }))
+      setErrors((previous) => {
+        const nextErrors = { ...previous }
+        delete nextErrors[name]
+        delete nextErrors.clauses
+        return nextErrors
+      })
+      setFormError('')
+      return
+    }
     setFormData((previous) => ({
       ...previous,
       [name]: value,
@@ -476,30 +487,6 @@ export default function ContractForm({ contract = null, onClose, onSaved }) {
       ...previous,
       taciteReconduction: event.target.checked,
     }))
-    setFormError('')
-  }
-
-  function appendStandardClause(event) {
-    const clause = STANDARD_CONTRACT_CLAUSES.find((item) => item.label === event.target.value)
-    if (!clause) {
-      return
-    }
-
-    const currentClauses = formData.clauses.trim()
-    const nextClauses = currentClauses
-      ? `${currentClauses}\n\n${clause.text}`
-      : clause.text
-
-    setFormData((previous) => ({ ...previous, clauses: nextClauses }))
-    setErrors((previous) => {
-      const nextErrors = { ...previous }
-      if (nextClauses.length > MAX_CLAUSE_LENGTH) {
-        nextErrors.clauses = `Les clauses ne doivent pas dépasser ${MAX_CLAUSE_LENGTH.toLocaleString('fr-FR')} caractères.`
-      } else {
-        delete nextErrors.clauses
-      }
-      return nextErrors
-    })
     setFormError('')
   }
 
@@ -1082,26 +1069,34 @@ export default function ContractForm({ contract = null, onClose, onSaved }) {
                   >
                     Clauses particulières
                   </label>
-                  <select
-                    aria-label="Insérer une clause type"
-                    className="mb-2 h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 sm:w-auto"
+                  <button
+                    aria-label="Charger le modèle type"
+                    className="mb-2 inline-flex h-10 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-800 transition hover:bg-blue-100 focus:outline-none focus:ring-4 focus:ring-blue-600/10 disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={isSaving}
-                    onChange={appendStandardClause}
-                    value=""
+                    onClick={() => {
+                      const template = getContractClausesTemplate(
+                        formData.type,
+                        formData.typeContrat,
+                      )
+                      setFormData((previous) => ({
+                        ...previous,
+                        clauses: template,
+                      }))
+                      setClausesCustomized(false)
+                      setErrors((previous) => {
+                        const nextErrors = { ...previous }
+                        delete nextErrors.clauses
+                        return nextErrors
+                      })
+                    }}
+                    type="button"
                   >
-                    <option disabled value="">
-                      Insérer une clause type...
-                    </option>
-                    {STANDARD_CONTRACT_CLAUSES.map((clause) => (
-                      <option key={clause.label} value={clause.label}>
-                        {clause.label}
-                      </option>
-                    ))}
-                  </select>
+                    Charger le modèle type
+                  </button>
                   <textarea
                     aria-describedby={errors.clauses ? 'contract-clauses-error' : undefined}
                     aria-invalid={Boolean(errors.clauses)}
-                    className={`min-h-36 w-full resize-y rounded-lg border bg-white px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 ${
+                    className={`min-h-[24rem] w-full resize-y rounded-lg border bg-white px-3 py-3 text-sm leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 ${
                       errors.clauses
                         ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
                         : 'border-slate-300 focus:border-blue-600 focus:ring-blue-600/10'
@@ -1112,7 +1107,7 @@ export default function ContractForm({ contract = null, onClose, onSaved }) {
                     name="clauses"
                     onChange={handleChange}
                     placeholder="Conditions spécifiques, exclusions, délais d’intervention..."
-                    rows={5}
+                    rows={14}
                     value={formData.clauses}
                   />
                   {errors.clauses && (

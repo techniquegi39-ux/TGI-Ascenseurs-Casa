@@ -7,6 +7,7 @@ import {
 } from './PdfDocumentChrome.jsx'
 import { pdfPageStyles, pdfTableStyles } from './PdfDocumentStyles.js'
 import { breakLongTextAtCharacters } from './pdfTextUtils.js'
+import { getContractClausesTemplate } from '../../utils/contractClausesTemplates.js'
 
 const NAVY = '#1E1B4B'
 const BORDER = '#E2E8F0'
@@ -278,6 +279,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 1.55,
     textAlign: 'justify',
+  },
+  clauseParagraph: {
+    marginBottom: 7,
   },
   signatures: {
     flexDirection: 'row',
@@ -563,7 +567,11 @@ export default function ContractPdfDocument({ contract = {} }) {
   const automaticRenewal = Boolean(
     contract.taciteReconduction ?? contract.automaticRenewal ?? false,
   )
-  const clauses = getText(contract, 'clauses', 'conditions') || 'Aucune clause particulière.'
+  const savedClauses = getText(contract, 'clauses', 'conditions')
+  const clauses =
+    savedClauses && savedClauses !== 'Aucune clause particulière.'
+      ? savedClauses
+      : getContractClausesTemplate(contractNature, serviceType)
   const contractTerms = [
     ['Date de début', formatDate(dateDebut)],
     ['Date de fin', formatDate(dateFin)],
@@ -575,6 +583,10 @@ export default function ContractPdfDocument({ contract = {} }) {
     ['Délai d’intervention garanti (SLA)', responseSla],
     ['Tacite reconduction', automaticRenewal ? 'Oui — renouvellement automatique' : 'Non'],
   ]
+  const clauseParagraphs = clauses
+    .split('\n')
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
 
   return (
     <Document
@@ -752,8 +764,22 @@ export default function ContractPdfDocument({ contract = {} }) {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>4. Clauses du contrat</Text>
-            <View style={styles.clauseBox}>
-              <Text style={styles.clauseText}>{clauses}</Text>
+            <View style={styles.clauseBox} wrap>
+              {clauseParagraphs.map((paragraph, index) => (
+                  <Text
+                    key={`clause-${index}`}
+                    style={[
+                      styles.clauseText,
+                      index === clauseParagraphs.length - 1
+                        ? null
+                        : styles.clauseParagraph,
+                    ]}
+                    wrap
+                    hyphenationCallback={breakLongTextAtCharacters}
+                  >
+                    {paragraph}
+                  </Text>
+                ))}
             </View>
           </View>
 
